@@ -1,112 +1,118 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 // MARK: - Universal Selectable Pill
 
-/// A reusable pill-shaped button that can display any enum with a String raw value.
-///
-/// This generic component adapts its appearance based on selection state:
-/// - **Selected**: Bold text, larger size, solid color background, white text
-/// - **Unselected**: Regular text, smaller size, translucent background, default text color
-///
-/// The pill provides haptic feedback on tap (iOS only) and supports any
-/// `Hashable` enum that has `String` raw values.
-///
-/// - Note: The generic constraint `T.RawValue == String` ensures the option
-///   can be displayed as text.
+/// Glassmorphic pill button for picking enum values in forms.
+/// Selected: gradient fill + icon + white text.
+/// Unselected: translucent tint fill + muted text.
 struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == String {
-    /// The enum value this pill represents (e.g., `.internship`, `.applied`)
     let option: T
-    
-    /// Whether this pill is currently selected
     let isSelected: Bool
-    
-    /// The accent color for this pill (background when selected, tint when not)
     let color: Color
-    
-    /// Callback invoked when the pill is tapped
+    var icon: String? = nil
     let onTap: () -> Void
 
     var body: some View {
-        Text(option.rawValue)
-            /// Selected pills are bolder and slightly larger
-            .font(isSelected ? .headline.weight(.bold) : .subheadline)
-            .padding(.horizontal, isSelected ? 15 : 12)
-            .padding(.vertical, isSelected ? 9 : 8)
-            .background(
-                Capsule()
-                    /// Selected: nearly opaque color, Unselected: very translucent
-                    .fill(isSelected ? color.opacity(0.9) : color.opacity(0.2))
-            )
-            /// White text when selected for contrast, default color when not
-            .foregroundColor(isSelected ? .white : .primary)
-            .onTapGesture {
-                #if canImport(UIKit)
-                /// Provide subtle haptic feedback on tap (iOS/iPadOS only)
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                #endif
-                onTap()
+        HStack(spacing: isSelected ? 6 : 5) {
+            if let icon {
+                Image(systemName: icon)
+                    .font(.system(size: isSelected ? 13 : 12, weight: .semibold))
+                    .foregroundStyle(isSelected ? .white : color)
             }
+            Text(option.rawValue)
+                .font(isSelected ? .system(size: 14, weight: .bold) : .system(size: 13, weight: .medium))
+                .foregroundStyle(isSelected ? .white : color.opacity(0.85))
+        }
+        .padding(.horizontal, isSelected ? 14 : 12)
+        .padding(.vertical, isSelected ? 9 : 8)
+        .background(
+            Capsule()
+                .fill(isSelected
+                      ? LinearGradient(colors: [color, color.opacity(0.75)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                      : LinearGradient(colors: [color.opacity(0.18), color.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .overlay(
+                    Capsule()
+                        .strokeBorder(isSelected ? color.opacity(0.0) : color.opacity(0.25), lineWidth: 0.8)
+                )
+        )
+        .shadow(color: isSelected ? color.opacity(0.35) : .clear, radius: 6, y: 2)
+        .onTapGesture {
+            #if canImport(UIKit)
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            #endif
+            onTap()
+        }
+        .animation(.spring(response: 0.28, dampingFraction: 0.65), value: isSelected)
     }
 }
 
-// MARK: - Color Extensions
+// MARK: - Color + Icon Extensions
 
-/// Extends `ApplicationType` to provide semantic colors for each job type.
-///
-/// Color meanings:
-/// - Green: Permanent positions (full-time)
-/// - Yellow: Flexible arrangements (part-time)
-/// - Blue: Time-bound contracts
-/// - Red: Learning opportunities (internships)
-/// - Gray: Academic programs (co-op)
-/// - Purple: Short-term work (temporary)
 extension ApplicationType {
     var color: Color {
         switch self {
-        case .fullTime: return .green
-        case .partTime: return .yellow
-        case .internship: return .red
-        case .contract: return .blue
-        case .Co_op: return .gray
-        case .temporary: return .purple
+        case .fullTime:   return Color(red: 0.35, green: 0.65, blue: 0.96)
+        case .partTime:   return Color(red: 0.96, green: 0.73, blue: 0.28)
+        case .internship: return Color(red: 0.93, green: 0.38, blue: 0.44)
+        case .contract:   return Color(red: 0.62, green: 0.52, blue: 0.96)
+        case .Co_op:      return Color(red: 0.30, green: 0.80, blue: 0.45)
+        case .temporary:  return Color(red: 0.96, green: 0.52, blue: 0.62)
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .fullTime:   return "briefcase.fill"
+        case .partTime:   return "clock.fill"
+        case .internship: return "graduationcap.fill"
+        case .contract:   return "doc.text.fill"
+        case .Co_op:      return "building.2.fill"
+        case .temporary:  return "timer"
         }
     }
 }
 
-/// Extends `ApplicationStatus` to provide colors that reflect urgency and progress.
-///
-/// Color meanings:
-/// - Blue: Action needed (to apply)
-/// - Yellow: Waiting (applied)
-/// - Gray: In progress (interview)
-/// - Green: Success (offer)
-/// - Red: Closed (rejected)
 extension ApplicationStatus {
     var color: Color {
         switch self {
-        case .toApply: return .blue
-        case .applied: return .yellow
-        case .interview: return .gray
-        case .offer: return .green
-        case .rejected: return .red
+        case .toApply:   return Color(red: 0.58, green: 0.62, blue: 0.82)
+        case .applied:   return Color(red: 0.35, green: 0.65, blue: 0.96)
+        case .interview: return Color(red: 0.96, green: 0.73, blue: 0.28)
+        case .offer:     return Color(red: 0.30, green: 0.80, blue: 0.45)
+        case .rejected:  return Color(red: 0.93, green: 0.38, blue: 0.44)
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .toApply:   return "plus.circle.fill"
+        case .applied:   return "paperplane.fill"
+        case .interview: return "person.2.fill"
+        case .offer:     return "checkmark.seal.fill"
+        case .rejected:  return "xmark.circle.fill"
         }
     }
 }
 
-/// Extends `ApplicationSeason` to provide colors matching seasonal associations.
-///
-/// Color meanings:
-/// - Pink: Spring (flowers)
-/// - Yellow: Summer (sunshine)
-/// - Brown: Fall (autumn leaves)
-/// - Blue: Winter (cold, ice)
 extension ApplicationSeason {
     var color: Color {
         switch self {
-        case .spring: return .pink
-        case .summer: return .yellow
-        case .fall: return .brown
-        case .winter: return .blue
+        case .spring: return Color(red: 0.96, green: 0.52, blue: 0.62)
+        case .summer: return Color(red: 0.96, green: 0.73, blue: 0.28)
+        case .fall:   return Color(red: 0.80, green: 0.46, blue: 0.20)
+        case .winter: return Color(red: 0.35, green: 0.65, blue: 0.96)
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .spring: return "leaf.fill"
+        case .summer: return "sun.max.fill"
+        case .fall:   return "wind"
+        case .winter: return "snowflake"
         }
     }
 }

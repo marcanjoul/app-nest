@@ -1,20 +1,12 @@
-//
-//  SelectablePill.swift
-//  AppNest
-//
-//  Created by Mark Anjoul on 3/18/26.
-//
-
-
 import SwiftUI
 
-// MARK: - Display-only Pill (for card view)
+// MARK: - Display-only Status Pill (used on light-mode job cards)
 
 struct StatusPill: View {
     let text: String
     let background: Color
     let foreground: Color
-    
+
     var body: some View {
         Text(text)
             .font(.caption2.weight(.semibold))
@@ -22,9 +14,7 @@ struct StatusPill: View {
             .fixedSize(horizontal: true, vertical: false)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
-            .background(
-                Capsule().fill(background)
-            )
+            .background(Capsule().fill(background))
             .foregroundStyle(foreground)
     }
 }
