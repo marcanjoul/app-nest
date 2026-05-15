@@ -51,12 +51,9 @@ struct ApplicationView: View {
             List {
                 // Header
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("AppNest")
+                    Text("App Nest")
                         .font(.system(size: 40, weight: .bold, design: .default))
                         .foregroundStyle(DarkTheme.textPrimary)
-                    Text("Your job search, organized.")
-                        .font(.subheadline)
-                        .foregroundStyle(DarkTheme.textSecondary)
                 }
                 .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 8, trailing: 20))
                 .listRowBackground(Color.clear)
