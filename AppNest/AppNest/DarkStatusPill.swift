@@ -63,27 +63,61 @@ struct DarkTypeTag: View {
     }
 }
 
-// MARK: - Stat Chip
+// MARK: - Stat Pill
 
-/// Glassmorphic card showing a single statistic (number + label).
+/// Tappable status-tinted pill that shows a count and acts as a filter toggle.
 struct StatChip: View {
+    let status: ApplicationStatus
     let number: Int
-    let label: String
+    var isSelected: Bool = false
+    var action: (() -> Void)? = nil
+
+    private var style: DarkTheme.StatusStyle { DarkTheme.statusStyle(for: status) }
+
+    private var label: String {
+        switch status {
+        case .toApply:   return "To Apply"
+        case .applied:   return "Applied"
+        case .interview: return "Interview"
+        case .offer:     return "Offers"
+        case .rejected:  return "Rejected"
+        }
+    }
 
     var body: some View {
-        VStack(spacing: 4) {
-            Text("\(number)")
-                .font(.system(size: 26, weight: .bold, design: .rounded))
-                .foregroundStyle(DarkTheme.textPrimary)
-            Text(label)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(DarkTheme.textSecondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+        Button {
+            action?()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: style.iconName)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(style.tintColor)
+
+                Text("\(number)")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(DarkTheme.textPrimary)
+
+                Text(label)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(DarkTheme.textSecondary)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                Capsule()
+                    .fill(isSelected ? AnyShapeStyle(style.fillColor) : AnyShapeStyle(style.gradient))
+                    .overlay(
+                        Capsule().strokeBorder(
+                            isSelected ? style.tintColor.opacity(0.55) : style.borderColor,
+                            lineWidth: isSelected ? 1.4 : 0.8
+                        )
+                    )
+                    .shadow(color: isSelected ? style.tintColor.opacity(0.25) : .clear, radius: 6, y: 2)
+            )
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .glassCard(cornerRadius: 16, shadowOpacity: 0.08)
+        .buttonStyle(.plain)
+        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: isSelected)
     }
 }
 
@@ -188,10 +222,10 @@ struct DarkJobCardView: View {
                 DarkTypeTag(text: "Full Time",  icon: "briefcase.fill")
             }
 
-            HStack(spacing: 12) {
-                StatChip(number: 12, label: "Applied")
-                StatChip(number: 3,  label: "Interview")
-                StatChip(number: 1,  label: "Offers")
+            HStack(spacing: 10) {
+                StatChip(status: .applied,   number: 12)
+                StatChip(status: .interview, number: 3)
+                StatChip(status: .offer,     number: 1)
             }
 
             DarkJobCardView(job: JobApplication(

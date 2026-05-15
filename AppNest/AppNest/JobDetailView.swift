@@ -446,22 +446,33 @@ private struct ResumeSection: View {
             SectionLabel(icon: "doc.richtext", title: "Resume")
 
             HStack(spacing: 10) {
+                // Left icon
                 Image(systemName: "doc.text")
                     .foregroundStyle(.secondary)
-                Text(resumeFileName ?? "No file attached")
-                    .foregroundStyle(resumeFileName == nil ? .secondary : .primary)
+
+                // File name label with explicit local constants to reduce type-check complexity
+                let hasFile: Bool = (resumeFileName != nil)
+                let displayedName: String = resumeFileName ?? "No file attached"
+
+                Text(displayedName)
+                    .foregroundStyle(hasFile ? Color.primary : Color.secondary)
                     .font(.subheadline)
+
                 Spacer()
-                if resumeFileName != nil {
+
+                // Clear button only when a file exists
+                if hasFile {
                     Button(role: .destructive, action: onClear) {
                         Image(systemName: "trash")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.red)
                     }
                 }
+
+                // Attach button
                 Button(action: onPick) {
                     Image(systemName: "paperclip")
                 }
-                .foregroundStyle(.accentColor)
+                .foregroundStyle(Color.accentColor)
                 .padding(8)
                 .background(
                     Circle()
@@ -494,7 +505,7 @@ private struct JobNotesSection: View {
 
             ZStack(alignment: .topLeading) {
                 if jobNotes.isEmpty {
-                    Text("Add notes about this application…")
+                    Text("Add notes about this job…")
                         .foregroundStyle(.secondary)
                         .font(.subheadline)
                         .padding(.horizontal, 4)

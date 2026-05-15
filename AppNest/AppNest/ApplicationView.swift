@@ -156,7 +156,7 @@ struct ApplicationView: View {
     // MARK: - Search + Filter Row
 
     private var searchFilterRow: some View {
-        VStack(spacing: 10) {
+        HStack(spacing: 10) {
             // Glass search bar
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
@@ -182,80 +182,28 @@ struct ApplicationView: View {
                     .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
             }
 
-            // Filter + Sort chips
-            HStack(spacing: 8) {
-                Menu {
+            // Sort menu
+            Menu {
+                ForEach(SortOption.allCases, id: \.self) { option in
                     Button {
-                        selectedStatus = nil
+                        sortOption = option
                     } label: {
                         HStack {
-                            Text("All")
-                            if selectedStatus == nil { Image(systemName: "checkmark") }
+                            Text(option.rawValue)
+                            if sortOption == option { Image(systemName: "checkmark") }
                         }
-                    }
-                    ForEach(ApplicationStatus.allCases, id: \.self) { status in
-                        Button {
-                            selectedStatus = status
-                        } label: {
-                            HStack {
-                                Text(status.rawValue)
-                                if selectedStatus == status { Image(systemName: "checkmark") }
-                            }
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "line.3.horizontal.decrease")
-                            .font(.system(size: 12, weight: .semibold))
-                        Text(selectedStatus?.rawValue ?? "Filter")
-                            .font(.system(size: 13, weight: .semibold))
-                    }
-                    .foregroundStyle(selectedStatus != nil ? Color.accentColor : DarkTheme.textPrimary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background {
-                        Capsule()
-                            .fill(selectedStatus != nil
-                                  ? Color.accentColor.opacity(0.12)
-                                  : Color.primary.opacity(0.06))
-                            .overlay(
-                                Capsule().strokeBorder(
-                                    selectedStatus != nil ? Color.accentColor.opacity(0.35) : Color.primary.opacity(0.08),
-                                    lineWidth: 0.8
-                                )
-                            )
                     }
                 }
-
-                Menu {
-                    ForEach(SortOption.allCases, id: \.self) { option in
-                        Button {
-                            sortOption = option
-                        } label: {
-                            HStack {
-                                Text(option.rawValue)
-                                if sortOption == option { Image(systemName: "checkmark") }
-                            }
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "arrow.up.arrow.down")
-                            .font(.system(size: 12, weight: .semibold))
-                        Text(sortOption.rawValue)
-                            .font(.system(size: 13, weight: .semibold))
-                    }
+            } label: {
+                Image(systemName: "arrow.up.arrow.down")
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(DarkTheme.textPrimary)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
+                    .frame(width: 44, height: 44)
                     .background {
-                        Capsule()
-                            .fill(Color.primary.opacity(0.06))
-                            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.8))
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                            .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
                     }
-                }
-
-                Spacer()
             }
         }
         .padding(.horizontal, 20)
@@ -264,25 +212,23 @@ struct ApplicationView: View {
     // MARK: - Stats Section
 
     private var statsSection: some View {
-        HStack(spacing: 10) {
-            StatChip(
-                number: applications.filter { $0.status == .applied }.count,
-                label: "Applied"
-            )
-            StatChip(
-                number: applications.filter { $0.status == .interview }.count,
-                label: "Interview"
-            )
-            StatChip(
-                number: applications.filter { $0.status == .offer }.count,
-                label: "Offers"
-            )
-            StatChip(
-                number: applications.filter { $0.status == .rejected }.count,
-                label: "Rejected"
-            )
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach([ApplicationStatus.applied, .interview, .offer, .rejected], id: \.self) { status in
+                    StatChip(
+                        status: status,
+                        number: applications.filter { $0.status == status }.count,
+                        isSelected: selectedStatus == status,
+                        action: {
+                            withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                                selectedStatus = (selectedStatus == status) ? nil : status
+                            }
+                        }
+                    )
+                }
+            }
+            .padding(.horizontal, 20)
         }
-        .padding(.horizontal, 20)
     }
 
     // MARK: - Empty States

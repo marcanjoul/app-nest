@@ -79,7 +79,7 @@ struct ProfileView: View {
             VStack(spacing: 4) {
                 Text("\(totalCount)")
                     .font(.system(size: 52, weight: .bold, design: .rounded))
-                    .foregroundStyle(.accentColor)
+                    .foregroundStyle(Color.accentColor)
                 Text("Total Applications")
                     .font(.subheadline)
                     .foregroundStyle(DarkTheme.textSecondary)
@@ -186,7 +186,7 @@ struct ProfileView: View {
                 }
                 Button { isShowingDocumentPicker = true } label: {
                     Image(systemName: "paperclip")
-                        .foregroundStyle(.accentColor)
+                        .foregroundStyle(Color.accentColor)
                         .padding(8)
                         .background(Circle().fill(Color.accentColor.opacity(0.12)))
                 }
@@ -219,7 +219,7 @@ struct ProfileView: View {
             Button { exportCSV() } label: {
                 Label("Export as CSV", systemImage: "tablecells")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(applications.isEmpty ? .secondary : .accentColor)
+                    .foregroundStyle(applications.isEmpty ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.accentColor))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 13)
                     .background {
