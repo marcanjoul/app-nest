@@ -299,24 +299,8 @@ private struct JobInfoSection: View {
         return String(first).uppercased()
     }
 
-    private func titleFontSize(for text: String) -> CGFloat {
-        let base: CGFloat = 22
-        let count = text.isEmpty ? 14 : text.count
-        if count <= 18 { return base }
-        if count <= 26 { return base * 0.85 }
-        if count <= 36 { return base * 0.72 }
-        if count <= 48 { return base * 0.60 }
-        return base * 0.50
-    }
-
-    private func companyFontSize(for text: String) -> CGFloat {
-        let base: CGFloat = 12
-        let count = text.isEmpty ? 12 : text.count
-        if count <= 22 { return base }
-        if count <= 32 { return base * 0.90 }
-        if count <= 44 { return base * 0.78 }
-        return base * 0.68
-    }
+    private static let titleBaseFontSize: CGFloat = 22
+    private static let companyBaseFontSize: CGFloat = 12
 
     @ViewBuilder
     private func editableFieldBackground(isFocused: Bool, tint: Color? = nil) -> some View {
@@ -329,6 +313,19 @@ private struct JobInfoSection: View {
                 Capsule(style: .continuous)
                     .strokeBorder(strokeColor, lineWidth: 1)
             )
+    }
+
+    // Hugs the field's content while it fits comfortably; otherwise pins the field
+    // to the parent's proposed width so it can't push sibling sections wider.
+    // Uses a stable modifier chain so the TextField's identity (and focus) survive
+    // the hug↔fill transition.
+    private struct HugWhenShort: ViewModifier {
+        let hug: Bool
+        func body(content: Content) -> some View {
+            content
+                .frame(maxWidth: hug ? nil : .infinity)
+                .fixedSize(horizontal: hug, vertical: false)
+        }
     }
 
     var body: some View {
@@ -401,30 +398,34 @@ private struct JobInfoSection: View {
                 TextField("Position Title", text: $position)
                     .multilineTextAlignment(.center)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.5)
                     .font(.system(size: titleFontSize(for: position), weight: .bold, design: .rounded))
                     .foregroundStyle(DarkTheme.textPrimary)
                     .focused($focused, equals: .position)
-                    .fixedSize(horizontal: true, vertical: false)
+                    .modifier(HugWhenShort(hug: position.count <= 24))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 7)
                     .background(
                         editableFieldBackground(isFocused: focused == .position)
                     )
+                    .animation(.smooth(duration: 0.22), value: position.count <= 24)
 
                 TextField("COMPANY NAME", text: $companyName)
                     .multilineTextAlignment(.center)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.5)
                     .font(.system(size: companyFontSize(for: companyName), weight: .heavy, design: .rounded))
                     .tracking(1.4)
                     .foregroundStyle(DarkTheme.textPrimary)
                     .textInputAutocapitalization(.words)
                     .focused($focused, equals: .company)
-                    .fixedSize(horizontal: true, vertical: false)
+                    .modifier(HugWhenShort(hug: companyName.count <= 18))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(
                         editableFieldBackground(isFocused: focused == .company)
                     )
+                    .animation(.smooth(duration: 0.22), value: companyName.count <= 18)
             }
             .padding(.horizontal, 16)
         }
