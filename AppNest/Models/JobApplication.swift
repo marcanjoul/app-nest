@@ -94,6 +94,9 @@ class JobApplication {
     
     /// Security-scoped bookmark data for attached resume file.
     var resumeBookmark: Data?
+
+    /// Identifier for the resume profile item attached to this job.
+    var resumeID: UUID?
     
     /// Creates a new persistent job application.
     ///
@@ -121,7 +124,8 @@ class JobApplication {
         dateApplied: Date = Date(),
         jobNotes: String? = nil,
         resumeFileName: String? = nil,
-        resumeBookmark: Data? = nil
+        resumeBookmark: Data? = nil,
+        resumeID: UUID? = nil
     ) {
         self.companyName = companyName
         self.companyLogoName = companyLogoName
@@ -134,5 +138,32 @@ class JobApplication {
         self.jobNotes = jobNotes
         self.resumeFileName = resumeFileName
         self.resumeBookmark = resumeBookmark
+        self.resumeID = resumeID
+    }
+}
+
+// MARK: - Resume Document
+
+/// SwiftData model representing a reusable resume managed from the profile.
+@Model
+class ResumeDocument {
+    @Attribute(.unique) var id: UUID
+    var fileName: String
+    var bookmark: Data
+    var isDefault: Bool
+    var createdAt: Date
+
+    init(
+        id: UUID = UUID(),
+        fileName: String,
+        bookmark: Data,
+        isDefault: Bool = false,
+        createdAt: Date = Date()
+    ) {
+        self.id = id
+        self.fileName = fileName
+        self.bookmark = bookmark
+        self.isDefault = isDefault
+        self.createdAt = createdAt
     }
 }

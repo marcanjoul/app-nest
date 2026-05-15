@@ -9,6 +9,7 @@ import UIKit
 struct JobDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss)      private var dismiss
+    @Query(sort: \ResumeDocument.createdAt, order: .reverse) private var resumes: [ResumeDocument]
 
     var job: JobApplication?
 
@@ -24,6 +25,7 @@ struct JobDetailView: View {
     @State private var dateApplied:       Date
     @State private var jobNotes:          String
     @State private var resumeFileName:    String?
+    @State private var resumeID:          UUID?
     @State private var _pendingResumeBookmark: Data?
     @State private var isShowingDocumentPicker = false
     @State private var pickerItem: PhotosPickerItem? = nil
@@ -48,6 +50,7 @@ struct JobDetailView: View {
         _dateApplied            = State(initialValue: job?.dateApplied ?? Date())
         _jobNotes               = State(initialValue: job?.jobNotes ?? "")
         _resumeFileName         = State(initialValue: job?.resumeFileName)
+        _resumeID               = State(initialValue: job?.resumeID)
         __pendingResumeBookmark = State(initialValue: nil)
     }
 
@@ -72,9 +75,17 @@ struct JobDetailView: View {
                     SeasonPickerSection(season: $season)
                     DateAppliedSection(dateApplied: $dateApplied)
                     ResumeSection(
-                        resumeFileName: resumeFileName,
+                        defaultResume: defaultResume,
+                        attachedResume: attachedResume,
+                        legacyResumeFileName: resumeID == nil ? resumeFileName : nil,
+                        attachedResumeWasDeleted: attachedResumeWasDeleted,
+                        onSelectDefault: attachDefaultResume,
                         onPick: { isShowingDocumentPicker = true },
-                        onClear: { resumeFileName = nil }
+                        onClear: {
+                            resumeID = nil
+                            resumeFileName = nil
+                            _pendingResumeBookmark = nil
+                        }
                     )
                     JobNotesSection(jobNotes: $jobNotes)
                 }
@@ -89,8 +100,7 @@ struct JobDetailView: View {
         .sheet(isPresented: $isShowingDocumentPicker) {
             DocumentPicker { result in
                 if case .success(let picked) = result {
-                    resumeFileName = picked.fileName
-                    self._pendingResumeBookmark = picked.bookmark
+                    attachPickedResume(fileName: picked.fileName, bookmark: picked.bookmark)
                 }
             }
         }
@@ -164,6 +174,7 @@ struct JobDetailView: View {
             job.jobNotes            = jobNotes
             job.resumeFileName      = resumeFileName
             job.resumeBookmark      = _pendingResumeBookmark ?? job.resumeBookmark
+            job.resumeID            = resumeID
         } else {
             modelContext.insert(JobApplication(
                 companyName: companyName,
@@ -176,9 +187,52 @@ struct JobDetailView: View {
                 dateApplied: dateApplied,
                 jobNotes: jobNotes,
                 resumeFileName: resumeFileName,
-                resumeBookmark: _pendingResumeBookmark
+                resumeBookmark: _pendingResumeBookmark,
+                resumeID: resumeID
             ))
         }
+    }
+
+    private var defaultResume: ResumeDocument? {
+        resumes.first(where: \.isDefault)
+    }
+
+    private var attachedResume: ResumeDocument? {
+        guard let resumeID else { return nil }
+        return resumes.first { $0.id == resumeID }
+    }
+
+    private var attachedResumeWasDeleted: Bool {
+        resumeID != nil && attachedResume == nil
+    }
+
+    private func attachPickedResume(fileName: String, bookmark: Data) {
+        let resume = existingResume(fileName: fileName) ?? createResume(fileName: fileName, bookmark: bookmark)
+        resume.bookmark = bookmark
+        resumeID = resume.id
+        resumeFileName = resume.fileName
+        _pendingResumeBookmark = bookmark
+    }
+
+    private func attachDefaultResume() {
+        guard let defaultResume else { return }
+        resumeID = defaultResume.id
+        resumeFileName = defaultResume.fileName
+        _pendingResumeBookmark = defaultResume.bookmark
+    }
+
+    private func existingResume(fileName: String) -> ResumeDocument? {
+        resumes.first { $0.fileName == fileName }
+    }
+
+    private func createResume(fileName: String, bookmark: Data) -> ResumeDocument {
+        let resume = ResumeDocument(
+            fileName: fileName,
+            bookmark: bookmark,
+            isDefault: resumes.isEmpty || !resumes.contains(where: \.isDefault)
+        )
+        modelContext.insert(resume)
+        return resume
     }
 }
 
@@ -517,17 +571,26 @@ private struct DateAppliedSection: View {
     @Binding var dateApplied: Date
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             SectionLabel(icon: "calendar", title: "Date Applied")
-            DatePicker(
-                "",
-                selection: $dateApplied,
-                in: ...Date(),
-                displayedComponents: .date
-            )
-            .labelsHidden()
+
+            HStack {
+                Spacer()
+                DatePicker(
+                    "",
+                    selection: $dateApplied,
+                    in: ...Date(),
+                    displayedComponents: .date
+                )
+                .labelsHidden()
+                .datePickerStyle(.compact)
+                .controlSize(.large)
+                Spacer()
+            }
+            .padding(.vertical, 2)
         }
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassCard()
     }
@@ -536,56 +599,85 @@ private struct DateAppliedSection: View {
 // MARK: - Resume Section
 
 private struct ResumeSection: View {
-    var resumeFileName: String?
+    var defaultResume: ResumeDocument?
+    var attachedResume: ResumeDocument?
+    var legacyResumeFileName: String?
+    var attachedResumeWasDeleted: Bool
+    var onSelectDefault: () -> Void
     var onPick: () -> Void
     var onClear: () -> Void
+
+    private var isShowingUploadOnly: Bool {
+        defaultResume == nil &&
+        attachedResume == nil &&
+        legacyResumeFileName == nil &&
+        !attachedResumeWasDeleted
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionLabel(icon: "doc.richtext", title: "Resume")
 
-            HStack(spacing: 10) {
-                // Left icon
-                Image(systemName: "doc.text")
-                    .foregroundStyle(.secondary)
+            if isShowingUploadOnly {
+                ResumePill(title: "Upload Resume", style: .add, isSelected: true, showsGlow: false, action: onPick)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 8)
+            } else {
+                VStack(alignment: .leading, spacing: 10) {
+                    if let defaultResume {
+                        ResumePill(
+                            title: defaultResume.fileName,
+                            style: .resume,
+                            isSelected: attachedResume?.id == defaultResume.id,
+                            action: onSelectDefault
+                        )
+                    }
 
-                // File name label with explicit local constants to reduce type-check complexity
-                let hasFile: Bool = (resumeFileName != nil)
-                let displayedName: String = resumeFileName ?? "No file attached"
+                    HStack(spacing: 10) {
+                        if let attachedResume, attachedResume.id != defaultResume?.id {
+                            ResumePill(title: attachedResume.fileName, style: .resume, isSelected: true)
+                        } else if let legacyResumeFileName {
+                            ResumePill(title: legacyResumeFileName, style: .resume, isSelected: true)
+                        } else if attachedResumeWasDeleted {
+                            ResumePill(title: "File Deleted", style: .deleted)
+                        } else {
+                            ResumePill(title: "Add Resume", style: .add, action: onPick)
+                        }
 
-                Text(displayedName)
-                    .foregroundStyle(hasFile ? Color.primary : Color.secondary)
-                    .font(.subheadline)
+                        Spacer(minLength: 8)
 
-                Spacer()
+                        if attachedResume != nil || legacyResumeFileName != nil || attachedResumeWasDeleted {
+                            Button(action: onPick) {
+                                Image(systemName: "paperclip")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(Color.accentColor)
+                                    .frame(width: 34, height: 34)
+                                    .background(Circle().fill(Color.accentColor.opacity(0.12)))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Replace resume")
 
-                // Clear button only when a file exists
-                if hasFile {
-                    Button(role: .destructive, action: onClear) {
-                        Image(systemName: "trash")
-                            .foregroundStyle(Color.red)
+                            Button(role: .destructive, action: onClear) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(Color.red)
+                                    .frame(width: 34, height: 34)
+                                    .background(Circle().fill(Color.red.opacity(0.10)))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Remove attached resume")
+                        }
                     }
                 }
-
-                // Attach button
-                Button(action: onPick) {
-                    Image(systemName: "paperclip")
+                .padding(12)
+                .background {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.primary.opacity(0.05))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                        )
                 }
-                .foregroundStyle(Color.accentColor)
-                .padding(8)
-                .background(
-                    Circle()
-                        .fill(Color.accentColor.opacity(0.12))
-                )
-            }
-            .padding(12)
-            .background {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.primary.opacity(0.05))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
-                    )
             }
         }
         .padding(16)
@@ -698,5 +790,5 @@ private struct DocumentPicker: UIViewControllerRepresentable {
             dateApplied: Date()
         ))
     }
-    .modelContainer(for: JobApplication.self, inMemory: true)
+    .modelContainer(for: [JobApplication.self, ResumeDocument.self], inMemory: true)
 }

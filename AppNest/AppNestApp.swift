@@ -13,6 +13,6 @@ struct AppNestApp: App {
                 OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
             }
         }
-        .modelContainer(for: JobApplication.self)
+        .modelContainer(for: [JobApplication.self, ResumeDocument.self])
     }
 }

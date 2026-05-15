@@ -267,7 +267,7 @@ struct ApplicationView: View {
 
 #Preview {
     let container = try! ModelContainer(
-        for: JobApplication.self,
+        for: JobApplication.self, ResumeDocument.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     let ctx = container.mainContext

@@ -49,6 +49,79 @@ struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == 
     }
 }
 
+// MARK: - Resume Pill
+
+/// Glass capsule pill for resume actions and attached resume states.
+struct ResumePill: View {
+    enum Style {
+        case resume
+        case add
+        case deleted
+    }
+
+    let title: String
+    let style: Style
+    var isSelected: Bool = false
+    var showsGlow: Bool = true
+    var action: (() -> Void)? = nil
+
+    private var tint: Color {
+        switch style {
+        case .resume:  return Color.accentColor
+        case .add:     return Color(red: 0.30, green: 0.80, blue: 0.45)
+        case .deleted: return Color(UIColor.secondaryLabel)
+        }
+    }
+
+    private var iconName: String {
+        switch style {
+        case .resume:  return "doc.text.fill"
+        case .add:     return "plus.circle.fill"
+        case .deleted: return "exclamationmark.triangle.fill"
+        }
+    }
+
+    var body: some View {
+        Button {
+            guard let action else { return }
+            #if canImport(UIKit)
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            #endif
+            action()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: iconName)
+                    .font(.system(size: isSelected ? 13 : 12, weight: .semibold))
+                Text(title)
+                    .font(isSelected ? .system(size: 14, weight: .bold) : .system(size: 13, weight: .medium))
+                    .lineLimit(1)
+                    .strikethrough(style == .deleted, color: tint)
+            }
+            .foregroundStyle(isSelected ? .white : tint.opacity(0.88))
+            .padding(.horizontal, isSelected ? 14 : 12)
+            .padding(.vertical, isSelected ? 9 : 8)
+            .background(
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: isSelected
+                                ? [tint, tint.opacity(0.75)]
+                                : [tint.opacity(style == .deleted ? 0.12 : 0.18), tint.opacity(0.08)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(Capsule().strokeBorder(isSelected ? tint.opacity(0.0) : tint.opacity(style == .deleted ? 0.20 : 0.25), lineWidth: 0.8))
+            )
+            .shadow(color: isSelected && showsGlow ? tint.opacity(0.35) : .clear, radius: 6, y: 2)
+            .opacity(style == .deleted ? 0.72 : 1)
+        }
+        .buttonStyle(.plain)
+        .allowsHitTesting(action != nil)
+        .animation(.spring(response: 0.28, dampingFraction: 0.65), value: isSelected)
+    }
+}
+
 // MARK: - Color + Icon Extensions
 
 extension ApplicationType {
