@@ -27,6 +27,10 @@ struct JobDetailView: View {
     @State private var resumeFileName:    String?
     @State private var resumeID:          UUID?
     @State private var _pendingResumeBookmark: Data?
+    @State private var compensationKind:     CompensationKind?
+    @State private var compensationAmount:   String
+    @State private var compensationCurrency: Currency
+    @State private var salaryPeriod:         SalaryPeriod
     @State private var isShowingDocumentPicker = false
     @State private var isShowingResumeLibrary = false
     @State private var pickerItem: PhotosPickerItem? = nil
@@ -53,6 +57,17 @@ struct JobDetailView: View {
         _resumeFileName         = State(initialValue: job?.resumeFileName)
         _resumeID               = State(initialValue: job?.resumeID)
         __pendingResumeBookmark = State(initialValue: nil)
+        _compensationKind       = State(initialValue: job?.compensationKind)
+        _compensationAmount     = State(initialValue: job?.compensationAmount.map { Self.formatAmount($0) } ?? "")
+        _compensationCurrency   = State(initialValue: job?.compensationCurrency ?? .usd)
+        _salaryPeriod           = State(initialValue: job?.salaryPeriod ?? .yearly)
+    }
+
+    private static func formatAmount(_ value: Double) -> String {
+        if value.rounded() == value {
+            return String(format: "%.0f", value)
+        }
+        return String(format: "%g", value)
     }
 
     // MARK: - Body
@@ -74,6 +89,12 @@ struct JobDetailView: View {
                     TypePickerSection(type: $type)
                     StatusPickerSection(status: $status)
                     SeasonPickerSection(season: $season)
+                    CompensationSection(
+                        kind: $compensationKind,
+                        amount: $compensationAmount,
+                        currency: $compensationCurrency,
+                        salaryPeriod: $salaryPeriod
+                    )
                     DateAppliedSection(dateApplied: $dateApplied)
                     ResumeSection(
                         resumes: orderedResumes,
@@ -174,6 +195,9 @@ struct JobDetailView: View {
     // MARK: - Save
 
     private func save() {
+        let parsedAmount = parsedCompensationAmount
+        let resolvedSalaryPeriod: SalaryPeriod? = compensationKind == .salary ? salaryPeriod : nil
+
         if let job {
             job.companyName         = companyName
             job.companyLogoName     = companyLogoName
@@ -187,6 +211,10 @@ struct JobDetailView: View {
             job.resumeFileName      = resumeFileName
             job.resumeBookmark      = _pendingResumeBookmark ?? job.resumeBookmark
             job.resumeID            = resumeID
+            job.compensationKind    = compensationKind
+            job.compensationAmount  = parsedAmount
+            job.compensationCurrency = compensationCurrency
+            job.salaryPeriod        = resolvedSalaryPeriod
         } else {
             modelContext.insert(JobApplication(
                 companyName: companyName,
@@ -200,9 +228,21 @@ struct JobDetailView: View {
                 jobNotes: jobNotes,
                 resumeFileName: resumeFileName,
                 resumeBookmark: _pendingResumeBookmark,
-                resumeID: resumeID
+                resumeID: resumeID,
+                compensationKind: compensationKind,
+                compensationAmount: parsedAmount,
+                compensationCurrency: compensationCurrency,
+                salaryPeriod: resolvedSalaryPeriod
             ))
         }
+    }
+
+    private var parsedCompensationAmount: Double? {
+        let cleaned = compensationAmount
+            .replacingOccurrences(of: ",", with: "")
+            .trimmingCharacters(in: .whitespaces)
+        guard !cleaned.isEmpty else { return nil }
+        return Double(cleaned)
     }
 
     private var defaultResume: ResumeDocument? {
@@ -249,182 +289,6 @@ struct JobDetailView: View {
         )
         modelContext.insert(resume)
         return resume
-    }
-}
-
-// MARK: - Company Info Section
-
-private struct JobInfoSection: View {
-    @Binding var companyName: String
-    @Binding var companyLogoName: String
-    @Binding var companyLogoImageData: Data?
-    @Binding var position: String
-    @Binding var pickerItem: PhotosPickerItem?
-
-    private enum Field: Hashable { case position, company }
-    @FocusState private var focused: Field?
-
-    private static let tintPalette: [Color] = [
-        Color(red: 0.36, green: 0.66, blue: 0.96),
-        Color(red: 0.96, green: 0.73, blue: 0.28),
-        Color(red: 0.30, green: 0.80, blue: 0.45),
-        Color(red: 0.93, green: 0.38, blue: 0.44),
-        Color(red: 0.62, green: 0.52, blue: 0.96),
-        Color(red: 0.96, green: 0.52, blue: 0.62),
-    ]
-
-    private var accentTint: Color {
-        let trimmed = companyName.trimmingCharacters(in: .whitespaces)
-        let key: String
-        if let first = trimmed.first {
-            key = String(first).uppercased()
-        } else {
-            key = "AppNest"
-        }
-        return Self.tintPalette[abs(key.hashValue) % Self.tintPalette.count]
-    }
-
-    #if canImport(UIKit)
-    private var logoImage: Image? {
-        if let data = companyLogoImageData, let ui = UIImage(data: data) {
-            return Image(uiImage: ui)
-        } else if !companyLogoName.isEmpty, UIImage(named: companyLogoName) != nil {
-            return Image(companyLogoName)
-        }
-        return nil
-    }
-    #else
-    private var logoImage: Image? {
-        companyLogoName.isEmpty ? nil : Image(companyLogoName)
-    }
-    #endif
-
-    private var logoInitial: String {
-        let trimmed = companyName.trimmingCharacters(in: .whitespaces)
-        guard let first = trimmed.first else { return "?" }
-        return String(first).uppercased()
-    }
-
-    private let titleBaseFontSize: CGFloat = 22
-    private let companyBaseFontSize: CGFloat = 12
-
-    @ViewBuilder
-    private func editableFieldBackground(isFocused: Bool, tint: Color? = nil) -> some View {
-        let strokeColor: Color = isFocused
-            ? (tint ?? Color.accentColor).opacity(0.55)
-            : Color.primary.opacity(0.12)
-        Capsule(style: .continuous)
-            .fill(Color.primary.opacity(isFocused ? 0.08 : 0.04))
-            .overlay(
-                Capsule(style: .continuous)
-                    .strokeBorder(strokeColor, lineWidth: 1)
-            )
-    }
-
-    var body: some View {
-        VStack(spacing: 12) {
-            PhotosPicker(selection: $pickerItem, matching: .images) {
-                Group {
-                    if let image = logoImage {
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    } else {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [accentTint, accentTint.opacity(0.72)],
-                                        startPoint: .topLeading, endPoint: .bottomTrailing
-                                    )
-                                )
-                            Text(logoInitial)
-                                .font(.system(size: 32, weight: .heavy, design: .rounded))
-                                .foregroundStyle(.white)
-                        }
-                    }
-                }
-                .frame(width: 80, height: 80)
-                .clipShape(Circle())
-                .overlay(
-                    Circle()
-                        .strokeBorder(
-                            LinearGradient(
-                                colors: [Color.white.opacity(0.5), Color.white.opacity(0.05)],
-                                startPoint: .topLeading, endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                )
-                .shadow(color: .black.opacity(0.20), radius: 10, y: 5)
-                .overlay(alignment: .bottomTrailing) {
-                    ZStack {
-                        Circle()
-                            .fill(Color(UIColor.systemBackground))
-                            .frame(width: 24, height: 24)
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 20, height: 20)
-                            .background(Circle().fill(accentTint))
-                    }
-                    .offset(x: 2, y: 2)
-                }
-            }
-            .onChange(of: pickerItem) { _, newValue in
-                guard let item = newValue else { return }
-                Task {
-                    if let data = try? await item.loadTransferable(type: Data.self) {
-                        companyLogoImageData = data
-                    }
-                }
-            }
-            .contextMenu {
-                if companyLogoImageData != nil {
-                    Button(role: .destructive) { companyLogoImageData = nil } label: {
-                        Label("Remove Custom Logo", systemImage: "trash")
-                    }
-                }
-            }
-
-            VStack(spacing: 6) {
-                TextField("Position Title", text: $position)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.45)
-                    .truncationMode(.tail)
-                    .font(.system(size: titleBaseFontSize, weight: .bold, design: .rounded))
-                    .foregroundStyle(DarkTheme.textPrimary)
-                    .focused($focused, equals: .position)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 7)
-                    .background(
-                        editableFieldBackground(isFocused: focused == .position)
-                    )
-
-                TextField("COMPANY NAME", text: $companyName)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .truncationMode(.tail)
-                    .font(.system(size: companyName.isEmpty ? companyBaseFontSize * 0.85 : companyBaseFontSize, weight: .medium, design: .rounded))
-                    .tracking(1.4)
-                    .foregroundStyle(DarkTheme.textPrimary.opacity(0.6))
-                    .textInputAutocapitalization(.words)
-                    .focused($focused, equals: .company)
-                    .frame(maxWidth: 220)
-                    .padding(.horizontal, companyName.isEmpty ? 10 : 12)
-                    .padding(.vertical, companyName.isEmpty ? 4 : 6)
-                    .background(
-                        editableFieldBackground(isFocused: focused == .company)
-                    )
-            }
-            .padding(.horizontal, 16)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 8)
-        .padding(.bottom, 4)
     }
 }
 
@@ -606,191 +470,6 @@ private struct DateAppliedSection: View {
     }
 }
 
-// MARK: - Resume Section
-
-private struct ResumeSection: View {
-    var resumes: [ResumeDocument]
-    var attachedResume: ResumeDocument?
-    var legacyResumeFileName: String?
-    var attachedResumeWasDeleted: Bool
-    var onSelectResume: (ResumeDocument) -> Void
-    var onViewAll: () -> Void
-    var onPick: () -> Void
-    var onClear: () -> Void
-
-    private var inlineResumes: [ResumeDocument] {
-        guard let attachedResume, !resumes.prefix(3).contains(where: { $0.id == attachedResume.id }) else {
-            return Array(resumes.prefix(3))
-        }
-
-        return [attachedResume] + resumes.filter { $0.id != attachedResume.id }.prefix(2)
-    }
-
-    private var isShowingUploadOnly: Bool {
-        resumes.isEmpty &&
-        attachedResume == nil &&
-        legacyResumeFileName == nil &&
-        !attachedResumeWasDeleted
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionLabel(icon: "doc.richtext", title: "Resume")
-
-            if isShowingUploadOnly {
-                ResumePill(title: "Upload Resume", style: .add, isSelected: true, showsGlow: false, action: onPick)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 8)
-            } else {
-                VStack(alignment: .leading, spacing: 10) {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(inlineResumes, id: \.id) { resume in
-                                let isAttached = attachedResume?.id == resume.id
-                                ResumePill(
-                                    title: resume.fileName,
-                                    style: isAttached ? .attached : .resume,
-                                    isSelected: isAttached,
-                                    isDefault: resume.isDefault,
-                                    action: { onSelectResume(resume) }
-                                )
-                            }
-
-                            if let legacyResumeFileName {
-                                ResumePill(title: legacyResumeFileName, style: .attached, isSelected: true)
-                            }
-
-                            if attachedResumeWasDeleted {
-                                ResumePill(title: "File Deleted", style: .deleted)
-                            }
-
-                            ResumePill(title: "Add Resume", style: .add, action: onPick)
-                        }
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 2)
-                    }
-
-                    HStack(spacing: 8) {
-                        if resumes.count > inlineResumes.count {
-                            Button(action: onViewAll) {
-                                Label("View All", systemImage: "tray.full")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(Color.accentColor)
-                            }
-                            .buttonStyle(.plain)
-                        }
-
-                        Spacer()
-
-                        if attachedResume != nil || legacyResumeFileName != nil || attachedResumeWasDeleted {
-                            Button(action: onPick) {
-                                Image(systemName: "paperclip")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(Color.accentColor)
-                                    .frame(width: 34, height: 34)
-                                    .background(Circle().fill(Color.accentColor.opacity(0.12)))
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Replace resume")
-
-                            Button(role: .destructive, action: onClear) {
-                                Image(systemName: "trash")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(Color.red)
-                                    .frame(width: 34, height: 34)
-                                    .background(Circle().fill(Color.red.opacity(0.10)))
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Remove attached resume")
-                        }
-                    }
-                }
-            }
-        }
-        .padding(16)
-        .glassCard()
-    }
-}
-
-private struct ResumeLibrarySheet: View {
-    @Environment(\.dismiss) private var dismiss
-
-    let resumes: [ResumeDocument]
-    let attachedResumeID: UUID?
-    let onSelectResume: (ResumeDocument) -> Void
-
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                AmbientBackground()
-
-                ScrollView {
-                    LazyVStack(spacing: 10) {
-                        ForEach(resumes, id: \.id) { resume in
-                            let isAttached = attachedResumeID == resume.id
-                            Button {
-                                onSelectResume(resume)
-                            } label: {
-                                HStack(spacing: 12) {
-                                    Image(systemName: resume.isDefault ? "star.fill" : "doc.text.fill")
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundStyle(resume.isDefault ? Color(red: 0.96, green: 0.73, blue: 0.28) : DarkTheme.textSecondary)
-                                        .frame(width: 30, height: 30)
-                                        .background(Circle().fill(Color.primary.opacity(0.06)))
-
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(resume.fileName)
-                                            .font(.subheadline.weight(.semibold))
-                                            .foregroundStyle(DarkTheme.textPrimary)
-                                            .lineLimit(2)
-                                            .multilineTextAlignment(.leading)
-
-                                        if resume.isDefault {
-                                            Text("Default")
-                                                .font(.caption.weight(.semibold))
-                                                .foregroundStyle(Color(red: 0.96, green: 0.73, blue: 0.28))
-                                        }
-                                    }
-
-                                    Spacer()
-
-                                    if isAttached {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .font(.system(size: 18, weight: .semibold))
-                                            .foregroundStyle(Color(red: 0.30, green: 0.80, blue: 0.45))
-                                    }
-                                }
-                                .padding(14)
-                                .background {
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .fill(isAttached ? Color(red: 0.30, green: 0.80, blue: 0.45).opacity(0.12) : Color.primary.opacity(0.05))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                                .strokeBorder(
-                                                    isAttached ? Color(red: 0.30, green: 0.80, blue: 0.45).opacity(0.35) : Color.primary.opacity(0.08),
-                                                    lineWidth: 1
-                                                )
-                                        )
-                                }
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding()
-                }
-            }
-            .navigationTitle("Select Resume")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
-            }
-        }
-        .presentationDetents([.medium, .large])
-    }
-}
-
 // MARK: - Notes Section
 
 private struct JobNotesSection: View {
@@ -826,62 +505,6 @@ private struct JobNotesSection: View {
         }
         .padding(16)
         .glassCard()
-    }
-}
-
-// MARK: - Section Label Helper
-
-private struct SectionLabel: View {
-    let icon: String
-    let title: String
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(DarkTheme.textSecondary)
-            Text(title)
-                .font(.system(size: 12, weight: .bold, design: .rounded))
-                .tracking(1.4)
-                .textCase(.uppercase)
-                .foregroundStyle(DarkTheme.textSecondary)
-        }
-    }
-}
-
-// MARK: - Document Picker
-
-private struct DocumentPicker: UIViewControllerRepresentable {
-    struct PickedFile { let fileName: String; let bookmark: Data }
-    var completion: (Result<PickedFile, Error>) -> Void
-
-    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let picker = UIDocumentPickerViewController(
-            forOpeningContentTypes: [.pdf, .plainText, .rtf, .image, .data], asCopy: true
-        )
-        picker.allowsMultipleSelection = false
-        picker.delegate = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
-    func makeCoordinator() -> Coordinator { Coordinator(completion: completion) }
-
-    final class Coordinator: NSObject, UIDocumentPickerDelegate {
-        let completion: (Result<PickedFile, Error>) -> Void
-        init(completion: @escaping (Result<PickedFile, Error>) -> Void) { self.completion = completion }
-
-        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-            guard let url = urls.first else { return }
-            do {
-                let _ = url.startAccessingSecurityScopedResource()
-                defer { url.stopAccessingSecurityScopedResource() }
-                let bookmark = try url.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
-                completion(.success(PickedFile(fileName: url.lastPathComponent, bookmark: bookmark)))
-            } catch { completion(.failure(error)) }
-        }
-
-        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {}
     }
 }
 
