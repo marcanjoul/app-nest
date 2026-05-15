@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import QuickLook
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -16,6 +17,18 @@ struct ResumeSection: View {
     var onPick: () -> Void
     var onClear: () -> Void
 
+    @State private var fullscreenResume: FullscreenResume?
+
+    struct FullscreenResume: Identifiable {
+        let id: UUID
+        let bookmark: Data
+        let fileName: String
+    }
+
+    private func openFullscreen(_ resume: ResumeDocument) {
+        fullscreenResume = FullscreenResume(id: resume.id, bookmark: resume.bookmark, fileName: resume.fileName)
+    }
+
     private var inlineResumes: [ResumeDocument] {
         guard let attachedResume, !resumes.prefix(3).contains(where: { $0.id == attachedResume.id }) else {
             return Array(resumes.prefix(3))
@@ -29,6 +42,10 @@ struct ResumeSection: View {
         attachedResume == nil &&
         legacyResumeFileName == nil &&
         !attachedResumeWasDeleted
+    }
+
+    private var hasAttachedResume: Bool {
+        attachedResume != nil || legacyResumeFileName != nil || attachedResumeWasDeleted
     }
 
     var body: some View {
@@ -52,6 +69,23 @@ struct ResumeSection: View {
                                     isDefault: resume.isDefault,
                                     action: { onSelectResume(resume) }
                                 )
+                                .contextMenu {
+                                    Button {
+                                        openFullscreen(resume)
+                                    } label: {
+                                        Label("Open Full Screen", systemImage: "arrow.up.left.and.arrow.down.right")
+                                    }
+                                    Button {
+                                        onSelectResume(resume)
+                                    } label: {
+                                        Label(isAttached ? "Attached" : "Attach to Job",
+                                              systemImage: isAttached ? "checkmark.circle.fill" : "paperclip")
+                                    }
+                                    .disabled(isAttached)
+                                } preview: {
+                                    ResumePreview(bookmark: resume.bookmark, fileName: resume.fileName)
+                                        .onTapGesture { openFullscreen(resume) }
+                                }
                             }
 
                             if let legacyResumeFileName {
@@ -61,8 +95,6 @@ struct ResumeSection: View {
                             if attachedResumeWasDeleted {
                                 ResumePill(title: "File Deleted", style: .deleted)
                             }
-
-                            ResumePill(title: "Add Resume", style: .add, action: onPick)
                         }
                         .padding(.vertical, 4)
                         .padding(.horizontal, 2)
@@ -80,33 +112,35 @@ struct ResumeSection: View {
 
                         Spacer()
 
-                        if attachedResume != nil || legacyResumeFileName != nil || attachedResumeWasDeleted {
-                            Button(action: onPick) {
-                                Image(systemName: "paperclip")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(Color.accentColor)
-                                    .frame(width: 34, height: 34)
-                                    .background(Circle().fill(Color.accentColor.opacity(0.12)))
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Replace resume")
-
-                            Button(role: .destructive, action: onClear) {
-                                Image(systemName: "trash")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(Color.red)
-                                    .frame(width: 34, height: 34)
-                                    .background(Circle().fill(Color.red.opacity(0.10)))
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Remove attached resume")
+                        Button(action: onPick) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(Color.accentColor)
+                                .frame(width: 34, height: 34)
+                                .background(Circle().fill(Color.accentColor.opacity(0.12)))
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Add resume")
+
+                        Button(role: .destructive, action: onClear) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(hasAttachedResume ? Color.red : Color.red.opacity(0.35))
+                                .frame(width: 34, height: 34)
+                                .background(Circle().fill(Color.red.opacity(hasAttachedResume ? 0.10 : 0.04)))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(!hasAttachedResume)
+                        .accessibilityLabel("Remove attached resume")
                     }
                 }
             }
         }
         .padding(16)
         .glassCard()
+        .fullScreenCover(item: $fullscreenResume) { resume in
+            FullscreenResumeViewer(bookmark: resume.bookmark, fileName: resume.fileName)
+        }
     }
 }
 
@@ -187,6 +221,178 @@ struct ResumeLibrarySheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+    }
+}
+
+/// Quick Look preview shown when a resume pill is haptic-touched. Resolves
+/// the security-scoped bookmark and renders the file via `QLPreviewController`
+/// with a titled header bar on top.
+struct ResumePreview: View {
+    let bookmark: Data
+    let fileName: String
+
+    @State private var resolvedURL: URL?
+    @State private var didStartAccessing = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            titleBar
+            Group {
+                if let resolvedURL {
+                    QuickLookPreview(url: resolvedURL)
+                } else {
+                    placeholder
+                }
+            }
+        }
+        .frame(width: 320, height: 460)
+        .background(Color(UIColor.systemBackground))
+        .onAppear { resolve() }
+        .onDisappear {
+            if didStartAccessing {
+                resolvedURL?.stopAccessingSecurityScopedResource()
+                didStartAccessing = false
+            }
+        }
+    }
+
+    private var titleBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "doc.text.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+            Text(fileName)
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .foregroundStyle(DarkTheme.textPrimary)
+            Spacer(minLength: 0)
+            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(DarkTheme.textSecondary)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Color.primary.opacity(0.08))
+                .frame(height: 0.5)
+        }
+    }
+
+    private var placeholder: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "doc.text")
+                .font(.system(size: 36, weight: .semibold))
+                .foregroundStyle(DarkTheme.textSecondary)
+            Text("Unable to load preview")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.primary.opacity(0.04))
+    }
+
+    private func resolve() {
+        var isStale = false
+        if let url = try? URL(
+            resolvingBookmarkData: bookmark,
+            options: [],
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        ) {
+            didStartAccessing = url.startAccessingSecurityScopedResource()
+            resolvedURL = url
+        }
+    }
+}
+
+/// Full-screen QuickLook viewer presented when the user taps a resume preview
+/// or chooses "Open Full Screen" from the context menu. Includes a Done button.
+struct FullscreenResumeViewer: View {
+    let bookmark: Data
+    let fileName: String
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var resolvedURL: URL?
+    @State private var didStartAccessing = false
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if let resolvedURL {
+                    QuickLookPreview(url: resolvedURL)
+                        .ignoresSafeArea(edges: .bottom)
+                } else {
+                    VStack(spacing: 12) {
+                        Image(systemName: "doc.text")
+                            .font(.system(size: 44, weight: .semibold))
+                            .foregroundStyle(DarkTheme.textSecondary)
+                        Text("Unable to load this resume")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            .navigationTitle(fileName)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                        .fontWeight(.semibold)
+                }
+            }
+        }
+        .onAppear { resolve() }
+        .onDisappear {
+            if didStartAccessing {
+                resolvedURL?.stopAccessingSecurityScopedResource()
+                didStartAccessing = false
+            }
+        }
+    }
+
+    private func resolve() {
+        var isStale = false
+        if let url = try? URL(
+            resolvingBookmarkData: bookmark,
+            options: [],
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        ) {
+            didStartAccessing = url.startAccessingSecurityScopedResource()
+            resolvedURL = url
+        }
+    }
+}
+
+/// SwiftUI wrapper around `QLPreviewController` for inline document previews.
+struct QuickLookPreview: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> QLPreviewController {
+        let controller = QLPreviewController()
+        controller.dataSource = context.coordinator
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: QLPreviewController, context: Context) {
+        uiViewController.reloadData()
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(url: url) }
+
+    final class Coordinator: NSObject, QLPreviewControllerDataSource {
+        let url: URL
+        init(url: URL) { self.url = url }
+
+        func numberOfPreviewItems(in controller: QLPreviewController) -> Int { 1 }
+
+        func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem {
+            url as NSURL
+        }
     }
 }
 

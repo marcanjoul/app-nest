@@ -105,6 +105,9 @@ struct JobDetailView: View {
                         onViewAll: { isShowingResumeLibrary = true },
                         onPick: { isShowingDocumentPicker = true },
                         onClear: {
+                            if let attached = attachedResume {
+                                modelContext.delete(attached)
+                            }
                             resumeID = nil
                             resumeFileName = nil
                             _pendingResumeBookmark = nil

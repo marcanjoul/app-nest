@@ -32,6 +32,7 @@ struct CompensationSection: View {
             SectionLabel(icon: "dollarsign.circle", title: "Compensation")
 
             HStack(spacing: 8) {
+                Spacer(minLength: 0)
                 ForEach(orderedKindOptions, id: \.self) { option in
                     SelectablePill(
                         option: option,
@@ -47,6 +48,7 @@ struct CompensationSection: View {
                 }
                 Spacer(minLength: 0)
             }
+            .frame(maxWidth: .infinity)
 
             if kind != nil {
                 HStack(spacing: 10) {

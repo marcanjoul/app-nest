@@ -73,11 +73,17 @@ struct ResumePill: View {
         }
 
         switch style {
-        case .resume:  return Color.accentColor
+        case .resume:   return Color(UIColor.tertiaryLabel)
         case .attached: return Color(red: 0.30, green: 0.80, blue: 0.45)
-        case .add:     return Color(red: 0.30, green: 0.80, blue: 0.45)
-        case .deleted: return Color(UIColor.secondaryLabel)
+        case .add:      return Color(red: 0.30, green: 0.80, blue: 0.45)
+        case .deleted:  return Color(UIColor.secondaryLabel)
         }
+    }
+
+    private var pillOpacity: Double {
+        if style == .deleted { return 0.72 }
+        if style == .resume && !isDefault && !isSelected { return 0.65 }
+        return 1
     }
 
     private var iconName: String {
@@ -127,7 +133,7 @@ struct ResumePill: View {
                     .overlay(Capsule().strokeBorder(isSelected ? tint.opacity(0.0) : tint.opacity(style == .deleted ? 0.20 : 0.25), lineWidth: 0.8))
             )
             .shadow(color: isSelected && showsGlow ? tint.opacity(0.35) : .clear, radius: 6, y: 2)
-            .opacity(style == .deleted ? 0.72 : 1)
+            .opacity(pillOpacity)
         }
         .buttonStyle(.plain)
         .allowsHitTesting(action != nil)
