@@ -28,6 +28,45 @@ enum ApplicationSeason: String, CaseIterable, Codable {
     case fall = "Fall"
 }
 
+// MARK: - Compensation
+
+/// Whether the compensation is paid hourly or as a salary.
+enum CompensationKind: String, CaseIterable, Codable {
+    case hourly = "Hourly"
+    case salary = "Salary"
+}
+
+/// Period used for salary compensation.
+enum SalaryPeriod: String, CaseIterable, Codable {
+    case yearly = "Year"
+    case monthly = "Month"
+}
+
+/// Supported currencies for compensation entry.
+enum Currency: String, CaseIterable, Codable {
+    case usd = "USD"
+    case eur = "EUR"
+    case gbp = "GBP"
+    case cad = "CAD"
+    case aud = "AUD"
+    case jpy = "JPY"
+    case cny = "CNY"
+    case inr = "INR"
+    case chf = "CHF"
+    case mxn = "MXN"
+
+    var symbol: String {
+        switch self {
+        case .usd, .cad, .aud, .mxn: return "$"
+        case .eur: return "€"
+        case .gbp: return "£"
+        case .jpy, .cny: return "¥"
+        case .inr: return "₹"
+        case .chf: return "₣"
+        }
+    }
+}
+
 // MARK: - Application Status
 
 /// The current status of a job application in the hiring pipeline.
@@ -97,7 +136,19 @@ class JobApplication {
 
     /// Identifier for the resume profile item attached to this job.
     var resumeID: UUID?
-    
+
+    /// Whether compensation is paid hourly or as a salary.
+    var compensationKind: CompensationKind?
+
+    /// Numeric compensation amount (interpreted with `compensationKind` and `salaryPeriod`).
+    var compensationAmount: Double?
+
+    /// Currency for the compensation amount (defaults to USD).
+    var compensationCurrency: Currency?
+
+    /// Period (year/month) for salary compensation. Ignored for hourly.
+    var salaryPeriod: SalaryPeriod?
+
     /// Creates a new persistent job application.
     ///
     /// All parameters are persisted to storage. Defaults are provided for optional values.
@@ -125,7 +176,11 @@ class JobApplication {
         jobNotes: String? = nil,
         resumeFileName: String? = nil,
         resumeBookmark: Data? = nil,
-        resumeID: UUID? = nil
+        resumeID: UUID? = nil,
+        compensationKind: CompensationKind? = nil,
+        compensationAmount: Double? = nil,
+        compensationCurrency: Currency? = .usd,
+        salaryPeriod: SalaryPeriod? = nil
     ) {
         self.companyName = companyName
         self.companyLogoName = companyLogoName
@@ -139,6 +194,10 @@ class JobApplication {
         self.resumeFileName = resumeFileName
         self.resumeBookmark = resumeBookmark
         self.resumeID = resumeID
+        self.compensationKind = compensationKind
+        self.compensationAmount = compensationAmount
+        self.compensationCurrency = compensationCurrency
+        self.salaryPeriod = salaryPeriod
     }
 }
 
