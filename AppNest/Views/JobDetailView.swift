@@ -274,7 +274,13 @@ private struct JobInfoSection: View {
     ]
 
     private var accentTint: Color {
-        let key = companyName.isEmpty ? "AppNest" : companyName
+        let trimmed = companyName.trimmingCharacters(in: .whitespaces)
+        let key: String
+        if let first = trimmed.first {
+            key = String(first).uppercased()
+        } else {
+            key = "AppNest"
+        }
         return Self.tintPalette[abs(key.hashValue) % Self.tintPalette.count]
     }
 
@@ -299,8 +305,8 @@ private struct JobInfoSection: View {
         return String(first).uppercased()
     }
 
-    private static let titleBaseFontSize: CGFloat = 22
-    private static let companyBaseFontSize: CGFloat = 12
+    private let titleBaseFontSize: CGFloat = 22
+    private let companyBaseFontSize: CGFloat = 12
 
     @ViewBuilder
     private func editableFieldBackground(isFocused: Bool, tint: Color? = nil) -> some View {
@@ -313,19 +319,6 @@ private struct JobInfoSection: View {
                 Capsule(style: .continuous)
                     .strokeBorder(strokeColor, lineWidth: 1)
             )
-    }
-
-    // Hugs the field's content while it fits comfortably; otherwise pins the field
-    // to the parent's proposed width so it can't push sibling sections wider.
-    // Uses a stable modifier chain so the TextField's identity (and focus) survive
-    // the hug↔fill transition.
-    private struct HugWhenShort: ViewModifier {
-        let hug: Bool
-        func body(content: Content) -> some View {
-            content
-                .frame(maxWidth: hug ? nil : .infinity)
-                .fixedSize(horizontal: hug, vertical: false)
-        }
     }
 
     var body: some View {
@@ -398,34 +391,34 @@ private struct JobInfoSection: View {
                 TextField("Position Title", text: $position)
                     .multilineTextAlignment(.center)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .font(.system(size: titleFontSize(for: position), weight: .bold, design: .rounded))
+                    .minimumScaleFactor(0.45)
+                    .truncationMode(.tail)
+                    .font(.system(size: titleBaseFontSize, weight: .bold, design: .rounded))
                     .foregroundStyle(DarkTheme.textPrimary)
                     .focused($focused, equals: .position)
-                    .modifier(HugWhenShort(hug: position.count <= 24))
+                    .frame(maxWidth: .infinity)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 7)
                     .background(
                         editableFieldBackground(isFocused: focused == .position)
                     )
-                    .animation(.smooth(duration: 0.22), value: position.count <= 24)
 
                 TextField("COMPANY NAME", text: $companyName)
                     .multilineTextAlignment(.center)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
-                    .font(.system(size: companyFontSize(for: companyName), weight: .heavy, design: .rounded))
+                    .truncationMode(.tail)
+                    .font(.system(size: companyName.isEmpty ? companyBaseFontSize * 0.85 : companyBaseFontSize, weight: .medium, design: .rounded))
                     .tracking(1.4)
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(DarkTheme.textPrimary.opacity(0.6))
                     .textInputAutocapitalization(.words)
                     .focused($focused, equals: .company)
-                    .modifier(HugWhenShort(hug: companyName.count <= 18))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .frame(maxWidth: 220)
+                    .padding(.horizontal, companyName.isEmpty ? 10 : 12)
+                    .padding(.vertical, companyName.isEmpty ? 4 : 6)
                     .background(
                         editableFieldBackground(isFocused: focused == .company)
                     )
-                    .animation(.smooth(duration: 0.22), value: companyName.count <= 18)
             }
             .padding(.horizontal, 16)
         }
