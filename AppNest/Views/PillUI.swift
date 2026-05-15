@@ -55,6 +55,7 @@ struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == 
 struct ResumePill: View {
     enum Style {
         case resume
+        case attached
         case add
         case deleted
     }
@@ -62,20 +63,30 @@ struct ResumePill: View {
     let title: String
     let style: Style
     var isSelected: Bool = false
+    var isDefault: Bool = false
     var showsGlow: Bool = true
     var action: (() -> Void)? = nil
 
     private var tint: Color {
+        if isDefault && style == .resume {
+            return Color(red: 0.96, green: 0.73, blue: 0.28)
+        }
+
         switch style {
         case .resume:  return Color.accentColor
+        case .attached: return Color(red: 0.30, green: 0.80, blue: 0.45)
         case .add:     return Color(red: 0.30, green: 0.80, blue: 0.45)
         case .deleted: return Color(UIColor.secondaryLabel)
         }
     }
 
     private var iconName: String {
+        if isDefault && style == .resume {
+            return "star.fill"
+        }
+
         switch style {
-        case .resume:  return "doc.text.fill"
+        case .resume, .attached: return "doc.text.fill"
         case .add:     return "plus.circle.fill"
         case .deleted: return "exclamationmark.triangle.fill"
         }
@@ -95,6 +106,8 @@ struct ResumePill: View {
                 Text(title)
                     .font(isSelected ? .system(size: 14, weight: .bold) : .system(size: 13, weight: .medium))
                     .lineLimit(1)
+                    .truncationMode(.middle)
+                    .frame(maxWidth: style == .add ? nil : 168, alignment: .leading)
                     .strikethrough(style == .deleted, color: tint)
             }
             .foregroundStyle(isSelected ? .white : tint.opacity(0.88))

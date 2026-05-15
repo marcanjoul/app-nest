@@ -28,6 +28,7 @@ struct JobDetailView: View {
     @State private var resumeID:          UUID?
     @State private var _pendingResumeBookmark: Data?
     @State private var isShowingDocumentPicker = false
+    @State private var isShowingResumeLibrary = false
     @State private var pickerItem: PhotosPickerItem? = nil
 
     private var isNewApplication: Bool { job == nil }
@@ -75,11 +76,12 @@ struct JobDetailView: View {
                     SeasonPickerSection(season: $season)
                     DateAppliedSection(dateApplied: $dateApplied)
                     ResumeSection(
-                        defaultResume: defaultResume,
+                        resumes: orderedResumes,
                         attachedResume: attachedResume,
                         legacyResumeFileName: resumeID == nil ? resumeFileName : nil,
                         attachedResumeWasDeleted: attachedResumeWasDeleted,
-                        onSelectDefault: attachDefaultResume,
+                        onSelectResume: attachResume,
+                        onViewAll: { isShowingResumeLibrary = true },
                         onPick: { isShowingDocumentPicker = true },
                         onClear: {
                             resumeID = nil
@@ -103,6 +105,16 @@ struct JobDetailView: View {
                     attachPickedResume(fileName: picked.fileName, bookmark: picked.bookmark)
                 }
             }
+        }
+        .sheet(isPresented: $isShowingResumeLibrary) {
+            ResumeLibrarySheet(
+                resumes: orderedResumes,
+                attachedResumeID: resumeID,
+                onSelectResume: { resume in
+                    attachResume(resume)
+                    isShowingResumeLibrary = false
+                }
+            )
         }
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 0) {
@@ -197,6 +209,11 @@ struct JobDetailView: View {
         resumes.first(where: \.isDefault)
     }
 
+    private var orderedResumes: [ResumeDocument] {
+        guard let defaultResume else { return resumes }
+        return [defaultResume] + resumes.filter { $0.id != defaultResume.id }
+    }
+
     private var attachedResume: ResumeDocument? {
         guard let resumeID else { return nil }
         return resumes.first { $0.id == resumeID }
@@ -214,11 +231,10 @@ struct JobDetailView: View {
         _pendingResumeBookmark = bookmark
     }
 
-    private func attachDefaultResume() {
-        guard let defaultResume else { return }
-        resumeID = defaultResume.id
-        resumeFileName = defaultResume.fileName
-        _pendingResumeBookmark = defaultResume.bookmark
+    private func attachResume(_ resume: ResumeDocument) {
+        resumeID = resume.id
+        resumeFileName = resume.fileName
+        _pendingResumeBookmark = resume.bookmark
     }
 
     private func existingResume(fileName: String) -> ResumeDocument? {
@@ -385,10 +401,12 @@ private struct JobInfoSection: View {
                 TextField("Position Title", text: $position)
                     .multilineTextAlignment(.center)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.4)
+                    .truncationMode(.tail)
                     .font(.system(size: titleFontSize(for: position), weight: .bold, design: .rounded))
                     .foregroundStyle(DarkTheme.textPrimary)
                     .focused($focused, equals: .position)
-                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(maxWidth: .infinity)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 7)
                     .background(
@@ -398,12 +416,14 @@ private struct JobInfoSection: View {
                 TextField("COMPANY NAME", text: $companyName)
                     .multilineTextAlignment(.center)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.4)
+                    .truncationMode(.tail)
                     .font(.system(size: companyFontSize(for: companyName), weight: .heavy, design: .rounded))
                     .tracking(1.4)
                     .foregroundStyle(DarkTheme.textPrimary)
                     .textInputAutocapitalization(.words)
                     .focused($focused, equals: .company)
-                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(maxWidth: .infinity)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(
@@ -599,16 +619,25 @@ private struct DateAppliedSection: View {
 // MARK: - Resume Section
 
 private struct ResumeSection: View {
-    var defaultResume: ResumeDocument?
+    var resumes: [ResumeDocument]
     var attachedResume: ResumeDocument?
     var legacyResumeFileName: String?
     var attachedResumeWasDeleted: Bool
-    var onSelectDefault: () -> Void
+    var onSelectResume: (ResumeDocument) -> Void
+    var onViewAll: () -> Void
     var onPick: () -> Void
     var onClear: () -> Void
 
+    private var inlineResumes: [ResumeDocument] {
+        guard let attachedResume, !resumes.prefix(3).contains(where: { $0.id == attachedResume.id }) else {
+            return Array(resumes.prefix(3))
+        }
+
+        return [attachedResume] + resumes.filter { $0.id != attachedResume.id }.prefix(2)
+    }
+
     private var isShowingUploadOnly: Bool {
-        defaultResume == nil &&
+        resumes.isEmpty &&
         attachedResume == nil &&
         legacyResumeFileName == nil &&
         !attachedResumeWasDeleted
@@ -624,27 +653,44 @@ private struct ResumeSection: View {
                     .padding(.vertical, 8)
             } else {
                 VStack(alignment: .leading, spacing: 10) {
-                    if let defaultResume {
-                        ResumePill(
-                            title: defaultResume.fileName,
-                            style: .resume,
-                            isSelected: attachedResume?.id == defaultResume.id,
-                            action: onSelectDefault
-                        )
-                    }
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(inlineResumes, id: \.id) { resume in
+                                let isAttached = attachedResume?.id == resume.id
+                                ResumePill(
+                                    title: resume.fileName,
+                                    style: isAttached ? .attached : .resume,
+                                    isSelected: isAttached,
+                                    isDefault: resume.isDefault,
+                                    action: { onSelectResume(resume) }
+                                )
+                            }
 
-                    HStack(spacing: 10) {
-                        if let attachedResume, attachedResume.id != defaultResume?.id {
-                            ResumePill(title: attachedResume.fileName, style: .resume, isSelected: true)
-                        } else if let legacyResumeFileName {
-                            ResumePill(title: legacyResumeFileName, style: .resume, isSelected: true)
-                        } else if attachedResumeWasDeleted {
-                            ResumePill(title: "File Deleted", style: .deleted)
-                        } else {
+                            if let legacyResumeFileName {
+                                ResumePill(title: legacyResumeFileName, style: .attached, isSelected: true)
+                            }
+
+                            if attachedResumeWasDeleted {
+                                ResumePill(title: "File Deleted", style: .deleted)
+                            }
+
                             ResumePill(title: "Add Resume", style: .add, action: onPick)
                         }
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 2)
+                    }
 
-                        Spacer(minLength: 8)
+                    HStack(spacing: 8) {
+                        if resumes.count > inlineResumes.count {
+                            Button(action: onViewAll) {
+                                Label("View All", systemImage: "tray.full")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(Color.accentColor)
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        Spacer()
 
                         if attachedResume != nil || legacyResumeFileName != nil || attachedResumeWasDeleted {
                             Button(action: onPick) {
@@ -669,19 +715,89 @@ private struct ResumeSection: View {
                         }
                     }
                 }
-                .padding(12)
-                .background {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.primary.opacity(0.05))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
-                        )
-                }
             }
         }
         .padding(16)
         .glassCard()
+    }
+}
+
+private struct ResumeLibrarySheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let resumes: [ResumeDocument]
+    let attachedResumeID: UUID?
+    let onSelectResume: (ResumeDocument) -> Void
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AmbientBackground()
+
+                ScrollView {
+                    LazyVStack(spacing: 10) {
+                        ForEach(resumes, id: \.id) { resume in
+                            let isAttached = attachedResumeID == resume.id
+                            Button {
+                                onSelectResume(resume)
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: resume.isDefault ? "star.fill" : "doc.text.fill")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundStyle(resume.isDefault ? Color(red: 0.96, green: 0.73, blue: 0.28) : DarkTheme.textSecondary)
+                                        .frame(width: 30, height: 30)
+                                        .background(Circle().fill(Color.primary.opacity(0.06)))
+
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(resume.fileName)
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(DarkTheme.textPrimary)
+                                            .lineLimit(2)
+                                            .multilineTextAlignment(.leading)
+
+                                        if resume.isDefault {
+                                            Text("Default")
+                                                .font(.caption.weight(.semibold))
+                                                .foregroundStyle(Color(red: 0.96, green: 0.73, blue: 0.28))
+                                        }
+                                    }
+
+                                    Spacer()
+
+                                    if isAttached {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.system(size: 18, weight: .semibold))
+                                            .foregroundStyle(Color(red: 0.30, green: 0.80, blue: 0.45))
+                                    }
+                                }
+                                .padding(14)
+                                .background {
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(isAttached ? Color(red: 0.30, green: 0.80, blue: 0.45).opacity(0.12) : Color.primary.opacity(0.05))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                .strokeBorder(
+                                                    isAttached ? Color(red: 0.30, green: 0.80, blue: 0.45).opacity(0.35) : Color.primary.opacity(0.08),
+                                                    lineWidth: 1
+                                                )
+                                        )
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding()
+                }
+            }
+            .navigationTitle("Select Resume")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 }
 
