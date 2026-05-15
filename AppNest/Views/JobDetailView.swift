@@ -58,7 +58,7 @@ struct JobDetailView: View {
             AmbientBackground()
 
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 16) {
                     JobInfoSection(
                         companyName: $companyName,
                         companyLogoName: $companyLogoName,
@@ -191,45 +191,125 @@ private struct JobInfoSection: View {
     @Binding var position: String
     @Binding var pickerItem: PhotosPickerItem?
 
+    private enum Field: Hashable { case position, company }
+    @FocusState private var focused: Field?
+
+    private static let tintPalette: [Color] = [
+        Color(red: 0.36, green: 0.66, blue: 0.96),
+        Color(red: 0.96, green: 0.73, blue: 0.28),
+        Color(red: 0.30, green: 0.80, blue: 0.45),
+        Color(red: 0.93, green: 0.38, blue: 0.44),
+        Color(red: 0.62, green: 0.52, blue: 0.96),
+        Color(red: 0.96, green: 0.52, blue: 0.62),
+    ]
+
+    private var accentTint: Color {
+        let key = companyName.isEmpty ? "AppNest" : companyName
+        return Self.tintPalette[abs(key.hashValue) % Self.tintPalette.count]
+    }
+
     #if canImport(UIKit)
-    private var logoImage: Image {
+    private var logoImage: Image? {
         if let data = companyLogoImageData, let ui = UIImage(data: data) {
             return Image(uiImage: ui)
         } else if !companyLogoName.isEmpty, UIImage(named: companyLogoName) != nil {
             return Image(companyLogoName)
-        } else {
-            return Image(systemName: "building.2")
         }
+        return nil
     }
     #else
-    private var logoImage: Image { Image(companyLogoName) }
+    private var logoImage: Image? {
+        companyLogoName.isEmpty ? nil : Image(companyLogoName)
+    }
     #endif
 
+    private var logoInitial: String {
+        let trimmed = companyName.trimmingCharacters(in: .whitespaces)
+        guard let first = trimmed.first else { return "?" }
+        return String(first).uppercased()
+    }
+
+    private func titleFontSize(for text: String) -> CGFloat {
+        let base: CGFloat = 22
+        let count = text.isEmpty ? 14 : text.count
+        if count <= 18 { return base }
+        if count <= 26 { return base * 0.85 }
+        if count <= 36 { return base * 0.72 }
+        if count <= 48 { return base * 0.60 }
+        return base * 0.50
+    }
+
+    private func companyFontSize(for text: String) -> CGFloat {
+        let base: CGFloat = 12
+        let count = text.isEmpty ? 12 : text.count
+        if count <= 22 { return base }
+        if count <= 32 { return base * 0.90 }
+        if count <= 44 { return base * 0.78 }
+        return base * 0.68
+    }
+
+    @ViewBuilder
+    private func editableFieldBackground(isFocused: Bool, tint: Color? = nil) -> some View {
+        let strokeColor: Color = isFocused
+            ? (tint ?? Color.accentColor).opacity(0.55)
+            : Color.primary.opacity(0.12)
+        Capsule(style: .continuous)
+            .fill(Color.primary.opacity(isFocused ? 0.08 : 0.04))
+            .overlay(
+                Capsule(style: .continuous)
+                    .strokeBorder(strokeColor, lineWidth: 1)
+            )
+    }
+
     var body: some View {
-        VStack(alignment: .center, spacing: 14) {
+        VStack(spacing: 12) {
             PhotosPicker(selection: $pickerItem, matching: .images) {
-                logoImage
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 96, height: 96)
-                    .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
-                    )
-                    .overlay(alignment: .bottomTrailing) {
-                        Image(systemName: "pencil.circle.fill")
-                            .symbolRenderingMode(.multicolor)
-                            .font(.system(size: 22))
-                            .background(
-                                Circle()
-                                    .fill(Color(UIColor.systemBackground))
-                                    .frame(width: 18, height: 18)
-                                    .offset(x: -2, y: -2)
-                            )
-                            .offset(x: 4, y: 4)
+                Group {
+                    if let image = logoImage {
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [accentTint, accentTint.opacity(0.72)],
+                                        startPoint: .topLeading, endPoint: .bottomTrailing
+                                    )
+                                )
+                            Text(logoInitial)
+                                .font(.system(size: 32, weight: .heavy, design: .rounded))
+                                .foregroundStyle(.white)
+                        }
                     }
-                    .shadow(color: .black.opacity(0.15), radius: 8, y: 3)
+                }
+                .frame(width: 80, height: 80)
+                .clipShape(Circle())
+                .overlay(
+                    Circle()
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.5), Color.white.opacity(0.05)],
+                                startPoint: .topLeading, endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+                .shadow(color: .black.opacity(0.20), radius: 10, y: 5)
+                .overlay(alignment: .bottomTrailing) {
+                    ZStack {
+                        Circle()
+                            .fill(Color(UIColor.systemBackground))
+                            .frame(width: 24, height: 24)
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 20, height: 20)
+                            .background(Circle().fill(accentTint))
+                    }
+                    .offset(x: 2, y: 2)
+                }
             }
             .onChange(of: pickerItem) { _, newValue in
                 guard let item = newValue else { return }
@@ -250,18 +330,37 @@ private struct JobInfoSection: View {
             VStack(spacing: 6) {
                 TextField("Position Title", text: $position)
                     .multilineTextAlignment(.center)
-                    .font(.title3.weight(.bold))
+                    .lineLimit(1)
+                    .font(.system(size: titleFontSize(for: position), weight: .bold, design: .rounded))
                     .foregroundStyle(DarkTheme.textPrimary)
+                    .focused($focused, equals: .position)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(
+                        editableFieldBackground(isFocused: focused == .position)
+                    )
 
-                TextField("Company Name", text: $companyName)
+                TextField("COMPANY NAME", text: $companyName)
                     .multilineTextAlignment(.center)
-                    .font(.callout)
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .lineLimit(1)
+                    .font(.system(size: companyFontSize(for: companyName), weight: .heavy, design: .rounded))
+                    .tracking(1.4)
+                    .foregroundStyle(DarkTheme.textPrimary)
+                    .textInputAutocapitalization(.words)
+                    .focused($focused, equals: .company)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        editableFieldBackground(isFocused: focused == .company)
+                    )
             }
+            .padding(.horizontal, 16)
         }
         .frame(maxWidth: .infinity)
-        .padding(20)
-        .glassCard()
+        .padding(.top, 8)
+        .padding(.bottom, 4)
     }
 }
 
@@ -539,9 +638,16 @@ private struct SectionLabel: View {
     let title: String
 
     var body: some View {
-        Label(title, systemImage: icon)
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(DarkTheme.textPrimary)
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(DarkTheme.textSecondary)
+            Text(title)
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .tracking(1.4)
+                .textCase(.uppercase)
+                .foregroundStyle(DarkTheme.textSecondary)
+        }
     }
 }
 

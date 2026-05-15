@@ -37,18 +37,24 @@ The email parser uses a hybrid approach: Apple's `NLTagger` handles named entity
 
 ```
 AppNest/
-├── AppNestApp.swift          # Entry point, ModelContainer + onboarding gate
-├── Theme.swift               # Centralized color system and design tokens
-├── JobApplication.swift      # @Model data class + enums
-├── RootView.swift            # Tab bar (Applications, Parse, Profile)
-├── ApplicationView.swift     # Main list with search, sort, filter
-├── JobCardView.swift         # Card component with themed avatars
-├── JobDetailView.swift       # Add/edit form with pill pickers
-├── EmailParserView.swift     # Paste email → extract fields UI
-├── EmailParser.swift         # NLP + regex parsing engine
-├── ProfileView.swift         # Stats dashboard + CSV export
-├── OnboardingView.swift      # First-launch walkthrough
-└── PillUI.swift              # Reusable pill components
+├── AppNestApp.swift              # Entry point, ModelContainer + onboarding gate
+├── Theme.swift                   # Centralized color system and design tokens
+├── DarkTheme.swift               # Dark-mode palette, glass card, ambient background
+├── Assets.xcassets               # Image and color assets
+├── Models/
+│   ├── JobApplication.swift      # @Model data class + enums
+│   └── EmailParser.swift         # NLP + regex parsing engine
+└── Views/
+    ├── RootView.swift            # Tab bar (Applications, Parse, Profile)
+    ├── ApplicationView.swift     # Main list with search, sort, filter
+    ├── JobCardView.swift         # Card component with themed avatars
+    ├── JobDetailView.swift       # Add/edit form with hero header + pill pickers
+    ├── EmailParserView.swift     # Paste email → extract fields UI
+    ├── ProfileView.swift         # Stats dashboard + CSV export
+    ├── OnboardingView.swift      # First-launch walkthrough
+    ├── PillUI.swift              # Reusable pill components
+    ├── SelectablePill.swift      # Selectable pill used in JobDetailView pickers
+    └── DarkStatusPill.swift      # Status pill with colored dot indicator
 ```
 
 ---
