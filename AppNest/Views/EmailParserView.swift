@@ -3,12 +3,17 @@ import SwiftData
 
 struct EmailParserView: View {
     @Environment(\.modelContext) private var modelContext
+    @Query(sort: \ResumeDocument.createdAt, order: .reverse) private var resumes: [ResumeDocument]
 
     @State private var emailText    = ""
     @State private var parsedResult: EmailParser.ParsedResult? = nil
     @State private var isParsing    = false
 
     private let parser = EmailParser()
+
+    private var defaultResume: ResumeDocument? {
+        resumes.first(where: \.isDefault)
+    }
 
     var body: some View {
         ZStack {
@@ -75,7 +80,7 @@ struct EmailParserView: View {
                                         )
                                         .clipShape(Capsule())
                                     }
-                                    .shadow(color: disabled ? .clear : Color.accentColor.opacity(0.45), radius: 10, y: 3)
+                                    .shadow(color: disabled ? .clear : Color.accentColor.opacity(0.27), radius: 10, y: 3)
                             }
                         }
                         .disabled(emailText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isParsing)
@@ -113,7 +118,7 @@ struct EmailParserView: View {
                                                 LinearGradient(colors: [Color.white.opacity(0.20), Color.clear], startPoint: .top, endPoint: .center)
                                                     .clipShape(Capsule())
                                             }
-                                            .shadow(color: c.opacity(0.45), radius: 10, y: 3)
+                                            .shadow(color: c.opacity(0.27), radius: 10, y: 3)
                                     }
                             }
                             .disabled(result.companyName == nil && result.position == nil)
@@ -155,11 +160,15 @@ struct EmailParserView: View {
 
     private func saveApplication() {
         guard let result = parsedResult else { return }
+        let attached = defaultResume
         modelContext.insert(JobApplication(
             companyName: result.companyName ?? "Unknown Company",
             position:    result.position ?? "Unknown Position",
             status:      result.status ?? .applied,
-            dateApplied: result.dateApplied ?? Date()
+            dateApplied: result.dateApplied ?? Date(),
+            resumeFileName: attached?.fileName,
+            resumeBookmark: attached?.bookmark,
+            resumeID: attached?.id
         ))
         emailText = ""
         parsedResult = nil

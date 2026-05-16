@@ -113,7 +113,7 @@ struct StatChip: View {
                             lineWidth: isSelected ? 1.4 : 0.8
                         )
                     )
-                    .shadow(color: isSelected ? style.tintColor.opacity(0.25) : .clear, radius: 6, y: 2)
+                    .shadow(color: isSelected ? style.tintColor.opacity(0.15) : .clear, radius: 6, y: 2)
             )
         }
         .buttonStyle(.plain)
@@ -177,7 +177,7 @@ struct DarkJobCardView: View {
             }
         }
         .padding(16)
-        .glassCard(cornerRadius: DarkTheme.cardRadius)
+        .glassCard(cornerRadius: DarkTheme.cardRadius, fillOpacity: 0.8)
     }
 
     @ViewBuilder

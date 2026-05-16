@@ -131,5 +131,5 @@ struct JobCardView: View {
     }
     .padding()
     .background(Color(.systemGroupedBackground))
-    .modelContainer(for: JobApplication.self, inMemory: true)
+    .modelContainer(for: [JobApplication.self, ResumeDocument.self], inMemory: true)
 }

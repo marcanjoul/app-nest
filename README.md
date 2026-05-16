@@ -5,7 +5,7 @@ An iOS app for tracking job and internship applications — built with SwiftUI
 
 ## Features
 
-**Track applications** — Add jobs manually with company, position, type, status, season, date, notes, and a resume attachment. Edit or delete anytime.
+**Track applications** — Add jobs manually with company, position, type, status, season, compensation (hourly or salary, with a currency picker), date, notes, and a resume attachment. Edit or delete anytime.
 
 **Parse emails with on-device AI** — Paste a job confirmation email and AppNest extracts the company name, position, status, and date automatically using Apple's NaturalLanguage framework. No API keys, no internet required.
 
@@ -37,18 +37,29 @@ The email parser uses a hybrid approach: Apple's `NLTagger` handles named entity
 
 ```
 AppNest/
-├── AppNestApp.swift          # Entry point, ModelContainer + onboarding gate
-├── Theme.swift               # Centralized color system and design tokens
-├── JobApplication.swift      # @Model data class + enums
-├── RootView.swift            # Tab bar (Applications, Parse, Profile)
-├── ApplicationView.swift     # Main list with search, sort, filter
-├── JobCardView.swift         # Card component with themed avatars
-├── JobDetailView.swift       # Add/edit form with pill pickers
-├── EmailParserView.swift     # Paste email → extract fields UI
-├── EmailParser.swift         # NLP + regex parsing engine
-├── ProfileView.swift         # Stats dashboard + CSV export
-├── OnboardingView.swift      # First-launch walkthrough
-└── PillUI.swift              # Reusable pill components
+├── AppNestApp.swift              # Entry point, ModelContainer + onboarding gate
+├── Theme.swift                   # Centralized color system and design tokens
+├── DarkTheme.swift               # Dark-mode palette, glass card, ambient background
+├── Assets.xcassets               # Image and color assets
+├── Models/
+│   ├── JobApplication.swift      # @Model data class + enums (type, status, season, compensation, currency)
+│   └── EmailParser.swift         # NLP + regex parsing engine
+└── Views/
+    ├── RootView.swift            # Tab bar (Applications, Parse, Profile)
+    ├── ApplicationView.swift     # Main list with search, sort, filter
+    ├── JobCardView.swift         # Card component with themed avatars
+    ├── JobDetailView.swift       # Add/edit form: state, save, type/status/season/date/notes sections
+    ├── JobDetail/
+    │   ├── SectionLabel.swift        # Shared label row used by detail sections
+    │   ├── JobInfoSection.swift      # Hero header: logo picker, position, company name
+    │   ├── CompensationSection.swift # Hourly/Salary + currency + period picker
+    │   └── ResumeSection.swift       # Inline resume pills, library sheet, document picker
+    ├── EmailParserView.swift     # Paste email → extract fields UI
+    ├── ProfileView.swift         # Stats dashboard + CSV export
+    ├── OnboardingView.swift      # First-launch walkthrough
+    ├── PillUI.swift              # Reusable pill components
+    ├── SelectablePill.swift      # Selectable pill used in JobDetailView pickers
+    └── DarkStatusPill.swift      # Status pill with colored dot indicator
 ```
 
 ---
