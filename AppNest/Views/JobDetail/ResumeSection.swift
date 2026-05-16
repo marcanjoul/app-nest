@@ -29,23 +29,48 @@ struct ResumeSection: View {
         fullscreenResume = FullscreenResume(id: resume.id, bookmark: resume.bookmark, fileName: resume.fileName)
     }
 
-    private var inlineResumes: [ResumeDocument] {
-        var ordered: [ResumeDocument] = []
-
-        // Default is always first.
-        if let defaultResume = resumes.first(where: \.isDefault) {
-            ordered.append(defaultResume)
+    @ViewBuilder
+    private var primaryPill: some View {
+        if let attached = attachedResume {
+            ResumePill(
+                title: attached.fileName,
+                style: .attached,
+                isSelected: true,
+                isDefault: attached.isDefault,
+                isLarge: true,
+                action: { openFullscreen(attached) }
+            )
+            .contextMenu {
+                Button {
+                    openFullscreen(attached)
+                } label: {
+                    Label("Open Full Screen", systemImage: "arrow.up.left.and.arrow.down.right")
+                }
+                Button(action: onViewAll) {
+                    Label("Select Another", systemImage: "tray.full")
+                }
+            } preview: {
+                ResumePreview(bookmark: attached.bookmark, fileName: attached.fileName)
+                    .onTapGesture { openFullscreen(attached) }
+            }
+        } else if let legacyResumeFileName {
+            ResumePill(
+                title: legacyResumeFileName,
+                style: .attached,
+                isSelected: true,
+                isLarge: true
+            )
+        } else if attachedResumeWasDeleted {
+            ResumePill(title: "File Deleted", style: .deleted, isLarge: true)
+        } else if let fallback = resumes.first(where: \.isDefault) ?? resumes.first {
+            ResumePill(
+                title: fallback.fileName,
+                style: .resume,
+                isDefault: fallback.isDefault,
+                isLarge: true,
+                action: { onSelectResume(fallback) }
+            )
         }
-        // Attached comes next (unless it's also the default).
-        if let attached = attachedResume, !ordered.contains(where: { $0.id == attached.id }) {
-            ordered.append(attached)
-        }
-        // Remaining resumes fill in after.
-        for resume in resumes where !ordered.contains(where: { $0.id == resume.id }) {
-            ordered.append(resume)
-        }
-
-        return Array(ordered.prefix(3))
     }
 
     private var isShowingUploadOnly: Bool {
@@ -64,65 +89,39 @@ struct ResumeSection: View {
             SectionLabel(icon: "doc.richtext", title: "Resume")
 
             if isShowingUploadOnly {
-                ResumePill(title: "Upload Resume", style: .add, isSelected: true, showsGlow: false, action: onPick)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 8)
+                HStack {
+                    Spacer()
+                    ResumePill(
+                        title: "Upload Resume",
+                        style: .add,
+                        isSelected: true,
+                        showsGlow: false,
+                        isLarge: true,
+                        action: onPick
+                    )
+                    Spacer()
+                }
+                .padding(.vertical, 8)
             } else {
-                VStack(alignment: .leading, spacing: 10) {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(inlineResumes, id: \.id) { resume in
-                                let isAttached = attachedResume?.id == resume.id
-                                ResumePill(
-                                    title: resume.fileName,
-                                    style: isAttached ? .attached : .resume,
-                                    isSelected: isAttached,
-                                    isDefault: resume.isDefault,
-                                    action: { onSelectResume(resume) }
-                                )
-                                .contextMenu {
-                                    Button {
-                                        openFullscreen(resume)
-                                    } label: {
-                                        Label("Open Full Screen", systemImage: "arrow.up.left.and.arrow.down.right")
-                                    }
-                                    Button {
-                                        onSelectResume(resume)
-                                    } label: {
-                                        Label(isAttached ? "Attached" : "Attach to Job",
-                                              systemImage: isAttached ? "checkmark.circle.fill" : "paperclip")
-                                    }
-                                    .disabled(isAttached)
-                                } preview: {
-                                    ResumePreview(bookmark: resume.bookmark, fileName: resume.fileName)
-                                        .onTapGesture { openFullscreen(resume) }
-                                }
-                            }
+                VStack(spacing: 14) {
+                    HStack {
+                        Spacer()
+                        primaryPill
+                        Spacer()
+                    }
+                    .padding(.vertical, 4)
 
-                            if let legacyResumeFileName {
-                                ResumePill(title: legacyResumeFileName, style: .attached, isSelected: true)
-                            }
-
-                            if attachedResumeWasDeleted {
-                                ResumePill(title: "File Deleted", style: .deleted)
-                            }
+                    if resumes.count > 1 {
+                        Button(action: onViewAll) {
+                            Label("Select Another", systemImage: "tray.full")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Color.accentColor)
                         }
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 2)
+                        .buttonStyle(.plain)
                     }
 
                     HStack(spacing: 8) {
-                        if resumes.count > 1 {
-                            Button(action: onViewAll) {
-                                Label("View All", systemImage: "tray.full")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(Color.accentColor)
-                            }
-                            .buttonStyle(.plain)
-                        }
-
                         Spacer()
-
                         Button(action: onPick) {
                             Image(systemName: "plus")
                                 .font(.system(size: 16, weight: .bold))

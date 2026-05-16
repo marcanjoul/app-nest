@@ -78,7 +78,32 @@ struct ResumePill: View {
     var isSelected: Bool = false
     var isDefault: Bool = false
     var showsGlow: Bool = true
+    var isLarge: Bool = false
     var action: (() -> Void)? = nil
+
+    private var horizontalPadding: CGFloat {
+        if isLarge { return 22 }
+        return isSelected ? 14 : 12
+    }
+
+    private var verticalPadding: CGFloat {
+        if isLarge { return 14 }
+        return isSelected ? 9 : 8
+    }
+
+    private var iconSize: CGFloat {
+        if isLarge { return 16 }
+        return isSelected ? 13 : 12
+    }
+
+    private var textFont: Font {
+        if isLarge { return .system(size: 16, weight: .bold) }
+        return isSelected ? .system(size: 14, weight: .bold) : .system(size: 13, weight: .medium)
+    }
+
+    private var titleMaxWidth: CGFloat {
+        isLarge ? 260 : 168
+    }
 
     private var tint: Color {
         if isDefault && style == .resume {
@@ -121,17 +146,17 @@ struct ResumePill: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: iconName)
-                    .font(.system(size: isSelected ? 13 : 12, weight: .semibold))
+                    .font(.system(size: iconSize, weight: .semibold))
                 Text(title)
-                    .font(isSelected ? .system(size: 14, weight: .bold) : .system(size: 13, weight: .medium))
+                    .font(textFont)
                     .lineLimit(1)
                     .truncationMode(.middle)
-                    .frame(maxWidth: style == .add ? nil : 168, alignment: .leading)
+                    .frame(maxWidth: style == .add ? nil : titleMaxWidth, alignment: .leading)
                     .strikethrough(style == .deleted, color: tint)
             }
             .foregroundStyle(isSelected ? .white : tint.opacity(0.88))
-            .padding(.horizontal, isSelected ? 14 : 12)
-            .padding(.vertical, isSelected ? 9 : 8)
+            .padding(.horizontal, horizontalPadding)
+            .padding(.vertical, verticalPadding)
             .background(
                 Capsule()
                     .fill(

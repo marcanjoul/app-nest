@@ -65,4 +65,10 @@ enum NotificationManager {
         guard let id, !id.isEmpty else { return }
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [id])
     }
+
+    /// Returns `true` if the user has explicitly denied notification permission system-wide.
+    static func isDenied() async -> Bool {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        return settings.authorizationStatus == .denied
+    }
 }

@@ -35,6 +35,13 @@ struct JobDetailView: View {
     @State private var isShowingResumeLibrary = false
     @State private var pickerItem: PhotosPickerItem? = nil
     @State private var reminderEnabled: Bool
+    @State private var isShowingDeleteConfirmation = false
+    @State private var shakeMissingFields = false
+    @State private var scrollTargetSection: FormSection?
+
+    private enum FormSection: Hashable {
+        case info, type, status
+    }
 
     private var isNewApplication: Bool { job == nil }
 
@@ -92,11 +99,15 @@ struct JobDetailView: View {
             Divider().opacity(0.4)
             HStack {
                 Button {
-                    #if canImport(UIKit)
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    #endif
-                    save()
-                    dismiss()
+                    if isSaveDisabled {
+                        handleInvalidSaveTap()
+                    } else {
+                        #if canImport(UIKit)
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        #endif
+                        save()
+                        dismiss()
+                    }
                 } label: {
                     Text(isNewApplication ? "Add Application" : "Save Changes")
                         .font(.system(size: 16, weight: .semibold))
@@ -116,7 +127,6 @@ struct JobDetailView: View {
                                 .shadow(color: isSaveDisabled ? .clear : Color.accentColor.opacity(0.27), radius: 10, y: 3)
                         }
                 }
-                .disabled(isSaveDisabled)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
@@ -125,68 +135,108 @@ struct JobDetailView: View {
         .animation(.easeInOut(duration: 0.2), value: isSaveDisabled)
     }
 
+    private var firstMissingSection: FormSection? {
+        if companyName.trimmingCharacters(in: .whitespaces).isEmpty
+            || position.trimmingCharacters(in: .whitespaces).isEmpty {
+            return .info
+        }
+        if type == nil { return .type }
+        if status == nil { return .status }
+        return nil
+    }
+
+    private func handleInvalidSaveTap() {
+        #if canImport(UIKit)
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        #endif
+        if let target = firstMissingSection {
+            scrollTargetSection = target
+        }
+        withAnimation(.linear(duration: 0.45)) {
+            shakeMissingFields = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            shakeMissingFields = false
+        }
+    }
+
     // MARK: - Body
 
     var body: some View {
         ZStack {
             AmbientBackground()
 
-            ScrollView {
-                VStack(spacing: 16) {
-                    JobInfoSection(
-                        companyName: $companyName,
-                        companyLogoName: $companyLogoName,
-                        companyLogoImageData: $companyLogoImageData,
-                        position: $position,
-                        pickerItem: $pickerItem
-                    )
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 16) {
+                        JobInfoSection(
+                            companyName: $companyName,
+                            companyLogoName: $companyLogoName,
+                            companyLogoImageData: $companyLogoImageData,
+                            position: $position,
+                            pickerItem: $pickerItem
+                        )
+                        .id(FormSection.info)
+                        .modifier(ShakeEffect(animatableData: shakeMissingFields && firstMissingSection == .info ? 1 : 0))
 
-                    TypePickerSection(type: $type)
-                    StatusPickerSection(status: $status)
-                    if isSeasonAllowed {
-                        SeasonPickerSection(season: $season)
-                            .transition(.asymmetric(
-                                insertion: .opacity.combined(with: .move(edge: .top)),
-                                removal: .opacity
-                            ))
-                    }
-                    DateAppliedSection(
-                        dateApplied: $dateApplied,
-                        status: status,
-                        reminderEnabled: $reminderEnabled
-                    )
-                    CompensationSection(
-                        kind: $compensationKind,
-                        amount: $compensationAmount,
-                        currency: $compensationCurrency,
-                        salaryPeriod: $salaryPeriod
-                    )
-                    ResumeSection(
-                        resumes: orderedResumes,
-                        attachedResume: attachedResume,
-                        legacyResumeFileName: resumeID == nil ? resumeFileName : nil,
-                        attachedResumeWasDeleted: attachedResumeWasDeleted,
-                        onSelectResume: attachResume,
-                        onViewAll: { isShowingResumeLibrary = true },
-                        onPick: { isShowingDocumentPicker = true },
-                        onClear: {
-                            if let attached = attachedResume {
-                                modelContext.delete(attached)
-                            }
-                            resumeID = nil
-                            resumeFileName = nil
-                            _pendingResumeBookmark = nil
+                        TypePickerSection(type: $type)
+                            .id(FormSection.type)
+                            .modifier(ShakeEffect(animatableData: shakeMissingFields && firstMissingSection == .type ? 1 : 0))
+                        StatusPickerSection(status: $status)
+                            .id(FormSection.status)
+                            .modifier(ShakeEffect(animatableData: shakeMissingFields && firstMissingSection == .status ? 1 : 0))
+                        if isSeasonAllowed {
+                            SeasonPickerSection(season: $season)
+                                .transition(.asymmetric(
+                                    insertion: .opacity.combined(with: .move(edge: .top)),
+                                    removal: .opacity
+                                ))
                         }
-                    )
-                    JobNotesSection(jobNotes: $jobNotes)
+                        DateAppliedSection(
+                            dateApplied: $dateApplied,
+                            status: status,
+                            reminderEnabled: $reminderEnabled
+                        )
+                        CompensationSection(
+                            kind: $compensationKind,
+                            amount: $compensationAmount,
+                            currency: $compensationCurrency,
+                            salaryPeriod: $salaryPeriod
+                        )
+                        ResumeSection(
+                            resumes: orderedResumes,
+                            attachedResume: attachedResume,
+                            legacyResumeFileName: resumeID == nil ? resumeFileName : nil,
+                            attachedResumeWasDeleted: attachedResumeWasDeleted,
+                            onSelectResume: attachResume,
+                            onViewAll: { isShowingResumeLibrary = true },
+                            onPick: { isShowingDocumentPicker = true },
+                            onClear: {
+                                if let attached = attachedResume {
+                                    modelContext.delete(attached)
+                                }
+                                resumeID = nil
+                                resumeFileName = nil
+                                _pendingResumeBookmark = nil
+                            }
+                        )
+                        JobNotesSection(jobNotes: $jobNotes)
+                    }
+                    .onChange(of: type) { _, _ in
+                        if !isSeasonAllowed { season = nil }
+                    }
+                    .animation(.easeInOut(duration: 0.22), value: isSeasonAllowed)
+                    .padding()
                 }
-                .onChange(of: type) { _, _ in
-                    if !isSeasonAllowed { season = nil }
+                .scrollDismissesKeyboard(.interactively)
+                .onChange(of: scrollTargetSection) { _, target in
+                    guard let target else { return }
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.78)) {
+                        proxy.scrollTo(target, anchor: .top)
+                    }
+                    scrollTargetSection = nil
                 }
-                .animation(.easeInOut(duration: 0.22), value: isSeasonAllowed)
-                .padding()
             }
-            .scrollDismissesKeyboard(.interactively)
         }
         .onAppear(perform: attachDefaultResumeIfNeeded)
         .sheet(isPresented: $isShowingDocumentPicker) {
@@ -234,7 +284,27 @@ struct JobDetailView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
                 }
+            } else {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(role: .destructive) {
+                        isShowingDeleteConfirmation = true
+                    } label: {
+                        Image(systemName: "trash")
+                            .foregroundStyle(Color.red)
+                    }
+                    .accessibilityLabel("Delete application")
+                }
             }
+        }
+        .confirmationDialog(
+            "Delete this application?",
+            isPresented: $isShowingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) { deleteJob() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently remove the job and cancel any pending reminders.")
         }
         .navigationTitle(isNewApplication ? "New Application" : "Job Details")
         .navigationBarTitleDisplayMode(.inline)
@@ -377,6 +447,16 @@ struct JobDetailView: View {
         attachResume(defaultResume)
     }
 
+    private func deleteJob() {
+        guard let job else { return }
+        NotificationManager.cancelReminder(id: job.reminderNotificationID)
+        modelContext.delete(job)
+        #if canImport(UIKit)
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        #endif
+        dismiss()
+    }
+
     private func existingResume(fileName: String) -> ResumeDocument? {
         resumes.first { $0.fileName == fileName }
     }
@@ -389,6 +469,19 @@ struct JobDetailView: View {
         )
         modelContext.insert(resume)
         return resume
+    }
+}
+
+// MARK: - Shake Effect
+
+/// Horizontal shake driven by an `animatableData` value of 0 (rest) or 1 (shaking).
+private struct ShakeEffect: GeometryEffect {
+    var animatableData: CGFloat = 0
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        let amplitude: CGFloat = 8
+        let translation = amplitude * sin(animatableData * .pi * 4)
+        return ProjectionTransform(CGAffineTransform(translationX: translation, y: 0))
     }
 }
 
@@ -642,6 +735,14 @@ private struct DateAppliedSection: View {
         .glassCard()
         .animation(.easeInOut(duration: 0.22), value: isToApply)
         .animation(.easeInOut(duration: 0.20), value: permissionDenied)
+        .task(id: isToApply) {
+            guard isToApply else { return }
+            let denied = await NotificationManager.isDenied()
+            await MainActor.run {
+                permissionDenied = denied
+                if denied { reminderEnabled = false }
+            }
+        }
     }
 }
 

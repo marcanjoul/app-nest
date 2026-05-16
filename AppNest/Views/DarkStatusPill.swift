@@ -177,7 +177,7 @@ struct DarkJobCardView: View {
             }
         }
         .padding(16)
-        .glassCard(cornerRadius: DarkTheme.cardRadius)
+        .glassCard(cornerRadius: DarkTheme.cardRadius, fillOpacity: 0.8)
     }
 
     @ViewBuilder

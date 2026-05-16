@@ -14,6 +14,16 @@ struct ProfileView: View {
     @State private var isShowingShareSheet     = false
     @State private var csvFileURL: URL?        = nil
     @State private var resumePendingDeletion: ResumeDocument?
+    @State private var isShowingResumeManager  = false
+
+    private var orderedResumes: [ResumeDocument] {
+        guard let def = resumes.first(where: \.isDefault) else { return resumes }
+        return [def] + resumes.filter { $0.id != def.id }
+    }
+
+    private var inlineResumes: [ResumeDocument] {
+        Array(orderedResumes.prefix(5))
+    }
 
     // MARK: - Computed Stats
 
@@ -72,7 +82,20 @@ struct ProfileView: View {
             }
         } message: { resume in
             let count = attachmentCount(for: resume)
-            Text("This resume is attached to \(count) job application\(count == 1 ? "" : "s"). Deleting it will remove it from those applications.")
+            if count > 0 {
+                Text("This resume is attached to \(count) job application\(count == 1 ? "" : "s"). Deleting it will remove it from those applications.")
+            } else {
+                Text("")
+            }
+        }
+        .sheet(isPresented: $isShowingResumeManager) {
+            ResumeManagerSheet(
+                resumes: orderedResumes,
+                attachmentCount: attachmentCount,
+                onSetDefault: setDefaultResume,
+                onRequestDelete: { resumePendingDeletion = $0 },
+                onUpload: { isShowingDocumentPicker = true }
+            )
         }
     }
 
@@ -188,15 +211,18 @@ struct ProfileView: View {
             }
 
             if resumes.isEmpty {
-                ResumePill(title: "Upload Resume", style: .add) {
-                    isShowingDocumentPicker = true
+                HStack {
+                    Spacer()
+                    ResumePill(title: "Upload Resume", style: .add, isLarge: true) {
+                        isShowingDocumentPicker = true
+                    }
+                    Spacer()
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 VStack(spacing: 10) {
-                    ForEach(resumes, id: \.id) { resume in
+                    ForEach(inlineResumes, id: \.id) { resume in
                         HStack(spacing: 10) {
-                            ResumePill(title: resume.fileName, style: .resume)
+                            ResumePill(title: resume.fileName, style: .resume, isLarge: true)
                                 .frame(maxWidth: .infinity, alignment: .leading)
 
                             Button {
@@ -223,6 +249,17 @@ struct ProfileView: View {
                             .buttonStyle(.plain)
                             .accessibilityLabel("Delete resume")
                         }
+                    }
+
+                    if resumes.count > 5 {
+                        Button { isShowingResumeManager = true } label: {
+                            Label("View All", systemImage: "tray.full")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Color.accentColor)
+                        }
+                        .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 4)
                     }
                 }
             }
@@ -347,6 +384,93 @@ struct ProfileView: View {
             return "\"" + field.replacingOccurrences(of: "\"", with: "\"\"") + "\""
         }
         return field
+    }
+}
+
+// MARK: - Resume Manager Sheet
+
+/// Full-list resume management surface presented from the Profile resumes "View All" button.
+/// Mirrors the inline row UI: per-resume star-as-default and trash-to-delete actions.
+private struct ResumeManagerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let resumes: [ResumeDocument]
+    let attachmentCount: (ResumeDocument) -> Int
+    let onSetDefault: (ResumeDocument) -> Void
+    let onRequestDelete: (ResumeDocument) -> Void
+    let onUpload: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AmbientBackground()
+
+                ScrollView {
+                    LazyVStack(spacing: 10) {
+                        ForEach(resumes, id: \.id) { resume in
+                            row(for: resume)
+                        }
+                    }
+                    .padding()
+                }
+            }
+            .navigationTitle("All Resumes")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Done") { dismiss() }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: onUpload)
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 14, weight: .bold))
+                    }
+                    .accessibilityLabel("Upload resume")
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    @ViewBuilder
+    private func row(for resume: ResumeDocument) -> some View {
+        HStack(spacing: 10) {
+            ResumePill(title: resume.fileName, style: .resume, isLarge: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button { onSetDefault(resume) } label: {
+                Image(systemName: resume.isDefault ? "star.fill" : "star")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(resume.isDefault ? Color.yellow : DarkTheme.textTertiary)
+                    .frame(width: 34, height: 34)
+                    .background(Circle().fill(Color.primary.opacity(0.06)))
+            }
+            .buttonStyle(.plain)
+            .disabled(resume.isDefault)
+            .accessibilityLabel(resume.isDefault ? "Default resume" : "Set as default")
+
+            Button(role: .destructive) { onRequestDelete(resume) } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.red)
+                    .frame(width: 34, height: 34)
+                    .background(Circle().fill(Color.red.opacity(0.10)))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Delete resume")
+        }
+        .padding(12)
+        .background {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.primary.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                )
+        }
     }
 }
 

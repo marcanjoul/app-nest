@@ -121,16 +121,18 @@ enum DarkTheme {
 struct GlassCard: ViewModifier {
     var cornerRadius: CGFloat = 20
     var shadowOpacity: Double = 0.10
+    var fillOpacity: Double = 1.0
 
     func body(content: Content) -> some View {
         content
             .background {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(.ultraThinMaterial)
+                    .opacity(fillOpacity)
                     .overlay {
                         // Subtle top-leading shimmer — visible in dark, barely-there in light
                         LinearGradient(
-                            colors: [Color.white.opacity(0.07), Color.clear],
+                            colors: [Color.white.opacity(0.07 * fillOpacity), Color.clear],
                             startPoint: .topLeading, endPoint: .bottomTrailing
                         )
                         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
@@ -138,7 +140,7 @@ struct GlassCard: ViewModifier {
                     .overlay {
                         // Adaptive border: white in dark mode, near-black in light mode
                         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .strokeBorder(Color.primary.opacity(0.09), lineWidth: 1)
+                            .strokeBorder(Color.primary.opacity(0.09 * fillOpacity), lineWidth: 1)
                     }
             }
             .shadow(color: .black.opacity(shadowOpacity), radius: 8, y: 3)
@@ -146,8 +148,8 @@ struct GlassCard: ViewModifier {
 }
 
 extension View {
-    func glassCard(cornerRadius: CGFloat = 20, shadowOpacity: Double = 0.10) -> some View {
-        modifier(GlassCard(cornerRadius: cornerRadius, shadowOpacity: shadowOpacity))
+    func glassCard(cornerRadius: CGFloat = 20, shadowOpacity: Double = 0.10, fillOpacity: Double = 1.0) -> some View {
+        modifier(GlassCard(cornerRadius: cornerRadius, shadowOpacity: shadowOpacity, fillOpacity: fillOpacity))
     }
 }
 
