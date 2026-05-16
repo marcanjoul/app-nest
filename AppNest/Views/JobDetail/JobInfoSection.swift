@@ -140,7 +140,7 @@ struct JobInfoSection: View {
             }
 
             VStack(spacing: 6) {
-                TextField("Position Title", text: $position)
+                TextField("Position Title *", text: $position)
                     .multilineTextAlignment(.center)
                     .lineLimit(1)
                     .minimumScaleFactor(0.45)
@@ -155,7 +155,7 @@ struct JobInfoSection: View {
                         editableFieldBackground(isFocused: focused == .position)
                     )
 
-                TextField("COMPANY NAME", text: $companyName)
+                TextField("COMPANY NAME *", text: $companyName)
                     .multilineTextAlignment(.center)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)

@@ -38,9 +38,21 @@ struct JobDetailView: View {
     private var isNewApplication: Bool { job == nil }
 
     private var isSaveDisabled: Bool {
-        companyName.trimmingCharacters(in: .whitespaces).isEmpty ||
-        position.trimmingCharacters(in: .whitespaces).isEmpty ||
-        type == nil || status == nil
+        !missingFields.isEmpty
+    }
+
+    private var missingFields: [String] {
+        var fields: [String] = []
+        if companyName.trimmingCharacters(in: .whitespaces).isEmpty { fields.append("Company") }
+        if position.trimmingCharacters(in: .whitespaces).isEmpty   { fields.append("Position") }
+        if type == nil                                              { fields.append("Type") }
+        if status == nil                                            { fields.append("Status") }
+        return fields
+    }
+
+    private var isSeasonAllowed: Bool {
+        let allowed: [ApplicationType] = [.partTime, .internship, .temporary, .Co_op]
+        return type.map { allowed.contains($0) } ?? false
     }
 
     init(job: JobApplication?) {
@@ -88,14 +100,20 @@ struct JobDetailView: View {
 
                     TypePickerSection(type: $type)
                     StatusPickerSection(status: $status)
-                    SeasonPickerSection(season: $season)
+                    if isSeasonAllowed {
+                        SeasonPickerSection(season: $season)
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .move(edge: .top)),
+                                removal: .opacity
+                            ))
+                    }
+                    DateAppliedSection(dateApplied: $dateApplied)
                     CompensationSection(
                         kind: $compensationKind,
                         amount: $compensationAmount,
                         currency: $compensationCurrency,
                         salaryPeriod: $salaryPeriod
                     )
-                    DateAppliedSection(dateApplied: $dateApplied)
                     ResumeSection(
                         resumes: orderedResumes,
                         attachedResume: attachedResume,
@@ -115,10 +133,10 @@ struct JobDetailView: View {
                     )
                     JobNotesSection(jobNotes: $jobNotes)
                 }
-                .onChange(of: type) { _, newType in
-                    let allowed: [ApplicationType] = [.partTime, .internship, .temporary, .Co_op]
-                    if !(newType.map { allowed.contains($0) } ?? false) { season = nil }
+                .onChange(of: type) { _, _ in
+                    if !isSeasonAllowed { season = nil }
                 }
+                .animation(.easeInOut(duration: 0.22), value: isSeasonAllowed)
                 .padding()
             }
             .scrollDismissesKeyboard(.interactively)
@@ -175,6 +193,7 @@ struct JobDetailView: View {
                 .padding(.vertical, 12)
                 .background(.ultraThinMaterial)
             }
+            .animation(.easeInOut(duration: 0.2), value: isSaveDisabled)
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -309,7 +328,7 @@ private struct TypePickerSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionLabel(icon: "list.bullet", title: "Job Type")
+            SectionLabel(icon: "list.bullet", title: "Job Type", isRequired: true)
 
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -358,7 +377,7 @@ private struct StatusPickerSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionLabel(icon: "rectangle.and.hand.point.up.left.fill", title: "Status")
+            SectionLabel(icon: "rectangle.and.hand.point.up.left.fill", title: "Status", isRequired: true)
 
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
