@@ -29,36 +29,38 @@ struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == 
     }
 
     var body: some View {
-        HStack(spacing: isSelected ? 6 : 5) {
-            if let icon {
-                Image(systemName: icon)
-                    .font(.system(size: isSelected ? 13 : 12, weight: .bold))
-                    .foregroundStyle(isSelected ? .white : color)
-            }
-            Text(option.rawValue)
-                .font(.system(size: isSelected ? 14 : 13, weight: isSelected ? .bold : .semibold))
-                .foregroundStyle(isSelected ? .white : color.opacity(0.88))
-        }
-        .padding(.horizontal, isSelected ? 14 : 12)
-        .padding(.vertical, isSelected ? 9 : 8)
-        .background(
-            Capsule()
-                .fill(fillGradient)
-                .overlay(
-                    Capsule().strokeBorder(
-                        isSelected ? Color.clear : color.opacity(0.28),
-                        lineWidth: isSelected ? 0 : 0.8
-                    )
-                )
-        )
-        .shadow(color: isSelected ? color.opacity(0.21) : .clear, radius: 6, y: 2)
-        .onTapGesture {
+        Button {
             #if canImport(UIKit)
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             #endif
             onTap()
+        } label: {
+            HStack(spacing: isSelected ? 6 : 5) {
+                if let icon {
+                    Image(systemName: icon)
+                        .font(.system(size: isSelected ? 13 : 12, weight: .bold))
+                        .foregroundStyle(isSelected ? .white : color)
+                }
+                Text(option.rawValue)
+                    .font(.system(size: isSelected ? 14 : 13, weight: isSelected ? .bold : .semibold))
+                    .foregroundStyle(isSelected ? .white : color.opacity(0.88))
+            }
+            .padding(.horizontal, isSelected ? 14 : 12)
+            .padding(.vertical, isSelected ? 9 : 8)
+            .background(
+                Capsule()
+                    .fill(fillGradient)
+                    .overlay(
+                        Capsule().strokeBorder(
+                            isSelected ? Color.clear : color.opacity(0.28),
+                            lineWidth: isSelected ? 0 : 0.8
+                        )
+                    )
+            )
+            .shadow(color: isSelected ? color.opacity(0.21) : .clear, radius: 6, y: 2)
         }
-        .animation(.spring(response: 0.28, dampingFraction: 0.65), value: isSelected)
+        .buttonStyle(PressScaleButtonStyle())
+        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: isSelected)
     }
 }
 
@@ -173,9 +175,19 @@ struct ResumePill: View {
             .shadow(color: isSelected && showsGlow ? tint.opacity(0.21) : .clear, radius: 6, y: 2)
             .opacity(pillOpacity)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressScaleButtonStyle())
         .allowsHitTesting(action != nil)
-        .animation(.spring(response: 0.28, dampingFraction: 0.65), value: isSelected)
+        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: isSelected)
+    }
+}
+
+// MARK: - Shared Button Style
+
+private struct PressScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 

@@ -127,12 +127,13 @@ struct JobDetailView: View {
                                 .shadow(color: isSaveDisabled ? .clear : Color.accentColor.opacity(0.27), radius: 10, y: 3)
                         }
                 }
+                .buttonStyle(PressScaleButtonStyle())
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
             .background(.ultraThinMaterial)
         }
-        .animation(.easeInOut(duration: 0.2), value: isSaveDisabled)
+        .animation(.easeOut(duration: 0.18), value: isSaveDisabled)
     }
 
     private var firstMissingSection: FormSection? {
@@ -155,7 +156,7 @@ struct JobDetailView: View {
         withAnimation(.linear(duration: 0.45)) {
             shakeMissingFields = true
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
             shakeMissingFields = false
         }
     }
@@ -225,7 +226,7 @@ struct JobDetailView: View {
                     .onChange(of: type) { _, _ in
                         if !isSeasonAllowed { season = nil }
                     }
-                    .animation(.easeInOut(duration: 0.22), value: isSeasonAllowed)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.85), value: isSeasonAllowed)
                     .padding()
                 }
                 .scrollDismissesKeyboard(.interactively)
@@ -435,7 +436,7 @@ struct JobDetailView: View {
     }
 
     private func attachResume(_ resume: ResumeDocument) {
-        withAnimation(.spring(response: 0.28, dampingFraction: 0.65)) {
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.9)) {
             resumeID = resume.id
             resumeFileName = resume.fileName
             _pendingResumeBookmark = resume.bookmark
@@ -483,13 +484,22 @@ struct JobDetailView: View {
 // MARK: - Shake Effect
 
 /// Horizontal shake driven by an `animatableData` value of 0 (rest) or 1 (shaking).
+/// Amplitude tapers as `(1 - t)` so the shake decays naturally rather than cutting off.
 private struct ShakeEffect: GeometryEffect {
     var animatableData: CGFloat = 0
 
     func effectValue(size: CGSize) -> ProjectionTransform {
         let amplitude: CGFloat = 8
-        let translation = amplitude * sin(animatableData * .pi * 4)
+        let translation = amplitude * sin(animatableData * .pi * 4) * (1 - animatableData)
         return ProjectionTransform(CGAffineTransform(translationX: translation, y: 0))
+    }
+}
+
+private struct PressScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 
@@ -519,7 +529,7 @@ private struct TypePickerSection: View {
                                 color: option.color,
                                 icon: option.iconName,
                                 onTap: {
-                                    withAnimation(.spring(response: 0.28, dampingFraction: 0.65)) {
+                                    withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
                                         type = (type == option ? nil : option)
                                     }
                                 }
@@ -568,7 +578,7 @@ private struct StatusPickerSection: View {
                                 color: option.color,
                                 icon: option.iconName,
                                 onTap: {
-                                    withAnimation(.spring(response: 0.28, dampingFraction: 0.65)) {
+                                    withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
                                         status = (status == option ? nil : option)
                                     }
                                 }
@@ -581,7 +591,7 @@ private struct StatusPickerSection: View {
                 }
                 .onChange(of: status) { _, _ in
                     if let first = orderedOptions.first {
-                        withAnimation(.easeOut) { proxy.scrollTo(first, anchor: .leading) }
+                        withAnimation(.smooth) { proxy.scrollTo(first, anchor: .leading) }
                     }
                 }
             }
@@ -617,7 +627,7 @@ private struct SeasonPickerSection: View {
                                 color: option.color,
                                 icon: option.iconName,
                                 onTap: {
-                                    withAnimation(.spring(response: 0.28, dampingFraction: 0.65)) {
+                                    withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
                                         season = (season == option ? nil : option)
                                     }
                                 }
@@ -630,7 +640,7 @@ private struct SeasonPickerSection: View {
                 }
                 .onChange(of: season) { _, _ in
                     if let first = orderedOptions.first {
-                        withAnimation(.easeOut) { proxy.scrollTo(first, anchor: .leading) }
+                        withAnimation(.smooth) { proxy.scrollTo(first, anchor: .leading) }
                     }
                 }
             }
@@ -741,8 +751,8 @@ private struct DateAppliedSection: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassCard()
-        .animation(.easeInOut(duration: 0.22), value: isToApply)
-        .animation(.easeInOut(duration: 0.20), value: permissionDenied)
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: isToApply)
+        .animation(.easeOut(duration: 0.18), value: permissionDenied)
         .task(id: isToApply) {
             guard isToApply else { return }
             let denied = await NotificationManager.isDenied()
