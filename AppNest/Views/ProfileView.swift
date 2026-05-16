@@ -8,14 +8,14 @@ import UIKit
 
 struct ProfileView: View {
     private static let displayNameStorageKey = "profile.displayName"
-    private static let avatarStorageKey = "profile.avatarDataBase64"
+    private static let avatarStorageKey      = "profile.avatarDataBase64"
 
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \JobApplication.dateApplied, order: .reverse) private var applications: [JobApplication]
     @Query(sort: \ResumeDocument.createdAt, order: .reverse) private var resumes: [ResumeDocument]
 
     @AppStorage(Self.displayNameStorageKey) private var profileDisplayName: String = ""
-    @AppStorage(Self.avatarStorageKey) private var profileAvatarDataBase64: String = ""
+    @AppStorage(Self.avatarStorageKey)      private var profileAvatarDataBase64: String = ""
 
     @State private var avatarSelection: PhotosPickerItem?
     @State private var isShowingDocumentPicker = false
@@ -23,6 +23,10 @@ struct ProfileView: View {
     @State private var csvFileURL: URL?        = nil
     @State private var resumePendingDeletion: ResumeDocument?
     @State private var isShowingResumeManager  = false
+
+    @FocusState private var isNameFocused: Bool
+
+    // MARK: - Derived
 
     private var orderedResumes: [ResumeDocument] {
         guard let def = resumes.first(where: \.isDefault) else { return resumes }
@@ -34,44 +38,34 @@ struct ProfileView: View {
     }
 
     private var profileAvatarData: Data? {
-        Data(base64Encoded: profileAvatarDataBase64)
+        guard !profileAvatarDataBase64.isEmpty else { return nil }
+        return Data(base64Encoded: profileAvatarDataBase64)
     }
 
-    private var companyCount: Int {
-        Set(applications.map { $0.companyName }).count
-    }
+    private var totalCount: Int { applications.count }
 
-    private var activeApplicationCount: Int {
+    private var activeCount: Int {
         applications.filter { $0.status == .applied || $0.status == .interview }.count
     }
 
-    private var interviewCount: Int {
-        applications.filter { $0.status == .interview }.count
+    private var offerCount: Int {
+        applications.filter { $0.status == .offer }.count
     }
 
-    private var profileTrackingSummary: String {
-        guard !applications.isEmpty else {
-            return "Start tracking applications to see your profile stats here."
-        }
-
-        let resumeLabel = resumes.isEmpty ? "no resumes" : "\(resumes.count) resume\(resumes.count == 1 ? "" : "s")"
-        return "Tracking \(applications.count) applications across \(companyCount) companies with \(resumeLabel)."
+    private var trackingSubtitle: String {
+        if totalCount == 0 { return "Ready to start tracking applications." }
+        return "Tracking \(totalCount) application\(totalCount == 1 ? "" : "s")"
     }
 
-    private var appVersionFooter: String {
-        let info = Bundle.main.infoDictionary
-        let version = info?["CFBundleShortVersionString"] as? String ?? "1.0"
-        let build = info?["CFBundleVersion"] as? String ?? "1"
-        let name = info?["CFBundleDisplayName"] as? String ?? info?["CFBundleName"] as? String ?? "AppNest"
-        return "\(name) v\(version) (\(build))"
+    private var profileInitial: String {
+        let trimmed = profileDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let first = trimmed.first else { return "" }
+        return String(first).uppercased()
     }
 
-    private var insightTitleCount: String {
-        "\(applications.count) tracked"
-    }
-
-    private var interviewRateText: String {
-        percentageString(interviewCount, over: applications.count)
+    private var avatarGradientKey: String {
+        let trimmed = profileDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "AppNest" : trimmed
     }
 
     // MARK: - Body
@@ -83,16 +77,32 @@ struct ProfileView: View {
             ScrollView {
                 VStack(spacing: 18) {
                     identitySection
-                    insightsSection
+                    insightsCard
                     resumeSection
                     exportSection
                 }
                 .padding()
+                .padding(.bottom, 12)
             }
         }
+        .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Profile")
         .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button {
+                    #if canImport(UIKit)
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    #endif
+                } label: {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .accessibilityLabel("Dismiss keyboard")
+            }
+        }
         .sheet(isPresented: $isShowingDocumentPicker) {
             ProfileDocumentPicker { result in
                 if case .success(let picked) = result {
@@ -127,11 +137,9 @@ struct ProfileView: View {
                 onUpload: { isShowingDocumentPicker = true }
             )
         }
-        .onChange(of: avatarSelection) { newValue in
+        .onChange(of: avatarSelection) { _, newValue in
             guard let newValue else { return }
-            Task {
-                await updateProfileAvatar(from: newValue)
-            }
+            Task { await updateProfileAvatar(from: newValue) }
         }
     }
 
@@ -139,180 +147,171 @@ struct ProfileView: View {
 
     private var identitySection: some View {
         VStack(spacing: 16) {
-            SectionLabel(icon: "person.crop.circle.fill", title: "Identity")
-
-            HStack(alignment: .center, spacing: 14) {
-                PhotosPicker(selection: $avatarSelection, matching: .images) {
-                    ZStack(alignment: .bottomTrailing) {
-                        profileAvatarView
-
+            PhotosPicker(selection: $avatarSelection, matching: .images) {
+                avatarView
+                    .frame(width: 92, height: 92)
+                    .clipShape(Circle())
+                    .overlay(
                         Circle()
-                            .fill(Color.accentColor)
-                            .frame(width: 26, height: 26)
-                            .overlay {
-                                Image(systemName: "camera.fill")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundStyle(.white)
-                            }
-                            .shadow(color: .black.opacity(0.14), radius: 3, y: 1)
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.5), Color.white.opacity(0.05)],
+                                    startPoint: .topLeading, endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
+                    )
+                    .shadow(color: .black.opacity(0.22), radius: 10, y: 5)
+                    .overlay(alignment: .bottomTrailing) {
+                        ZStack {
+                            Circle()
+                                .fill(Color(UIColor.systemBackground))
+                                .frame(width: 26, height: 26)
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 22, height: 22)
+                                .background(Circle().fill(Color.accentColor))
+                        }
+                        .offset(x: 2, y: 2)
+                    }
+            }
+            .buttonStyle(.plain)
+            .contextMenu {
+                if profileAvatarData != nil {
+                    Button(role: .destructive) {
+                        profileAvatarDataBase64 = ""
+                    } label: {
+                        Label("Remove Photo", systemImage: "trash")
                     }
                 }
-                .buttonStyle(.plain)
+            }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    TextField("Your name", text: $profileDisplayName)
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
-                        .foregroundStyle(DarkTheme.textPrimary)
-                        .textFieldStyle(.plain)
-                        .textInputAutocapitalization(.words)
-                        .autocorrectionDisabled()
+            VStack(spacing: 6) {
+                TextField("Add Your Name", text: $profileDisplayName)
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(DarkTheme.textPrimary)
+                    .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled()
+                    .focused($isNameFocused)
+                    .frame(maxWidth: 260)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color.primary.opacity(isNameFocused ? 0.08 : 0.04))
+                            .overlay(
+                                Capsule(style: .continuous)
+                                    .strokeBorder(
+                                        isNameFocused
+                                            ? Color.accentColor.opacity(0.5)
+                                            : Color.primary.opacity(0.10),
+                                        lineWidth: 1
+                                    )
+                            )
+                    )
 
-                    Text(profileTrackingSummary)
-                        .font(.footnote)
-                        .foregroundStyle(DarkTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    Text(profileDisplayName.isEmpty ? "Edit name and photo to personalize this screen." : "Tap the avatar to update your photo.")
-                        .font(.caption)
-                        .foregroundStyle(DarkTheme.textTertiary)
-                }
-
-                Spacer(minLength: 0)
+                Text(trackingSubtitle)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(DarkTheme.textSecondary)
+                    .multilineTextAlignment(.center)
             }
         }
-        .padding(18)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 22)
+        .padding(.horizontal, 18)
         .glassCard()
     }
 
-    private var profileAvatarView: some View {
-        ZStack {
-#if canImport(UIKit)
-            if let data = profileAvatarData, let image = UIImage(data: data) {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-            } else {
-                fallbackAvatar
-            }
-#else
-            fallbackAvatar
-#endif
+    @ViewBuilder
+    private var avatarView: some View {
+        #if canImport(UIKit)
+        if let data = profileAvatarData, let image = UIImage(data: data) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+        } else {
+            initialAvatar
         }
-        .frame(width: 78, height: 78)
-        .clipShape(Circle())
-        .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
-        .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
+        #else
+        initialAvatar
+        #endif
     }
 
     @ViewBuilder
-    private var fallbackAvatar: some View {
-        Text(profileInitial)
-            .font(.system(size: 28, weight: .bold, design: .rounded))
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(DarkTheme.avatarGradient(for: profileDisplayName.isEmpty ? "AppNest" : profileDisplayName))
-    }
-
-    private var profileInitial: String {
-        let trimmed = profileDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let first = trimmed.first else { return "A" }
-        return String(first).uppercased()
+    private var initialAvatar: some View {
+        ZStack {
+            DarkTheme.avatarGradient(for: avatarGradientKey)
+            if profileInitial.isEmpty {
+                Image(systemName: "person.fill")
+                    .font(.system(size: 36, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.92))
+            } else {
+                Text(profileInitial)
+                    .font(.system(size: 36, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+            }
+        }
     }
 
     // MARK: - Insights
 
-    private var insightsSection: some View {
-        VStack(spacing: 14) {
-            SectionLabel(icon: "chart.bar.xaxis", title: "Insights")
+    private var insightsCard: some View {
+        NavigationLink {
+            ProfileStatsView()
+        } label: {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 8) {
+                    Label("Insights", systemImage: "chart.bar.xaxis")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(DarkTheme.textPrimary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(DarkTheme.textTertiary)
+                }
 
-            NavigationLink {
-                ProfileStatsView()
-            } label: {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(insightTitleCount)
-                            .font(.system(size: 24, weight: .bold, design: .rounded))
-                            .foregroundStyle(DarkTheme.textPrimary)
-
-                        Spacer(minLength: 0)
-
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(DarkTheme.textTertiary)
-                    }
-
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                        ProfileMetricTile(
-                            title: "Active",
-                            value: "\(activeApplicationCount)",
-                            systemImage: "hourglass.badge.plus",
-                            tint: Color(red: 0.35, green: 0.65, blue: 0.96),
-                            subtitle: "Applied + interview"
-                        )
-
-                        ProfileMetricTile(
-                            title: "Interviews",
-                            value: "\(interviewCount)",
-                            systemImage: "person.crop.circle.badge.checkmark",
-                            tint: Color(red: 0.96, green: 0.73, blue: 0.28),
-                            subtitle: interviewRateText
-                        )
-
-                        ProfileMetricTile(
-                            title: "Companies",
-                            value: "\(companyCount)",
-                            systemImage: "building.2.fill",
-                            tint: Color(red: 0.30, green: 0.80, blue: 0.45),
-                            subtitle: "Tracked"
-                        )
-                    }
-
-                    Text("Tap to open detailed KPI summary, funnel, and top companies.")
-                        .font(.footnote)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("\(totalCount)")
+                        .font(.system(size: 44, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color.accentColor)
+                    Text(totalCount == 1 ? "Application" : "Applications")
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(DarkTheme.textSecondary)
                 }
-                .padding(16)
-                .background {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(Color.primary.opacity(0.04))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.8)
-                        )
+
+                HStack(spacing: 8) {
+                    InsightPill(
+                        count: activeCount,
+                        label: "Active",
+                        tint: Color(red: 0.35, green: 0.65, blue: 0.96),
+                        icon: "paperplane.fill"
+                    )
+                    InsightPill(
+                        count: offerCount,
+                        label: offerCount == 1 ? "Offer" : "Offers",
+                        tint: Color(red: 0.30, green: 0.80, blue: 0.45),
+                        icon: "checkmark.seal.fill"
+                    )
+                    Spacer(minLength: 0)
                 }
             }
-            .buttonStyle(.plain)
+            .padding(18)
+            .glassCard()
         }
-        .padding(18)
-        .glassCard()
+        .buttonStyle(.plain)
     }
 
-    private func percentageString(_ count: Int, over total: Int) -> String {
-        guard total > 0 else { return "0%" }
-        let percentage = Double(count) / Double(total)
-        return String(format: "%.0f%%", percentage * 100)
-    }
-
-    private func updateProfileAvatar(from item: PhotosPickerItem) async {
-        if let data = try? await item.loadTransferable(type: Data.self) {
-            profileAvatarDataBase64 = data.base64EncodedString()
-        }
-    }
-
-    // MARK: - Resume
+    // MARK: - Resume Section (restored original look)
 
     private var resumeSection: some View {
         VStack(spacing: 14) {
             HStack {
-                SectionLabel(icon: "doc.richtext", title: "Resumes")
+                Label("Resumes", systemImage: "doc.richtext")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(DarkTheme.textPrimary)
                 Spacer()
-                Button { isShowingDocumentPicker = true } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(Color.accentColor)
-                        .padding(8)
-                        .background(Circle().fill(Color.accentColor.opacity(0.12)))
-                }
             }
 
             if resumes.isEmpty {
@@ -356,22 +355,80 @@ struct ProfileView: View {
                         }
                     }
 
-                    if resumes.count > 5 {
-                        Button { isShowingResumeManager = true } label: {
-                            Label("View All", systemImage: "tray.full")
+                    HStack(spacing: 14) {
+                        Button { isShowingDocumentPicker = true } label: {
+                            Label("Add Resume", systemImage: "plus")
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundStyle(Color.accentColor)
                         }
                         .buttonStyle(.plain)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 4)
+
+                        if resumes.count > 5 {
+                            Text("·")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(DarkTheme.textTertiary)
+                            Button { isShowingResumeManager = true } label: {
+                                Label("View All", systemImage: "tray.full")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(Color.accentColor)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 4)
                 }
             }
         }
         .padding(18)
         .glassCard()
     }
+
+    // MARK: - Export
+
+    private var exportSection: some View {
+        VStack(spacing: 14) {
+            HStack {
+                Label("Export Data", systemImage: "square.and.arrow.up")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(DarkTheme.textPrimary)
+                Spacer()
+            }
+
+            Button { exportCSV() } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "tablecells")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(applications.isEmpty ? DarkTheme.textTertiary : Color.accentColor)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            Circle().fill(
+                                applications.isEmpty
+                                    ? Color.primary.opacity(0.06)
+                                    : Color.accentColor.opacity(0.12)
+                            )
+                        )
+
+                    Text("Export as CSV")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(applications.isEmpty ? DarkTheme.textSecondary : DarkTheme.textPrimary)
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(DarkTheme.textTertiary)
+                }
+                .padding(.vertical, 6)
+            }
+            .buttonStyle(.plain)
+            .disabled(applications.isEmpty)
+        }
+        .padding(18)
+        .glassCard()
+    }
+
+    // MARK: - Helpers
 
     private var deletionAlertBinding: Binding<Bool> {
         Binding(
@@ -417,56 +474,10 @@ struct ProfileView: View {
         }
     }
 
-    // MARK: - Export
-
-    private var exportSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionLabel(icon: "square.and.arrow.up", title: "Export Data")
-
-            Button { exportCSV() } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(applications.isEmpty ? DarkTheme.textTertiary : Color.accentColor)
-                        .frame(width: 24)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Export as CSV")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(applications.isEmpty ? DarkTheme.textSecondary : DarkTheme.textPrimary)
-
-                        Text(applications.isEmpty ? "No applications to export yet." : "Download your applications as a spreadsheet.")
-                            .font(.caption)
-                            .foregroundStyle(DarkTheme.textSecondary)
-                            .lineLimit(2)
-                    }
-
-                    Spacer()
-
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(DarkTheme.textTertiary)
-                }
-                .padding(14)
-                .background {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(applications.isEmpty ? Color.primary.opacity(0.05) : Color.accentColor.opacity(0.10))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .strokeBorder(applications.isEmpty ? Color.primary.opacity(0.08) : Color.accentColor.opacity(0.22), lineWidth: 0.8)
-                        )
-                }
-            }
-            .disabled(applications.isEmpty)
-            .buttonStyle(.plain)
-
-            Text(appVersionFooter)
-                .font(.caption2)
-                .foregroundStyle(DarkTheme.textTertiary)
-                .frame(maxWidth: .infinity, alignment: .center)
+    private func updateProfileAvatar(from item: PhotosPickerItem) async {
+        if let data = try? await item.loadTransferable(type: Data.self) {
+            profileAvatarDataBase64 = data.base64EncodedString()
         }
-        .padding(18)
-        .glassCard()
     }
 
     // MARK: - CSV Export
@@ -505,6 +516,36 @@ struct ProfileView: View {
             return "\"" + field.replacingOccurrences(of: "\"", with: "\"\"") + "\""
         }
         return field
+    }
+}
+
+// MARK: - Insight Pill
+
+private struct InsightPill: View {
+    let count: Int
+    let label: String
+    let tint: Color
+    let icon: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(tint)
+            Text("\(count)")
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundStyle(DarkTheme.textPrimary)
+            Text(label)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(DarkTheme.textSecondary)
+        }
+        .padding(.horizontal, 11)
+        .padding(.vertical, 7)
+        .background(
+            Capsule()
+                .fill(tint.opacity(0.12))
+                .overlay(Capsule().strokeBorder(tint.opacity(0.25), lineWidth: 0.8))
+        )
     }
 }
 

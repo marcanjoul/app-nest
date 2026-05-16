@@ -4,148 +4,143 @@ import SwiftData
 import UIKit
 #endif
 
+/// Dedicated insights screen pushed from `ProfileView`. Shows aggregate
+/// stats about the user's applications: KPI summary, status breakdown,
+/// conversion funnel, and top companies.
 struct ProfileStatsView: View {
     @Query(sort: \JobApplication.dateApplied, order: .reverse) private var applications: [JobApplication]
-    @Query(sort: \ResumeDocument.createdAt, order: .reverse) private var resumes: [ResumeDocument]
 
-    private var totalApplications: Int {
-        applications.count
+    // MARK: - Computed metrics
+
+    private var totalCount: Int { applications.count }
+    private var appliedCount: Int { count(for: .applied) }
+    private var interviewCount: Int { count(for: .interview) }
+    private var offerCount: Int { count(for: .offer) }
+    private var rejectedCount: Int { count(for: .rejected) }
+    private var activeCount: Int { appliedCount + interviewCount }
+
+    /// Anything past the "applied" stage as a percentage of applied.
+    private var responseRate: Double {
+        guard appliedCount + interviewCount + offerCount + rejectedCount > 0 else { return 0 }
+        let responded = interviewCount + offerCount + rejectedCount
+        let denom = max(1, appliedCount + interviewCount + offerCount + rejectedCount)
+        return Double(responded) / Double(denom)
     }
 
-    private var activeApplications: Int {
-        applications.filter { $0.status == .applied || $0.status == .interview }.count
+    private var statusRows: [(ApplicationStatus, Int)] {
+        ApplicationStatus.allCases.map { ($0, count(for: $0)) }
     }
 
-    private var interviewCount: Int {
-        count(for: .interview)
+    private var maxStatusCount: Int {
+        max(1, statusRows.map(\.1).max() ?? 1)
     }
 
-    private var offerCount: Int {
-        count(for: .offer)
-    }
-
-    private var topCompanies: [ProfileCompanyStat] {
+    private var topCompanies: [(name: String, count: Int, sample: JobApplication?)] {
         Dictionary(grouping: applications, by: { $0.companyName })
-            .map { company, items in
-                ProfileCompanyStat(
-                    name: company,
-                    count: items.count,
-                    sample: items.first
-                )
+            .map { (name: $0.key, count: $0.value.count, sample: $0.value.first) }
+            .sorted { lhs, rhs in
+                if lhs.count == rhs.count { return lhs.name < rhs.name }
+                return lhs.count > rhs.count
             }
-            .sorted { $0.count > $1.count }
             .prefix(5)
-            .map { $0 }
+            .map { ($0.name, $0.count, $0.sample) }
     }
 
-    private var funnelSteps: [ProfileFunnelStep] {
-        [
-            ProfileFunnelStep(
-                title: "Applied",
-                count: count(for: .applied),
-                subtitle: totalApplications == 0 ? "No applications yet" : percentString(Double(count(for: .applied)) / Double(totalApplications)),
-                progress: totalApplications == 0 ? 0 : Double(count(for: .applied)) / Double(totalApplications),
-                tint: Color(red: 0.35, green: 0.65, blue: 0.96)
-            ),
-            ProfileFunnelStep(
-                title: "Interview",
-                count: interviewCount,
-                subtitle: count(for: .applied) == 0 ? "No applied apps" : percentString(Double(interviewCount) / Double(count(for: .applied))),
-                progress: count(for: .applied) == 0 ? 0 : Double(interviewCount) / Double(count(for: .applied)),
-                tint: Color(red: 0.96, green: 0.73, blue: 0.28)
-            ),
-            ProfileFunnelStep(
-                title: "Offer",
-                count: offerCount,
-                subtitle: interviewCount == 0 ? "No interviews yet" : percentString(Double(offerCount) / Double(interviewCount)),
-                progress: interviewCount == 0 ? 0 : Double(offerCount) / Double(interviewCount),
-                tint: Color(red: 0.30, green: 0.80, blue: 0.45)
-            )
-        ]
-    }
-
-    private var statusRows: [ProfileStatusRowModel] {
-        ApplicationStatus.allCases.map { status in
-            let count = self.count(for: status)
-            return ProfileStatusRowModel(
-                status: status,
-                count: count,
-                progress: totalApplications == 0 ? 0 : Double(count) / Double(totalApplications)
-            )
-        }
-    }
+    // MARK: - Body
 
     var body: some View {
         ZStack {
             AmbientBackground()
 
             ScrollView {
-                VStack(spacing: 18) {
-                    kpiSection
-                    statusBreakdownSection
-                    conversionFunnelSection
-                    topCompaniesSection
+                if applications.isEmpty {
+                    emptyState
+                        .padding(.top, 60)
+                        .padding(.horizontal, 24)
+                } else {
+                    VStack(spacing: 18) {
+                        summarySection
+                        statusBreakdownSection
+                        if appliedCount + interviewCount + offerCount > 0 {
+                            funnelSection
+                        }
+                        if !topCompanies.isEmpty {
+                            topCompaniesSection
+                        }
+                    }
+                    .padding()
                 }
-                .padding()
             }
         }
-        .navigationTitle("Profile Stats")
+        .navigationTitle("Insights")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
     }
 
-    private var kpiSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionLabel(icon: "chart.bar.xaxis", title: "KPI Summary")
+    // MARK: - Sections
 
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                ProfileMetricTile(
-                    title: "Tracked",
-                    value: "\(totalApplications)",
-                    systemImage: "tray.full",
-                    tint: Color.accentColor,
-                    subtitle: "Applications"
-                )
-
-                ProfileMetricTile(
-                    title: "Active",
-                    value: "\(activeApplications)",
-                    systemImage: "hourglass.badge.plus",
-                    tint: Color(red: 0.35, green: 0.65, blue: 0.96),
-                    subtitle: "Applied + interview"
-                )
-
-                ProfileMetricTile(
-                    title: "Interview rate",
-                    value: percentString(interviewCount, over: totalApplications),
-                    systemImage: "person.crop.circle.badge.checkmark",
-                    tint: Color(red: 0.96, green: 0.73, blue: 0.28),
-                    subtitle: "Of tracked apps"
-                )
-
-                ProfileMetricTile(
-                    title: "Offers",
-                    value: "\(offerCount)",
-                    systemImage: "hands.sparkles.fill",
-                    tint: Color(red: 0.30, green: 0.80, blue: 0.45),
-                    subtitle: percentString(offerCount, over: totalApplications)
-                )
+    private var summarySection: some View {
+        VStack(spacing: 14) {
+            HStack {
+                Label("Summary", systemImage: "chart.bar.xaxis")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(DarkTheme.textPrimary)
+                Spacer()
             }
 
-            Text("\(resumes.count) resume\(resumes.count == 1 ? "" : "s") stored in your profile.")
-                .font(.footnote)
-                .foregroundStyle(DarkTheme.textSecondary)
+            LazyVGrid(
+                columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
+                spacing: 10
+            ) {
+                StatsKPITile(
+                    label: "Total",
+                    value: "\(totalCount)",
+                    tint: Color.accentColor,
+                    icon: "tray.full.fill"
+                )
+                StatsKPITile(
+                    label: "Active",
+                    value: "\(activeCount)",
+                    tint: Color(red: 0.35, green: 0.65, blue: 0.96),
+                    icon: "paperplane.fill"
+                )
+                StatsKPITile(
+                    label: "Offers",
+                    value: "\(offerCount)",
+                    tint: Color(red: 0.30, green: 0.80, blue: 0.45),
+                    icon: "checkmark.seal.fill"
+                )
+                StatsKPITile(
+                    label: "Response Rate",
+                    value: appliedCount + interviewCount + offerCount + rejectedCount > 0
+                        ? "\(Int((responseRate * 100).rounded()))%"
+                        : "—",
+                    tint: Color(red: 0.96, green: 0.73, blue: 0.28),
+                    icon: "envelope.open.fill"
+                )
+            }
         }
         .padding(18)
         .glassCard()
     }
 
     private var statusBreakdownSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionLabel(icon: "chart.pie.fill", title: "Status Breakdown")
+        VStack(spacing: 14) {
+            HStack {
+                Label("Status Breakdown", systemImage: "list.bullet.rectangle")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(DarkTheme.textPrimary)
+                Spacer()
+            }
 
-            VStack(spacing: 12) {
-                ForEach(statusRows) { row in
-                    ProfileStatusBreakdownRow(row: row)
+            VStack(spacing: 14) {
+                ForEach(statusRows, id: \.0) { status, count in
+                    StatusBreakdownRow(
+                        status: status,
+                        count: count,
+                        maxCount: maxStatusCount
+                    )
                 }
             }
         }
@@ -153,14 +148,41 @@ struct ProfileStatsView: View {
         .glassCard()
     }
 
-    private var conversionFunnelSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionLabel(icon: "arrow.triangle.branch", title: "Conversion Funnel")
+    private var funnelSection: some View {
+        let appliedTotal = max(1, appliedCount + interviewCount + offerCount + rejectedCount)
+        let interviewProgress = Double(interviewCount + offerCount) / Double(appliedTotal)
+        let offerProgress = Double(offerCount) / Double(appliedTotal)
 
-            VStack(spacing: 12) {
-                ForEach(funnelSteps) { step in
-                    ProfileFunnelRow(step: step)
-                }
+        return VStack(spacing: 14) {
+            HStack {
+                Label("Conversion Funnel", systemImage: "arrow.down.right.circle")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(DarkTheme.textPrimary)
+                Spacer()
+            }
+
+            VStack(spacing: 14) {
+                FunnelRow(
+                    title: "Applied",
+                    count: appliedTotal,
+                    progress: 1.0,
+                    tint: Color(red: 0.35, green: 0.65, blue: 0.96),
+                    icon: "paperplane.fill"
+                )
+                FunnelRow(
+                    title: "Interview",
+                    count: interviewCount + offerCount,
+                    progress: interviewProgress,
+                    tint: Color(red: 0.96, green: 0.73, blue: 0.28),
+                    icon: "person.2.fill"
+                )
+                FunnelRow(
+                    title: "Offer",
+                    count: offerCount,
+                    progress: offerProgress,
+                    tint: Color(red: 0.30, green: 0.80, blue: 0.45),
+                    icon: "checkmark.seal.fill"
+                )
             }
         }
         .padding(18)
@@ -168,19 +190,22 @@ struct ProfileStatsView: View {
     }
 
     private var topCompaniesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionLabel(icon: "building.2.fill", title: "Top Companies")
+        VStack(spacing: 14) {
+            HStack {
+                Label("Top Companies", systemImage: "building.2.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(DarkTheme.textPrimary)
+                Spacer()
+            }
 
-            if topCompanies.isEmpty {
-                Text("Add applications to see which companies show up most often.")
-                    .font(.footnote)
-                    .foregroundStyle(DarkTheme.textSecondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            } else {
-                VStack(spacing: 12) {
-                    ForEach(topCompanies) { company in
-                        ProfileCompanyRow(company: company, totalApplications: totalApplications)
-                    }
+            VStack(spacing: 10) {
+                ForEach(Array(topCompanies.enumerated()), id: \.element.name) { index, company in
+                    TopCompanyRow(
+                        rank: index + 1,
+                        name: company.name,
+                        count: company.count,
+                        sample: company.sample
+                    )
                 }
             }
         }
@@ -188,293 +213,233 @@ struct ProfileStatsView: View {
         .glassCard()
     }
 
+    // MARK: - Empty state
+
+    private var emptyState: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "chart.bar.xaxis")
+                .font(.system(size: 44, weight: .semibold))
+                .foregroundStyle(DarkTheme.textSecondary.opacity(0.5))
+            Text("No insights yet")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(DarkTheme.textPrimary)
+            Text("Track a few applications to see your status breakdown, conversion funnel, and top companies here.")
+                .font(.subheadline)
+                .foregroundStyle(DarkTheme.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Helpers
+
     private func count(for status: ApplicationStatus) -> Int {
         applications.filter { $0.status == status }.count
     }
-
-    private func percentString(_ value: Double) -> String {
-        String(format: "%.0f%%", max(0, min(1, value)) * 100)
-    }
-
-    private func percentString(_ value: Int, over total: Int) -> String {
-        percentString(total == 0 ? 0 : Double(value) / Double(total))
-    }
 }
 
-struct ProfileMetricTile: View {
-    let title: String
+// MARK: - KPI Tile
+
+private struct StatsKPITile: View {
+    let label: String
     let value: String
-    let systemImage: String
     let tint: Color
-    var subtitle: String? = nil
+    let icon: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 12, weight: .bold))
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(tint)
-                    .frame(width: 18)
-
-                Text(title)
-                    .font(.caption.weight(.semibold))
+                Text(label.uppercased())
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .tracking(1.0)
                     .foregroundStyle(DarkTheme.textSecondary)
-
+                    .lineLimit(1)
                 Spacer(minLength: 0)
             }
 
             Text(value)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .font(.system(size: 26, weight: .bold, design: .rounded))
                 .foregroundStyle(DarkTheme.textPrimary)
-
-            if let subtitle, !subtitle.isEmpty {
-                Text(subtitle)
-                    .font(.caption2)
-                    .foregroundStyle(DarkTheme.textTertiary)
-                    .lineLimit(2)
-            }
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
-        .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
         .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.primary.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.8)
-                )
-        }
-    }
-}
-
-private struct ProfileStatusRowModel: Identifiable {
-    let id = UUID()
-    let status: ApplicationStatus
-    let count: Int
-    let progress: Double
-}
-
-private struct ProfileStatusBreakdownRow: View {
-    let row: ProfileStatusRowModel
-
-    private var style: DarkTheme.StatusStyle {
-        DarkTheme.statusStyle(for: row.status)
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: style.iconName)
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(style.tintColor)
-
-                Text(row.status.rawValue)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
-
-                Spacer()
-
-                Text("\(row.count)")
-                    .font(.subheadline.weight(.bold))
-                    .foregroundStyle(style.tintColor)
-            }
-
-            ProfileProgressBar(progress: row.progress, tint: style.tintColor)
-        }
-    }
-}
-
-private struct ProfileFunnelStep: Identifiable {
-    let id = UUID()
-    let title: String
-    let count: Int
-    let subtitle: String
-    let progress: Double
-    let tint: Color
-}
-
-private struct ProfileFunnelRow: View {
-    let step: ProfileFunnelStep
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(step.tint)
-                    .frame(width: 8, height: 28)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(step.title)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(DarkTheme.textPrimary)
-
-                    Text(step.subtitle)
-                        .font(.caption)
-                        .foregroundStyle(DarkTheme.textSecondary)
-                }
-
-                Spacer()
-
-                Text("\(step.count)")
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                    .foregroundStyle(step.tint)
-            }
-
-            ProfileProgressBar(progress: step.progress, tint: step.tint)
-        }
-        .padding(12)
-        .background {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.primary.opacity(0.05))
+                .fill(
+                    LinearGradient(
+                        colors: [tint.opacity(0.18), tint.opacity(0.06)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                )
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.8)
+                        .strokeBorder(tint.opacity(0.28), lineWidth: 0.8)
                 )
         }
     }
 }
 
-private struct ProfileCompanyStat: Identifiable {
-    let id: String
+// MARK: - Status Breakdown Row
+
+private struct StatusBreakdownRow: View {
+    let status: ApplicationStatus
+    let count: Int
+    let maxCount: Int
+
+    private var style: DarkTheme.StatusStyle { DarkTheme.statusStyle(for: status) }
+
+    private var progress: Double {
+        guard maxCount > 0 else { return 0 }
+        return Double(count) / Double(maxCount)
+    }
+
+    var body: some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: style.iconName)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(style.tintColor)
+                    .frame(width: 16)
+                Text(status.rawValue)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(DarkTheme.textPrimary)
+                Spacer()
+                Text("\(count)")
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundStyle(count == 0 ? DarkTheme.textTertiary : style.tintColor)
+            }
+
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.primary.opacity(0.06))
+                    if count > 0 {
+                        Capsule()
+                            .fill(style.tintColor.opacity(0.85))
+                            .frame(width: max(4, geo.size.width * progress))
+                    }
+                }
+            }
+            .frame(height: 6)
+        }
+    }
+}
+
+// MARK: - Funnel Row
+
+private struct FunnelRow: View {
+    let title: String
+    let count: Int
+    let progress: Double
+    let tint: Color
+    let icon: String
+
+    private var clampedProgress: Double { max(0, min(1, progress)) }
+
+    var body: some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(tint)
+                    .frame(width: 16)
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(DarkTheme.textPrimary)
+                Spacer()
+                Text("\(count)")
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundStyle(DarkTheme.textPrimary)
+                Text("\(Int((clampedProgress * 100).rounded()))%")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(DarkTheme.textTertiary)
+            }
+
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.primary.opacity(0.06))
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [tint, tint.opacity(0.72)],
+                                startPoint: .leading, endPoint: .trailing
+                            )
+                        )
+                        .frame(width: max(4, geo.size.width * clampedProgress))
+                }
+            }
+            .frame(height: 8)
+        }
+    }
+}
+
+// MARK: - Top Company Row
+
+private struct TopCompanyRow: View {
+    let rank: Int
     let name: String
     let count: Int
     let sample: JobApplication?
 
-    init(name: String, count: Int, sample: JobApplication?) {
-        self.id = name
-        self.name = name
-        self.count = count
-        self.sample = sample
-    }
-}
-
-private struct ProfileCompanyRow: View {
-    let company: ProfileCompanyStat
-    let totalApplications: Int
-
-    private var share: Double {
-        totalApplications == 0 ? 0 : Double(company.count) / Double(totalApplications)
-    }
-
-    private var avatarTint: Color {
-        // LinearGradient doesn't expose its colors; pick a stable representative color
-        let palette: [Color] = [
-            Color(red: 0.35, green: 0.65, blue: 0.96),
-            Color(red: 0.96, green: 0.73, blue: 0.28),
-            Color(red: 0.30, green: 0.80, blue: 0.45),
-            Color.pink,
-            Color.purple,
-            Color.indigo,
-            Color.teal
-        ]
-        let hash = abs(company.name.hashValue)
-        return palette[hash % palette.count]
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 12) {
-                ProfileCompanyAvatarView(company: company)
-                    .frame(width: 42, height: 42)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(company.name)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(DarkTheme.textPrimary)
-
-                    Text(company.sample?.companyLogoName.isEmpty == false ? "Logo asset" : "Company avatar")
-                        .font(.caption)
-                        .foregroundStyle(DarkTheme.textSecondary)
-                        .lineLimit(1)
-                }
-
-                Spacer()
-
-                Text("\(company.count)")
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                    .foregroundStyle(DarkTheme.textPrimary)
-            }
-
-            ProfileProgressBar(progress: share, tint: avatarTint)
-        }
-        .padding(12)
-        .background {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.primary.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.8)
-                )
-        }
-    }
-}
-
-private struct ProfileCompanyAvatarView: View {
-    let company: ProfileCompanyStat
-
     private var initial: String {
-        String(company.name.prefix(1)).uppercased()
+        String(name.prefix(1)).uppercased()
     }
 
     var body: some View {
-        ZStack {
-            if let sample = company.sample, let imageData = sample.companyLogoImageData {
-#if canImport(UIKit)
-                if let image = UIImage(data: imageData) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    fallback
-                }
-#else
-                fallback
-#endif
-            } else if let sample = company.sample, !sample.companyLogoName.isEmpty {
-#if canImport(UIKit)
-                if UIImage(named: sample.companyLogoName) != nil {
-                    Image(sample.companyLogoName)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    fallback
-                }
-#else
-                fallback
-#endif
-            } else {
-                fallback
-            }
+        HStack(spacing: 12) {
+            Text("\(rank)")
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundStyle(DarkTheme.textTertiary)
+                .frame(width: 14)
+
+            avatar
+                .frame(width: 36, height: 36)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            Text(name)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(DarkTheme.textPrimary)
+                .lineLimit(1)
+
+            Spacer()
+
+            Text("\(count) app\(count == 1 ? "" : "s")")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(DarkTheme.textSecondary)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 4)
+                .background(Capsule().fill(Color.primary.opacity(0.07)))
         }
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     @ViewBuilder
-    private var fallback: some View {
-        Text(initial)
-            .font(.system(size: 16, weight: .bold, design: .rounded))
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(DarkTheme.avatarGradient(for: company.name))
-    }
-}
-
-private struct ProfileProgressBar: View {
-    let progress: Double
-    let tint: Color
-
-    var body: some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.primary.opacity(0.07))
-
-                Capsule()
-                    .fill(tint)
-                    .frame(width: proxy.size.width * max(0, min(1, progress)))
-            }
+    private var avatar: some View {
+        #if canImport(UIKit)
+        if let sample, let data = sample.companyLogoImageData, let image = UIImage(data: data) {
+            Image(uiImage: image).resizable().scaledToFill()
+        } else if let sample, !sample.companyLogoName.isEmpty, UIImage(named: sample.companyLogoName) != nil {
+            Image(sample.companyLogoName).resizable().scaledToFill()
+        } else {
+            initialAvatar
         }
-        .frame(height: 8)
+        #else
+        initialAvatar
+        #endif
+    }
+
+    private var initialAvatar: some View {
+        ZStack {
+            DarkTheme.avatarGradient(for: name)
+            Text(initial)
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(.white)
+        }
     }
 }
 
