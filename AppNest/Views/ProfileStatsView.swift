@@ -357,7 +357,18 @@ private struct ProfileCompanyRow: View {
     }
 
     private var avatarTint: Color {
-        DarkTheme.avatarGradient(for: company.name).colors.first ?? Color.accentColor
+        // LinearGradient doesn't expose its colors; pick a stable representative color
+        let palette: [Color] = [
+            Color(red: 0.35, green: 0.65, blue: 0.96),
+            Color(red: 0.96, green: 0.73, blue: 0.28),
+            Color(red: 0.30, green: 0.80, blue: 0.45),
+            Color.pink,
+            Color.purple,
+            Color.indigo,
+            Color.teal
+        ]
+        let hash = abs(company.name.hashValue)
+        return palette[hash % palette.count]
     }
 
     var body: some View {
