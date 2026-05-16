@@ -75,7 +75,7 @@ struct EmailParserView: View {
                                         )
                                         .clipShape(Capsule())
                                     }
-                                    .shadow(color: disabled ? .clear : Color.accentColor.opacity(0.45), radius: 10, y: 3)
+                                    .shadow(color: disabled ? .clear : Color.accentColor.opacity(0.27), radius: 10, y: 3)
                             }
                         }
                         .disabled(emailText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isParsing)
@@ -113,7 +113,7 @@ struct EmailParserView: View {
                                                 LinearGradient(colors: [Color.white.opacity(0.20), Color.clear], startPoint: .top, endPoint: .center)
                                                     .clipShape(Capsule())
                                             }
-                                            .shadow(color: c.opacity(0.45), radius: 10, y: 3)
+                                            .shadow(color: c.opacity(0.27), radius: 10, y: 3)
                                     }
                             }
                             .disabled(result.companyName == nil && result.position == nil)

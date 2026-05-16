@@ -149,6 +149,13 @@ class JobApplication {
     /// Period (year/month) for salary compensation. Ignored for hourly.
     var salaryPeriod: SalaryPeriod?
 
+    /// Whether the user has requested a local notification reminder for this application.
+    /// Only meaningful while `status == .toApply`.
+    var reminderEnabled: Bool = false
+
+    /// Identifier for the scheduled `UNNotificationRequest`, if any. Used to cancel/replace.
+    var reminderNotificationID: String?
+
     /// Creates a new persistent job application.
     ///
     /// All parameters are persisted to storage. Defaults are provided for optional values.
@@ -180,7 +187,9 @@ class JobApplication {
         compensationKind: CompensationKind? = nil,
         compensationAmount: Double? = nil,
         compensationCurrency: Currency? = .usd,
-        salaryPeriod: SalaryPeriod? = nil
+        salaryPeriod: SalaryPeriod? = nil,
+        reminderEnabled: Bool = false,
+        reminderNotificationID: String? = nil
     ) {
         self.companyName = companyName
         self.companyLogoName = companyLogoName
@@ -198,6 +207,8 @@ class JobApplication {
         self.compensationAmount = compensationAmount
         self.compensationCurrency = compensationCurrency
         self.salaryPeriod = salaryPeriod
+        self.reminderEnabled = reminderEnabled
+        self.reminderNotificationID = reminderNotificationID
     }
 }
 

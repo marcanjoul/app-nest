@@ -38,7 +38,7 @@ struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == 
                         .strokeBorder(isSelected ? color.opacity(0.0) : color.opacity(0.25), lineWidth: 0.8)
                 )
         )
-        .shadow(color: isSelected ? color.opacity(0.35) : .clear, radius: 6, y: 2)
+        .shadow(color: isSelected ? color.opacity(0.21) : .clear, radius: 6, y: 2)
         .onTapGesture {
             #if canImport(UIKit)
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -132,7 +132,7 @@ struct ResumePill: View {
                     )
                     .overlay(Capsule().strokeBorder(isSelected ? tint.opacity(0.0) : tint.opacity(style == .deleted ? 0.20 : 0.25), lineWidth: 0.8))
             )
-            .shadow(color: isSelected && showsGlow ? tint.opacity(0.35) : .clear, radius: 6, y: 2)
+            .shadow(color: isSelected && showsGlow ? tint.opacity(0.21) : .clear, radius: 6, y: 2)
             .opacity(pillOpacity)
         }
         .buttonStyle(.plain)

@@ -34,6 +34,7 @@ struct JobDetailView: View {
     @State private var isShowingDocumentPicker = false
     @State private var isShowingResumeLibrary = false
     @State private var pickerItem: PhotosPickerItem? = nil
+    @State private var reminderEnabled: Bool
 
     private var isNewApplication: Bool { job == nil }
 
@@ -73,6 +74,7 @@ struct JobDetailView: View {
         _compensationAmount     = State(initialValue: job?.compensationAmount.map { Self.formatAmount($0) } ?? "")
         _compensationCurrency   = State(initialValue: job?.compensationCurrency ?? .usd)
         _salaryPeriod           = State(initialValue: job?.salaryPeriod ?? .yearly)
+        _reminderEnabled        = State(initialValue: job?.reminderEnabled ?? false)
     }
 
     private static func formatAmount(_ value: Double) -> String {
@@ -107,7 +109,11 @@ struct JobDetailView: View {
                                 removal: .opacity
                             ))
                     }
-                    DateAppliedSection(dateApplied: $dateApplied)
+                    DateAppliedSection(
+                        dateApplied: $dateApplied,
+                        status: status,
+                        reminderEnabled: $reminderEnabled
+                    )
                     CompensationSection(
                         kind: $compensationKind,
                         amount: $compensationAmount,
@@ -184,7 +190,7 @@ struct JobDetailView: View {
                                         )
                                         .clipShape(Capsule())
                                     }
-                                    .shadow(color: isSaveDisabled ? .clear : Color.accentColor.opacity(0.45), radius: 10, y: 3)
+                                    .shadow(color: isSaveDisabled ? .clear : Color.accentColor.opacity(0.27), radius: 10, y: 3)
                             }
                     }
                     .disabled(isSaveDisabled)
@@ -195,14 +201,19 @@ struct JobDetailView: View {
             }
             .animation(.easeInOut(duration: 0.2), value: isSaveDisabled)
         }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-                Button("Done") {
+                Button {
                     #if canImport(UIKit)
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                     #endif
+                } label: {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 14, weight: .semibold))
                 }
+                .accessibilityLabel("Dismiss keyboard")
             }
             if isNewApplication {
                 ToolbarItem(placement: .topBarLeading) {
@@ -219,6 +230,7 @@ struct JobDetailView: View {
     private func save() {
         let parsedAmount = parsedCompensationAmount
         let resolvedSalaryPeriod: SalaryPeriod? = compensationKind == .salary ? salaryPeriod : nil
+        let wantsReminder = status == .toApply && reminderEnabled
 
         if let job {
             job.companyName         = companyName
@@ -237,8 +249,11 @@ struct JobDetailView: View {
             job.compensationAmount  = parsedAmount
             job.compensationCurrency = compensationCurrency
             job.salaryPeriod        = resolvedSalaryPeriod
+            job.reminderEnabled     = wantsReminder
+
+            updateReminder(for: job, wantsReminder: wantsReminder)
         } else {
-            modelContext.insert(JobApplication(
+            let newJob = JobApplication(
                 companyName: companyName,
                 companyLogoName: companyLogoName,
                 companyLogoImageData: companyLogoImageData,
@@ -254,8 +269,49 @@ struct JobDetailView: View {
                 compensationKind: compensationKind,
                 compensationAmount: parsedAmount,
                 compensationCurrency: compensationCurrency,
-                salaryPeriod: resolvedSalaryPeriod
-            ))
+                salaryPeriod: resolvedSalaryPeriod,
+                reminderEnabled: wantsReminder
+            )
+            modelContext.insert(newJob)
+            updateReminder(for: newJob, wantsReminder: wantsReminder)
+        }
+    }
+
+    private func updateReminder(for job: JobApplication, wantsReminder: Bool) {
+        NotificationManager.cancelReminder(id: job.reminderNotificationID)
+        guard wantsReminder else {
+            job.reminderNotificationID = nil
+            return
+        }
+        let reminderDate = reminderFireDate(from: job.dateApplied)
+        let title = "Time to apply"
+        let bodyText = applicationReminderBody(company: job.companyName, position: job.position)
+        let identifier = job.reminderNotificationID ?? UUID().uuidString
+        job.reminderNotificationID = identifier
+        Task {
+            await NotificationManager.scheduleReminder(
+                id: identifier,
+                title: title,
+                body: bodyText,
+                date: reminderDate
+            )
+        }
+    }
+
+    private func reminderFireDate(from date: Date) -> Date {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: date)
+        return calendar.date(byAdding: .hour, value: 9, to: startOfDay) ?? date
+    }
+
+    private func applicationReminderBody(company: String, position: String) -> String {
+        let trimmedCompany = company.trimmingCharacters(in: .whitespaces)
+        let trimmedPosition = position.trimmingCharacters(in: .whitespaces)
+        switch (trimmedPosition.isEmpty, trimmedCompany.isEmpty) {
+        case (false, false): return "Apply for \(trimmedPosition) at \(trimmedCompany) today."
+        case (false, true):  return "Apply for \(trimmedPosition) today."
+        case (true, false):  return "Apply at \(trimmedCompany) today."
+        case (true, true):   return "Don't forget to submit your application today."
         }
     }
 
@@ -465,30 +521,77 @@ private struct SeasonPickerSection: View {
 
 private struct DateAppliedSection: View {
     @Binding var dateApplied: Date
+    var status: ApplicationStatus?
+    @Binding var reminderEnabled: Bool
+
+    private var isToApply: Bool { status == .toApply }
+
+    private var sectionTitle: String {
+        isToApply ? "Date to Apply" : "Date Applied"
+    }
+
+    private var dateRange: PartialRangeFrom<Date>? {
+        isToApply ? Date()... : nil
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            SectionLabel(icon: "calendar", title: "Date Applied")
+        VStack(alignment: .leading, spacing: 12) {
+            SectionLabel(icon: "calendar", title: sectionTitle)
 
             HStack {
                 Spacer()
-                DatePicker(
-                    "",
-                    selection: $dateApplied,
-                    in: ...Date(),
-                    displayedComponents: .date
-                )
-                .labelsHidden()
-                .datePickerStyle(.compact)
-                .controlSize(.large)
+                if let range = dateRange {
+                    DatePicker(
+                        "",
+                        selection: $dateApplied,
+                        in: range,
+                        displayedComponents: .date
+                    )
+                    .labelsHidden()
+                    .datePickerStyle(.compact)
+                    .controlSize(.large)
+                } else {
+                    DatePicker(
+                        "",
+                        selection: $dateApplied,
+                        in: ...Date(),
+                        displayedComponents: .date
+                    )
+                    .labelsHidden()
+                    .datePickerStyle(.compact)
+                    .controlSize(.large)
+                }
                 Spacer()
             }
             .padding(.vertical, 2)
+
+            if isToApply {
+                Toggle(isOn: $reminderEnabled) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "bell.badge.fill")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.accentColor)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Remind me to apply")
+                                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                .foregroundStyle(DarkTheme.textPrimary)
+                            Text("We'll send a notification on this date so you don't forget.")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(DarkTheme.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+                .tint(Color.accentColor)
+                .padding(.top, 4)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassCard()
+        .animation(.easeInOut(duration: 0.22), value: isToApply)
     }
 }
 

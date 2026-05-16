@@ -33,7 +33,7 @@ struct OnboardingView: View {
                                 Image(systemName: page.icon)
                                     .font(.system(size: 52, weight: .semibold))
                                     .foregroundStyle(page.color)
-                                    .shadow(color: page.color.opacity(0.40), radius: 12, y: 4)
+                                    .shadow(color: page.color.opacity(0.24), radius: 12, y: 4)
                             }
 
                             VStack(spacing: 10) {
@@ -92,7 +92,7 @@ struct OnboardingView: View {
                                     )
                                     .clipShape(Capsule())
                                 }
-                                .shadow(color: pages[currentPage].color.opacity(0.50), radius: 14, y: 5)
+                                .shadow(color: pages[currentPage].color.opacity(0.30), radius: 14, y: 5)
                         }
                 }
                 .padding(.horizontal, 28)

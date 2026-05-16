@@ -134,7 +134,7 @@ struct ApplicationView: View {
                                         )
                                         .clipShape(Capsule())
                                     }
-                                    .shadow(color: Color.accentColor.opacity(0.50), radius: 14, y: 5)
+                                    .shadow(color: Color.accentColor.opacity(0.30), radius: 14, y: 5)
                             }
                     }
                     .padding(.trailing, 20)
