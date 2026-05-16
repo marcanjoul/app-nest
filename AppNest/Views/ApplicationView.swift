@@ -208,23 +208,39 @@ struct ApplicationView: View {
 
     // MARK: - Stats Section
 
+    private var orderedFilterStatuses: [ApplicationStatus] {
+        let base: [ApplicationStatus] = [.applied, .interview, .offer, .rejected]
+        if let selected = selectedStatus, base.contains(selected) {
+            return [selected] + base.filter { $0 != selected }
+        }
+        return base
+    }
+
     private var statsSection: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach([ApplicationStatus.applied, .interview, .offer, .rejected], id: \.self) { status in
-                    StatChip(
-                        status: status,
-                        number: applications.filter { $0.status == status }.count,
-                        isSelected: selectedStatus == status,
-                        action: {
-                            withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
-                                selectedStatus = (selectedStatus == status) ? nil : status
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(orderedFilterStatuses, id: \.self) { status in
+                        StatChip(
+                            status: status,
+                            number: applications.filter { $0.status == status }.count,
+                            isSelected: selectedStatus == status,
+                            action: {
+                                withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
+                                    selectedStatus = (selectedStatus == status) ? nil : status
+                                }
                             }
-                        }
-                    )
+                        )
+                        .id(status)
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+            .onChange(of: selectedStatus) { _, _ in
+                if let first = orderedFilterStatuses.first {
+                    withAnimation(.smooth) { proxy.scrollTo(first, anchor: .leading) }
                 }
             }
-            .padding(.horizontal, 20)
         }
     }
 

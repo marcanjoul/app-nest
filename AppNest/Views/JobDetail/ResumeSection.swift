@@ -30,11 +30,22 @@ struct ResumeSection: View {
     }
 
     private var inlineResumes: [ResumeDocument] {
-        guard let attachedResume, !resumes.prefix(3).contains(where: { $0.id == attachedResume.id }) else {
-            return Array(resumes.prefix(3))
+        var ordered: [ResumeDocument] = []
+
+        // Default is always first.
+        if let defaultResume = resumes.first(where: \.isDefault) {
+            ordered.append(defaultResume)
+        }
+        // Attached comes next (unless it's also the default).
+        if let attached = attachedResume, !ordered.contains(where: { $0.id == attached.id }) {
+            ordered.append(attached)
+        }
+        // Remaining resumes fill in after.
+        for resume in resumes where !ordered.contains(where: { $0.id == resume.id }) {
+            ordered.append(resume)
         }
 
-        return [attachedResume] + resumes.filter { $0.id != attachedResume.id }.prefix(2)
+        return Array(ordered.prefix(3))
     }
 
     private var isShowingUploadOnly: Bool {
@@ -101,7 +112,7 @@ struct ResumeSection: View {
                     }
 
                     HStack(spacing: 8) {
-                        if resumes.count > inlineResumes.count {
+                        if resumes.count > 1 {
                             Button(action: onViewAll) {
                                 Label("View All", systemImage: "tray.full")
                                     .font(.system(size: 13, weight: .semibold))

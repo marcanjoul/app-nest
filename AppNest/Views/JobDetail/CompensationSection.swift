@@ -88,12 +88,25 @@ struct CompensationSection: View {
                 }
 
                 if kind == .salary {
-                    Picker("Salary Period", selection: $salaryPeriod) {
+                    HStack(spacing: 8) {
+                        Spacer(minLength: 0)
                         ForEach(SalaryPeriod.allCases, id: \.self) { period in
-                            Text("per \(period.rawValue.lowercased())").tag(period)
+                            SelectablePill(
+                                option: period,
+                                isSelected: period == salaryPeriod,
+                                color: amountAccent,
+                                icon: period == .yearly ? "calendar" : "calendar.day.timeline.left",
+                                onTap: {
+                                    withAnimation(.spring(response: 0.28, dampingFraction: 0.65)) {
+                                        salaryPeriod = period
+                                    }
+                                }
+                            )
                         }
+                        Spacer(minLength: 0)
                     }
-                    .pickerStyle(.segmented)
+                    .frame(maxWidth: .infinity)
+                    .transition(.opacity)
                 }
             }
         }

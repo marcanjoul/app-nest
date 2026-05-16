@@ -84,6 +84,47 @@ struct JobDetailView: View {
         return String(format: "%g", value)
     }
 
+    // MARK: - Save Bar
+
+    @ViewBuilder
+    private var saveBar: some View {
+        VStack(spacing: 0) {
+            Divider().opacity(0.4)
+            HStack {
+                Button {
+                    #if canImport(UIKit)
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    #endif
+                    save()
+                    dismiss()
+                } label: {
+                    Text(isNewApplication ? "Add Application" : "Save Changes")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background {
+                            Capsule()
+                                .fill(isSaveDisabled ? Color.secondary.opacity(0.3) : Color.accentColor)
+                                .overlay {
+                                    LinearGradient(
+                                        colors: [Color.white.opacity(0.20), Color.clear],
+                                        startPoint: .top, endPoint: .center
+                                    )
+                                    .clipShape(Capsule())
+                                }
+                                .shadow(color: isSaveDisabled ? .clear : Color.accentColor.opacity(0.27), radius: 10, y: 3)
+                        }
+                }
+                .disabled(isSaveDisabled)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(.ultraThinMaterial)
+        }
+        .animation(.easeInOut(duration: 0.2), value: isSaveDisabled)
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -147,6 +188,7 @@ struct JobDetailView: View {
             }
             .scrollDismissesKeyboard(.interactively)
         }
+        .onAppear(perform: attachDefaultResumeIfNeeded)
         .sheet(isPresented: $isShowingDocumentPicker) {
             DocumentPicker { result in
                 if case .success(let picked) = result {
@@ -164,44 +206,17 @@ struct JobDetailView: View {
                 }
             )
         }
-        .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 0) {
-                Divider().opacity(0.4)
-                HStack {
-                    Button {
-                        #if canImport(UIKit)
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        #endif
-                        save()
-                        dismiss()
-                    } label: {
-                        Text(isNewApplication ? "Add Application" : "Save Changes")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 15)
-                            .background {
-                                Capsule()
-                                    .fill(isSaveDisabled ? Color.secondary.opacity(0.3) : Color.accentColor)
-                                    .overlay {
-                                        LinearGradient(
-                                            colors: [Color.white.opacity(0.20), Color.clear],
-                                            startPoint: .top, endPoint: .center
-                                        )
-                                        .clipShape(Capsule())
-                                    }
-                                    .shadow(color: isSaveDisabled ? .clear : Color.accentColor.opacity(0.27), radius: 10, y: 3)
-                            }
-                    }
-                    .disabled(isSaveDisabled)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(.ultraThinMaterial)
-            }
-            .animation(.easeInOut(duration: 0.2), value: isSaveDisabled)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            saveBar.hidden()
         }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .overlay {
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                    .allowsHitTesting(false)
+                saveBar
+            }
+            .ignoresSafeArea(.keyboard, edges: .bottom)
+        }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -350,9 +365,16 @@ struct JobDetailView: View {
     }
 
     private func attachResume(_ resume: ResumeDocument) {
-        resumeID = resume.id
-        resumeFileName = resume.fileName
-        _pendingResumeBookmark = resume.bookmark
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.65)) {
+            resumeID = resume.id
+            resumeFileName = resume.fileName
+            _pendingResumeBookmark = resume.bookmark
+        }
+    }
+
+    private func attachDefaultResumeIfNeeded() {
+        guard resumeID == nil, let defaultResume else { return }
+        attachResume(defaultResume)
     }
 
     private func existingResume(fileName: String) -> ResumeDocument? {
@@ -524,14 +546,13 @@ private struct DateAppliedSection: View {
     var status: ApplicationStatus?
     @Binding var reminderEnabled: Bool
 
+    @State private var permissionDenied: Bool = false
+
     private var isToApply: Bool { status == .toApply }
+    private var accent: Color { Color.accentColor }
 
     private var sectionTitle: String {
         isToApply ? "Date to Apply" : "Date Applied"
-    }
-
-    private var dateRange: PartialRangeFrom<Date>? {
-        isToApply ? Date()... : nil
     }
 
     var body: some View {
@@ -540,16 +561,17 @@ private struct DateAppliedSection: View {
 
             HStack {
                 Spacer()
-                if let range = dateRange {
+                if isToApply {
                     DatePicker(
                         "",
                         selection: $dateApplied,
-                        in: range,
+                        in: Date()...,
                         displayedComponents: .date
                     )
                     .labelsHidden()
                     .datePickerStyle(.compact)
                     .controlSize(.large)
+                    .tint(accent)
                 } else {
                     DatePicker(
                         "",
@@ -560,38 +582,66 @@ private struct DateAppliedSection: View {
                     .labelsHidden()
                     .datePickerStyle(.compact)
                     .controlSize(.large)
+                    .tint(accent)
                 }
                 Spacer()
             }
             .padding(.vertical, 2)
 
             if isToApply {
-                Toggle(isOn: $reminderEnabled) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "bell.badge.fill")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.accentColor)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Remind me to apply")
-                                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                                .foregroundStyle(DarkTheme.textPrimary)
-                            Text("We'll send a notification on this date so you don't forget.")
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle(isOn: $reminderEnabled) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "bell.badge.fill")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(accent)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Remind me to apply")
+                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(DarkTheme.textPrimary)
+                                Text("We'll send a notification on this date so you don't forget.")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(DarkTheme.textSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                    .tint(accent)
+
+                    if permissionDenied {
+                        HStack(spacing: 6) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(Color.orange)
+                            Text("Enable notifications in Settings to receive reminders.")
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(DarkTheme.textSecondary)
-                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                 }
-                .tint(Color.accentColor)
                 .padding(.top, 4)
                 .transition(.opacity.combined(with: .move(edge: .top)))
+                .onChange(of: reminderEnabled) { _, newValue in
+                    guard newValue else { return }
+                    Task {
+                        let granted = await NotificationManager.requestAuthorization()
+                        await MainActor.run {
+                            if granted {
+                                permissionDenied = false
+                            } else {
+                                permissionDenied = true
+                                reminderEnabled = false
+                            }
+                        }
+                    }
+                }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassCard()
         .animation(.easeInOut(duration: 0.22), value: isToApply)
+        .animation(.easeInOut(duration: 0.20), value: permissionDenied)
     }
 }
 

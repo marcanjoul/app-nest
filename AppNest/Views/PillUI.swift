@@ -15,27 +15,40 @@ struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == 
     var icon: String? = nil
     let onTap: () -> Void
 
+    private var fillGradient: LinearGradient {
+        if isSelected {
+            return LinearGradient(
+                colors: [color, color.opacity(0.78)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+        }
+        return LinearGradient(
+            colors: [color.opacity(0.22), color.opacity(0.07)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    }
+
     var body: some View {
         HStack(spacing: isSelected ? 6 : 5) {
             if let icon {
                 Image(systemName: icon)
-                    .font(.system(size: isSelected ? 13 : 12, weight: .semibold))
+                    .font(.system(size: isSelected ? 13 : 12, weight: .bold))
                     .foregroundStyle(isSelected ? .white : color)
             }
             Text(option.rawValue)
-                .font(isSelected ? .system(size: 14, weight: .bold) : .system(size: 13, weight: .medium))
-                .foregroundStyle(isSelected ? .white : color.opacity(0.85))
+                .font(.system(size: isSelected ? 14 : 13, weight: isSelected ? .bold : .semibold))
+                .foregroundStyle(isSelected ? .white : color.opacity(0.88))
         }
         .padding(.horizontal, isSelected ? 14 : 12)
         .padding(.vertical, isSelected ? 9 : 8)
         .background(
             Capsule()
-                .fill(isSelected
-                      ? LinearGradient(colors: [color, color.opacity(0.75)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                      : LinearGradient(colors: [color.opacity(0.18), color.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .fill(fillGradient)
                 .overlay(
-                    Capsule()
-                        .strokeBorder(isSelected ? color.opacity(0.0) : color.opacity(0.25), lineWidth: 0.8)
+                    Capsule().strokeBorder(
+                        isSelected ? Color.clear : color.opacity(0.28),
+                        lineWidth: isSelected ? 0 : 0.8
+                    )
                 )
         )
         .shadow(color: isSelected ? color.opacity(0.21) : .clear, radius: 6, y: 2)
@@ -87,7 +100,7 @@ struct ResumePill: View {
     }
 
     private var iconName: String {
-        if isDefault && style == .resume {
+        if isDefault && (style == .resume || style == .attached) {
             return "star.fill"
         }
 
