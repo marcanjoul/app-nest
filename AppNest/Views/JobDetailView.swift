@@ -445,6 +445,14 @@ struct JobDetailView: View {
     private func attachDefaultResumeIfNeeded() {
         guard resumeID == nil, let defaultResume else { return }
         attachResume(defaultResume)
+
+        // Persist on existing jobs so attachment counts elsewhere (e.g. Profile)
+        // reflect this implicit attachment without requiring an explicit save.
+        if let job {
+            job.resumeID = defaultResume.id
+            job.resumeFileName = defaultResume.fileName
+            job.resumeBookmark = defaultResume.bookmark
+        }
     }
 
     private func deleteJob() {
