@@ -143,37 +143,31 @@ struct ProfileView: View {
         }
     }
 
-    // MARK: - Identity
+    // MARK: - Identity (branded hero)
 
     private var identitySection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 18) {
+            brandMark
+
             PhotosPicker(selection: $avatarSelection, matching: .images) {
                 avatarView
-                    .frame(width: 92, height: 92)
+                    .frame(width: 100, height: 100)
                     .clipShape(Circle())
                     .overlay(
-                        Circle()
-                            .strokeBorder(
-                                LinearGradient(
-                                    colors: [Color.white.opacity(0.5), Color.white.opacity(0.05)],
-                                    startPoint: .topLeading, endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1
-                            )
+                        Circle().strokeBorder(Color.white.opacity(0.35), lineWidth: 2)
                     )
-                    .shadow(color: .black.opacity(0.22), radius: 10, y: 5)
+                    .shadow(color: .black.opacity(0.28), radius: 14, y: 6)
                     .overlay(alignment: .bottomTrailing) {
                         ZStack {
                             Circle()
-                                .fill(Color(UIColor.systemBackground))
-                                .frame(width: 26, height: 26)
+                                .fill(.white)
+                                .frame(width: 30, height: 30)
                             Image(systemName: "camera.fill")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundStyle(.white)
-                                .frame(width: 22, height: 22)
-                                .background(Circle().fill(Color.accentColor))
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(Color.accentColor)
                         }
-                        .offset(x: 2, y: 2)
+                        .shadow(color: .black.opacity(0.20), radius: 3, y: 1)
+                        .offset(x: 4, y: 4)
                     }
             }
             .buttonStyle(.plain)
@@ -188,40 +182,87 @@ struct ProfileView: View {
             }
 
             VStack(spacing: 6) {
-                TextField("Add Your Name", text: $profileDisplayName)
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(DarkTheme.textPrimary)
-                    .textInputAutocapitalization(.words)
-                    .autocorrectionDisabled()
-                    .focused($isNameFocused)
-                    .frame(maxWidth: 260)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(Color.primary.opacity(isNameFocused ? 0.08 : 0.04))
-                            .overlay(
-                                Capsule(style: .continuous)
-                                    .strokeBorder(
-                                        isNameFocused
-                                            ? Color.accentColor.opacity(0.5)
-                                            : Color.primary.opacity(0.10),
-                                        lineWidth: 1
-                                    )
-                            )
-                    )
+                TextField(
+                    "",
+                    text: $profileDisplayName,
+                    prompt: Text("Add Your Name")
+                        .foregroundColor(.white.opacity(0.55))
+                )
+                .font(.system(size: 26, weight: .heavy, design: .rounded))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white)
+                .tint(.white)
+                .textInputAutocapitalization(.words)
+                .autocorrectionDisabled()
+                .focused($isNameFocused)
+                .frame(maxWidth: 280)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(.white.opacity(isNameFocused ? 0.15 : 0))
+                )
 
                 Text(trackingSubtitle)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.85))
                     .multilineTextAlignment(.center)
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 22)
-        .padding(.horizontal, 18)
-        .glassCard()
+        .padding(.vertical, 26)
+        .padding(.horizontal, 20)
+        .background(heroBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
+        )
+        .shadow(color: Color.accentColor.opacity(0.30), radius: 18, y: 8)
+    }
+
+    private var brandMark: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "leaf.fill")
+                .font(.system(size: 10, weight: .bold))
+            Text("APPNEST")
+                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                .tracking(2.8)
+        }
+        .foregroundStyle(.white.opacity(0.92))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 5)
+        .background(
+            Capsule().fill(.white.opacity(0.16))
+                .overlay(Capsule().strokeBorder(.white.opacity(0.22), lineWidth: 0.8))
+        )
+    }
+
+    @ViewBuilder
+    private var heroBackground: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color.accentColor,
+                    Color.accentColor.opacity(0.78)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            LinearGradient(
+                colors: [.white.opacity(0.20), .clear],
+                startPoint: .top,
+                endPoint: .center
+            )
+            Circle()
+                .fill(.white.opacity(0.07))
+                .frame(width: 240, height: 240)
+                .offset(x: -130, y: -110)
+            Circle()
+                .fill(.white.opacity(0.05))
+                .frame(width: 200, height: 200)
+                .offset(x: 140, y: 110)
+        }
     }
 
     @ViewBuilder
@@ -242,14 +283,21 @@ struct ProfileView: View {
     @ViewBuilder
     private var initialAvatar: some View {
         ZStack {
-            DarkTheme.avatarGradient(for: avatarGradientKey)
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(0.32),
+                    Color.white.opacity(0.10)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
             if profileInitial.isEmpty {
                 Image(systemName: "person.fill")
-                    .font(.system(size: 36, weight: .bold))
+                    .font(.system(size: 38, weight: .bold))
                     .foregroundStyle(.white.opacity(0.92))
             } else {
                 Text(profileInitial)
-                    .font(.system(size: 36, weight: .heavy, design: .rounded))
+                    .font(.system(size: 40, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
             }
         }
@@ -269,13 +317,22 @@ struct ProfileView: View {
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(DarkTheme.textTertiary)
+                        .foregroundStyle(Color.accentColor.opacity(0.7))
                 }
 
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("\(totalCount)")
-                        .font(.system(size: 44, weight: .bold, design: .rounded))
-                        .foregroundStyle(Color.accentColor)
+                        .font(.system(size: 48, weight: .heavy, design: .rounded))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [
+                                    Color.accentColor,
+                                    Color.accentColor.opacity(0.65)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
                     Text(totalCount == 1 ? "Application" : "Applications")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(DarkTheme.textSecondary)
@@ -298,7 +355,26 @@ struct ProfileView: View {
                 }
             }
             .padding(18)
-            .glassCard()
+            .background {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .overlay {
+                        LinearGradient(
+                            colors: [
+                                Color.accentColor.opacity(0.14),
+                                Color.clear
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    }
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .strokeBorder(Color.accentColor.opacity(0.22), lineWidth: 1)
+                    }
+            }
+            .shadow(color: .black.opacity(0.10), radius: 8, y: 3)
         }
         .buttonStyle(.plain)
     }
