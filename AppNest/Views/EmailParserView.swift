@@ -20,7 +20,10 @@ struct EmailParserView: View {
     @State private var editStatus    = ApplicationStatus.applied
     @State private var editDate      = Date()
 
-    @State private var cardAppeared  = false
+    @State private var cardAppeared    = false
+    @State private var parseCount      = 0
+    @State private var saveSuccess     = false
+    @State private var scrollToResults = false
 
     private let parser = EmailParser()
 
@@ -39,15 +42,26 @@ struct EmailParserView: View {
         ZStack {
             AmbientBackground()
 
-            ScrollView {
-                VStack(spacing: 16) {
-                    inputCard
-                    if hasResult { resultsCard }
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 16) {
+                        inputCard
+                        if hasResult { resultsCard.id("results") }
+                    }
+                    .padding()
+                    .animation(.spring(response: 0.45, dampingFraction: 0.8), value: hasResult)
                 }
-                .padding()
-                .animation(.spring(response: 0.45, dampingFraction: 0.8), value: hasResult)
+                .scrollDismissesKeyboard(.interactively)
+                .onChange(of: scrollToResults) { _, newValue in
+                    guard newValue else { return }
+                    scrollToResults = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                            proxy.scrollTo("results", anchor: .top)
+                        }
+                    }
+                }
             }
-            .scrollDismissesKeyboard(.interactively)
         }
         .navigationTitle("Parse Email")
         .navigationBarTitleDisplayMode(.inline)
@@ -112,11 +126,13 @@ struct EmailParserView: View {
             }
 
             if isEmailExpanded {
-                Text("Paste a job application email and AppNest extracts the details automatically.")
-                    .font(.subheadline)
-                    .foregroundStyle(DarkTheme.textSecondary)
-                    .padding(.top, 10)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                if emailText.isEmpty {
+                    Text("Paste a job application email and AppNest extracts the details automatically.")
+                        .font(.subheadline)
+                        .foregroundStyle(DarkTheme.textSecondary)
+                        .padding(.top, 10)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
 
                 ZStack(alignment: .topLeading) {
                     if emailText.isEmpty {
@@ -242,30 +258,37 @@ struct EmailParserView: View {
                 StatusPickerRow(status: $editStatus, index: 3)
                 DatePickerRow(date: $editDate, index: 4)
             }
+            .id(parseCount)
 
             Divider().opacity(0.4)
 
             Button { saveApplication() } label: {
-                Label("Add to Applications", systemImage: "plus.circle.fill")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background {
-                        let c: Color = isSaveDisabled ? .secondary.opacity(0.3) : Color.accentColor
-                        Capsule()
-                            .fill(c)
-                            .overlay {
-                                LinearGradient(
-                                    colors: [Color.white.opacity(0.20), Color.clear],
-                                    startPoint: .top, endPoint: .center
-                                )
-                                .clipShape(Capsule())
-                            }
-                            .shadow(color: isSaveDisabled ? .clear : c.opacity(0.27), radius: 10, y: 3)
-                    }
+                Label(
+                    saveSuccess ? "Added!" : "Add to Applications",
+                    systemImage: saveSuccess ? "checkmark.circle.fill" : "plus.circle.fill"
+                )
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background {
+                    let c: Color = isSaveDisabled ? .secondary.opacity(0.3)
+                                 : saveSuccess    ? Color.green
+                                 : Color.accentColor
+                    Capsule()
+                        .fill(c)
+                        .overlay {
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.20), Color.clear],
+                                startPoint: .top, endPoint: .center
+                            )
+                            .clipShape(Capsule())
+                        }
+                        .shadow(color: isSaveDisabled ? .clear : c.opacity(0.27), radius: 10, y: 3)
+                }
+                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: saveSuccess)
             }
-            .disabled(isSaveDisabled)
+            .disabled(isSaveDisabled || saveSuccess)
         }
         .padding(18)
         .glassCard()
@@ -278,6 +301,9 @@ struct EmailParserView: View {
     // MARK: - Actions
 
     private func parseEmail() {
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        #endif
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { isParsing = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             let result = parser.parse(emailText)
@@ -290,7 +316,9 @@ struct EmailParserView: View {
                 isParsing       = false
                 hasResult       = true
                 isEmailExpanded = false
+                parseCount     += 1
             }
+            scrollToResults = true
         }
     }
 
@@ -306,15 +334,24 @@ struct EmailParserView: View {
             resumeBookmark: attached?.bookmark,
             resumeID: attached?.id
         ))
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-            emailText       = ""
-            hasResult       = false
-            editCompany     = ""
-            editPosition    = ""
-            editJobType     = nil
-            editStatus      = .applied
-            editDate        = Date()
-            isEmailExpanded = true
+        #if canImport(UIKit)
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        #endif
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            saveSuccess = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                saveSuccess     = false
+                emailText       = ""
+                hasResult       = false
+                editCompany     = ""
+                editPosition    = ""
+                editJobType     = nil
+                editStatus      = .applied
+                editDate        = Date()
+                isEmailExpanded = true
+            }
         }
     }
 }
