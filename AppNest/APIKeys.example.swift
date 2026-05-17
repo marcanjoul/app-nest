@@ -1,19 +1,20 @@
 // MARK: - APIKeys Setup
 //
-// To use Logo.dev logos in this project:
+// Logo.dev uses two separate keys — both are in your Logo.dev dashboard.
 //
-// 1. Get a free API token at https://logo.dev
-// 2. Create a new file in this folder named exactly: APIKeys.swift
-// 3. Add it to the AppNest target in Xcode
-// 4. Paste the code below into APIKeys.swift and UNCOMMENT it (remove the // from each line)
-// 5. Replace pk_YOUR_TOKEN_HERE with your actual token
+// 1. Create a new file in this folder named exactly: APIKeys.swift
+// 2. Add it to the AppNest target in Xcode
+// 3. Paste and uncomment the code below, filling in both keys
 //
 // ------- paste into APIKeys.swift and uncomment -------
 //
 // enum APIKeys {
-//     static let logoDev = "pk_YOUR_TOKEN_HERE"
+//     /// Publishable key (pk_...) — for the logo image CDN
+//     static let logoDevPublicKey  = "pk_YOUR_PUBLISHABLE_KEY_HERE"
+//     /// Secret key (sk_...) — for company name search
+//     static let logoDevSecretKey  = "sk_YOUR_SECRET_KEY_HERE"
 // }
 //
 // ------------------------------------------------------
 //
-// APIKeys.swift is gitignored and will never be committed to the repo.
+// APIKeys.swift is gitignored and should never be committed.
