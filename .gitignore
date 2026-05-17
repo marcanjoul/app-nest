@@ -12,3 +12,4 @@ build/
 .gitignore
 skills-lock.json
 .agents/skills/
+PRODUCT.md
