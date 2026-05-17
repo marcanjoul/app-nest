@@ -1,4 +1,4 @@
-# AppNest
+# App Nest
 
 An iOS app for tracking job and internship applications — built with SwiftUI
 ---
