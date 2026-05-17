@@ -26,6 +26,7 @@ struct EmailParserView: View {
     @State private var saveSuccess     = false
     @State private var scrollToResults = false
     @State private var fetchedLogoData: Data? = nil
+    @State private var isFetchingLogo  = false
     @State private var highlights: [HighlightSpan] = []
 
     private let parser = EmailParser()
@@ -87,11 +88,14 @@ struct EmailParserView: View {
         }
         .task(id: editCompany) {
             fetchedLogoData = nil
+            isFetchingLogo  = false
             let trimmed = editCompany.trimmingCharacters(in: .whitespaces)
             guard trimmed.count >= 2 else { return }
             do { try await Task.sleep(for: .milliseconds(600)) } catch { return }
             guard !Task.isCancelled else { return }
+            withAnimation(.appFastOut) { isFetchingLogo = true }
             fetchedLogoData = await LogoFetcher.fetchLogoData(for: trimmed, darkMode: colorScheme == .dark)
+            withAnimation(.appFastOut) { isFetchingLogo = false }
         }
     }
 
@@ -259,6 +263,37 @@ struct EmailParserView: View {
                 }
             }
 
+            // Company avatar
+            HStack {
+                Spacer()
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(DarkTheme.avatarGradient(for: editCompany.isEmpty ? "?" : editCompany))
+                    let initial = editCompany.trimmingCharacters(in: .whitespaces).first.map { String($0).uppercased() } ?? "?"
+                    Text(initial)
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .opacity(fetchedLogoData == nil ? 1 : 0)
+                    if let data = fetchedLogoData, let ui = UIImage(data: data) {
+                        Image(uiImage: ui)
+                            .resizable()
+                            .scaledToFill()
+                            .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                    }
+                    if isFetchingLogo {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(.ultraThinMaterial)
+                        ProgressView().tint(.white)
+                    }
+                }
+                .frame(width: 60, height: 60)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
+                .animation(.appSmooth, value: fetchedLogoData == nil)
+                .animation(.appFastOut, value: isFetchingLogo)
+                Spacer()
+            }
+
             // Editable fields
             VStack(spacing: 8) {
                 EditableFieldRow(
@@ -366,6 +401,7 @@ struct EmailParserView: View {
                 editDate        = Date()
                 isEmailExpanded = true
                 fetchedLogoData = nil
+                isFetchingLogo  = false
                 highlights      = []
             }
         }
