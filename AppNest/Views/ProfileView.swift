@@ -528,25 +528,38 @@ struct ProfileView: View {
     // MARK: - CSV Export
 
     private func exportCSV() {
-        var csv = "Company,Position,Type,Status,Season,Date Applied,Notes\n"
         let dateFormatter = DateFormatter()
-        dateFormatter.dateStyle = .medium
+        dateFormatter.dateFormat = "yyyy-MM-dd"
 
-        for app in applications {
-            let fields = [
-                escapeCSV(app.companyName),
-                escapeCSV(app.position),
-                escapeCSV(app.jobType?.rawValue ?? ""),
-                escapeCSV(app.status?.rawValue ?? ""),
-                escapeCSV(app.season?.rawValue ?? ""),
-                escapeCSV(dateFormatter.string(from: app.dateApplied)),
-                escapeCSV(app.jobNotes ?? "")
-            ]
-            csv += fields.joined(separator: ",") + "\n"
-        }
+        let header = "Company,Position,Type,Status,Season,Date Applied,Compensation,Currency,Resume,Notes\n"
+        let rows = applications
+            .sorted { $0.dateApplied > $1.dateApplied }
+            .map { app -> String in
+                let compensation: String = {
+                    guard let amount = app.compensationAmount else { return "" }
+                    let kind = app.compensationKind?.rawValue ?? ""
+                    let period = app.salaryPeriod.map { "/\($0.rawValue)" } ?? ""
+                    return "\(amount)\(period.isEmpty ? " \(kind)" : " \(kind)\(period)")"
+                }()
+                let fields = [
+                    escapeCSV(app.companyName),
+                    escapeCSV(app.position),
+                    escapeCSV(app.jobType?.rawValue ?? ""),
+                    escapeCSV(app.status?.rawValue ?? ""),
+                    escapeCSV(app.season?.rawValue ?? ""),
+                    escapeCSV(dateFormatter.string(from: app.dateApplied)),
+                    escapeCSV(compensation),
+                    escapeCSV(app.compensationAmount != nil ? (app.compensationCurrency?.rawValue ?? "") : ""),
+                    escapeCSV(app.resumeFileName ?? ""),
+                    escapeCSV(app.jobNotes ?? "")
+                ]
+                return fields.joined(separator: ",")
+            }
 
+        let csv = header + rows.joined(separator: "\n") + "\n"
+        let datestamp = dateFormatter.string(from: Date())
         let tempURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("AppNest_Export.csv")
+            .appendingPathComponent("AppNest_Export_\(datestamp).csv")
         do {
             try csv.write(to: tempURL, atomically: true, encoding: .utf8)
             csvFileURL = tempURL
