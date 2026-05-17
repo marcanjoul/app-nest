@@ -16,6 +16,7 @@ struct ApplicationView: View {
     @State private var isPresentingNewApplication = false
     @State private var selectedStatus: ApplicationStatus? = nil
     @State private var sortOption: SortOption = .dateNewest
+    @State private var contentAppeared = false
 
     private var filteredAndSorted: [JobApplication] {
         var result = applications
@@ -55,18 +56,27 @@ struct ApplicationView: View {
                         .font(.system(size: 40, weight: .bold, design: .default))
                         .foregroundStyle(DarkTheme.textPrimary)
                 }
+                .opacity(contentAppeared ? 1 : 0)
+                .offset(y: contentAppeared ? 0 : 20)
+                .animation(.spring(response: 0.55, dampingFraction: 0.82), value: contentAppeared)
                 .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 8, trailing: 20))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
 
                 // Search + Filter
                 searchFilterRow
+                    .opacity(contentAppeared ? 1 : 0)
+                    .offset(y: contentAppeared ? 0 : 16)
+                    .animation(.spring(response: 0.55, dampingFraction: 0.82).delay(0.07), value: contentAppeared)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 10, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
 
                 // Stats
                 statsSection
+                    .opacity(contentAppeared ? 1 : 0)
+                    .offset(y: contentAppeared ? 0 : 12)
+                    .animation(.spring(response: 0.55, dampingFraction: 0.82).delay(0.12), value: contentAppeared)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 14, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -74,11 +84,13 @@ struct ApplicationView: View {
                 // Content
                 if applications.isEmpty {
                     emptyState
+                        .transition(.opacity)
                         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                 } else if filteredAndSorted.isEmpty {
                     noResultsState
+                        .transition(.opacity)
                         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
@@ -94,7 +106,7 @@ struct ApplicationView: View {
                         .listRowSeparator(.hidden)
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                             Button(role: .destructive) {
-                                withAnimation { modelContext.delete(job) }
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { modelContext.delete(job) }
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
@@ -137,12 +149,18 @@ struct ApplicationView: View {
                                     .shadow(color: Color.accentColor.opacity(0.30), radius: 14, y: 5)
                             }
                     }
+                    .buttonStyle(FABStyle())
+                    .opacity(contentAppeared ? 1 : 0)
+                    .animation(.spring(response: 0.55, dampingFraction: 0.82).delay(0.18), value: contentAppeared)
                     .padding(.trailing, 20)
                     .padding(.bottom, 20)
                 }
             }
         }
         .toolbar(.hidden, for: .navigationBar)
+        .onAppear {
+            contentAppeared = true
+        }
         .sheet(isPresented: $isPresentingNewApplication) {
             NavigationStack { JobDetailView(job: nil) }
         }
@@ -276,6 +294,14 @@ struct ApplicationView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 60)
+    }
+}
+
+private struct FABStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 
