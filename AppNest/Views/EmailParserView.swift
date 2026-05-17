@@ -16,6 +16,7 @@ struct EmailParserView: View {
     @State private var hasResult     = false
     @State private var editCompany   = ""
     @State private var editPosition  = ""
+    @State private var editJobType: ApplicationType? = nil
     @State private var editStatus    = ApplicationStatus.applied
     @State private var editDate      = Date()
 
@@ -237,8 +238,9 @@ struct EmailParserView: View {
                     placeholder: "Job title",
                     index: 1
                 )
-                StatusPickerRow(status: $editStatus, index: 2)
-                DatePickerRow(date: $editDate, index: 3)
+                JobTypePickerRow(jobType: $editJobType, index: 2)
+                StatusPickerRow(status: $editStatus, index: 3)
+                DatePickerRow(date: $editDate, index: 4)
             }
 
             Divider().opacity(0.4)
@@ -282,6 +284,7 @@ struct EmailParserView: View {
             withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
                 editCompany     = result.companyName ?? ""
                 editPosition    = result.position    ?? ""
+                editJobType     = result.jobType
                 editStatus      = result.status      ?? .applied
                 editDate        = result.dateApplied ?? Date()
                 isParsing       = false
@@ -296,6 +299,7 @@ struct EmailParserView: View {
         modelContext.insert(JobApplication(
             companyName: editCompany.isEmpty  ? "Unknown Company"  : editCompany,
             position:    editPosition.isEmpty ? "Unknown Position" : editPosition,
+            jobType:     editJobType,
             status:      editStatus,
             dateApplied: editDate,
             resumeFileName: attached?.fileName,
@@ -307,6 +311,7 @@ struct EmailParserView: View {
             hasResult       = false
             editCompany     = ""
             editPosition    = ""
+            editJobType     = nil
             editStatus      = .applied
             editDate        = Date()
             isEmailExpanded = true
@@ -371,6 +376,70 @@ private struct EditableFieldRow: View {
         }
         .animation(.easeInOut(duration: 0.18), value: isFocused)
         .animation(.easeInOut(duration: 0.18), value: isEmpty)
+        .opacity(appeared ? 1 : 0)
+        .offset(x: appeared ? 0 : -14)
+        .onAppear {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.72).delay(Double(index) * 0.07)) {
+                appeared = true
+            }
+        }
+    }
+}
+
+// MARK: - Job Type Picker Row
+
+private struct JobTypePickerRow: View {
+    @Binding var jobType: ApplicationType?
+    let index: Int
+
+    @State private var appeared = false
+
+    private let types = ApplicationType.allCases
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "tag")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(DarkTheme.textSecondary)
+                    .frame(width: 14)
+                Text("Job Type")
+                    .font(.caption)
+                    .foregroundStyle(DarkTheme.textSecondary)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(types, id: \.self) { t in
+                        let isSelected = jobType == t
+                        Button {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                jobType = isSelected ? nil : t
+                            }
+                        } label: {
+                            Text(t.rawValue)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(isSelected ? .white : DarkTheme.textSecondary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 7)
+                                .background {
+                                    Capsule()
+                                        .fill(isSelected ? Color.accentColor : Color.primary.opacity(0.07))
+                                        .overlay {
+                                            Capsule()
+                                                .strokeBorder(
+                                                    isSelected ? Color.clear : Color.primary.opacity(0.12),
+                                                    lineWidth: 1
+                                                )
+                                        }
+                                }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+        }
         .opacity(appeared ? 1 : 0)
         .offset(x: appeared ? 0 : -14)
         .onAppear {

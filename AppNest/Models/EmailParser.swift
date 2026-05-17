@@ -11,6 +11,7 @@ struct EmailParser {
     struct ParsedResult {
         var companyName: String?
         var position: String?
+        var jobType: ApplicationType?
         var status: ApplicationStatus?
         var dateApplied: Date?
     }
@@ -19,6 +20,7 @@ struct EmailParser {
         var result = ParsedResult()
         result.companyName = extractCompanyName(from: emailText)
         result.position    = extractPosition(from: emailText)
+        result.jobType     = extractJobType(from: emailText)
         result.status      = extractStatus(from: emailText)
         result.dateApplied = extractDate(from: emailText)
         return result
@@ -163,6 +165,37 @@ struct EmailParser {
         }
 
         return s
+    }
+
+    // MARK: - Job Type
+
+    private func extractJobType(from text: String) -> ApplicationType? {
+        let lowered = text.lowercased()
+
+        // Ordered by specificity — check co-op before "contract" to avoid false positives
+        let typePatterns: [(ApplicationType, [String])] = [
+            (.internship, ["intern ", "internship", " intern\n", " intern,", " intern."]),
+            (.Co_op,      ["co-op", "co op", "coop"]),
+            (.partTime,   ["part-time", "part time"]),
+            (.fullTime,   ["full-time", "full time"]),
+            (.contract,   ["contract position", "contract role", "contractor"]),
+            (.temporary,  ["temporary position", "temporary role", "temp position"]),
+        ]
+
+        for (type, keywords) in typePatterns {
+            for keyword in keywords {
+                if lowered.contains(keyword) {
+                    return type
+                }
+            }
+        }
+
+        // Fallback: check if position title already contains a type hint
+        let positionText = extractPosition(from: text)?.lowercased() ?? ""
+        if positionText.contains("intern") { return .internship }
+        if positionText.contains("co-op") || positionText.contains("coop") { return .Co_op }
+
+        return nil
     }
 
     // MARK: - Status
