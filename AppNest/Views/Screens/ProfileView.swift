@@ -165,7 +165,7 @@ struct ProfileView: View {
                 get: { appState.isImportingCSV },
                 set: { appState.isImportingCSV = $0 }
             ),
-            allowedContentTypes: [.commaSeparatedText, .csv],
+            allowedContentTypes: [.commaSeparatedText],
             allowsMultipleSelection: false
         ) { result in
             switch result {
