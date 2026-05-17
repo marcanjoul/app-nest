@@ -57,15 +57,20 @@ struct EmailParser {
             // "role/position/internship at Company"
             #"(?:role|position|opportunity|internship|job)\s+(?:at|with)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
             // "applied to [POSITION] at Company" — skip past the position title to find the company
-            #"(?:apply|applied|applying)\s+(?:to|for)\s+.+?\s+at\s+([A-Z][A-Za-z0-9&®\s\.]+?)(?:\s+on\b|\s+via\b|\.|,|\!|\n|$)"#,
-            // "apply/applied/applying to/at Company"
-            #"(?:apply|applied|applying)\s+(?:to|at|for)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
+            #"(?:apply|applied|applying)\s+(?:to|for)\s+.+?\s+at\s+([A-Z][A-Za-z0-9&®\s\.]+?)(?:\s+on\b|\s+via\b|\s+through\b|\.|,|\!|\n|$)"#,
+            // "apply/applied/applying to/at Company" — negative lookahead skips articles that precede position titles
+            #"(?:apply|applied|applying)\s+(?:to|at|for)\s+(?!the\b|a\b|an\b)([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+through\b|\s+via\b|\.|,|\!|\n|$)"#,
             // "application to Company" — acknowledgment emails ("submit an application to Snackpass")
             #"(?:application|applying|applied)\s+to\s+([A-Z][A-Za-z0-9&\.]+(?:\s+[A-Z][A-Za-z0-9&\.]+){0,2})(?:'s)?\b"#,
             // "about Company and" — rejection emails ("learn more about Intuitive and the...")
             #"about\s+([A-Z][A-Za-z0-9&\.]+)\s+and\b"#,
             // "part of Company" — excitement/acknowledgment emails ("be a part of Okta's momentum")
             #"(?:part\s+of|be\s+part\s+of)\s+([A-Z][A-Za-z0-9&\.]+)(?:'s)?\b"#,
+            // "here at Company" / "on behalf of Company" — recruiter outreach
+            #"(?:here\s+at|team\s+at|staff\s+at)\s+([A-Z][A-Za-z0-9&\.]+(?:\s+[A-Z][A-Za-z0-9&\.]+){0,2})\b"#,
+            #"on\s+behalf\s+of\s+([A-Z][A-Za-z0-9&\.]+(?:\s+[A-Z][A-Za-z0-9&\.]+){0,2})(?:'s)?\b"#,
+            // "Company is committed/growing/excited..." — company self-describes ("Helios Medical is committed to...")
+            #"([A-Z][A-Za-z0-9&]+(?:\s+[A-Z][A-Za-z0-9&]+){0,2})\s+is\s+(?:committed|growing|excited|dedicated|building|expanding|a\s+fast|at\s+a)\b"#,
             // "team/company at/of Company"
             #"(?:team|company)\s+(?:at|of)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
             // "welcome to / offer from Company"
@@ -76,6 +81,11 @@ struct EmailParser {
 
         for pattern in companyPatterns {
             if let result = extractCaptureGroup(from: text, pattern: pattern) {
+                // Company names are proper nouns — the raw capture must start uppercase.
+                // NSRegularExpression with .caseInsensitive makes [A-Z] match lowercase,
+                // so without this guard common words like "our", "the", "understanding" slip through.
+                guard result.first?.isUppercase == true else { continue }
+
                 var cleaned = result
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                     .trimmingCharacters(in: CharacterSet(charactersIn: ".,;:®™"))
@@ -130,7 +140,16 @@ struct EmailParser {
             "LinkedIn", "Indeed", "Glassdoor", "Handshake",
             "ZipRecruiter", "Monster", "CareerBuilder", "Wellfound"
         ]
-        let filtered = organizations.filter { !boilerplateOrgs.contains($0.key) }
+        // NLTagger sometimes mis-tags job titles (e.g. "Data Science Internship") as org names.
+        // Reject any tagged entity whose text contains position-type keywords.
+        let positionKeywords = ["internship", "intern", "engineer", "developer", "manager",
+                                "analyst", "designer", "scientist", "researcher", "coordinator",
+                                "associate", "director", "co-op", "specialist", "consultant"]
+        let filtered = organizations.filter { org in
+            let lower = org.key.lowercased()
+            return !boilerplateOrgs.contains(org.key)
+                && !positionKeywords.contains(where: { lower.contains($0) })
+        }
 
         return filtered.sorted(by: { $0.value > $1.value }).first?.key
     }
@@ -297,6 +316,29 @@ struct EmailParser {
                             return false
                         }
                         if isConditional { continue }
+                    }
+                    // "phone screen", "technical interview" etc. appearing in a process
+                    // description ("our process involves a phone screen") are not status signals.
+                    if status == .interview {
+                        let processDescriptionPhrases = [
+                            "process includes", "process involves",
+                            "stages include", "stages involving", "stages including",
+                            "typically involves", "typically includes",
+                            "steps include", "steps are"
+                        ]
+                        let isProcessDescription = processDescriptionPhrases.contains { desc in
+                            guard let descRange   = lowered.range(of: desc),
+                                  let phraseRange = lowered.range(of: phrase) else { return false }
+                            let sentenceStart: String.Index
+                            if let dot = lowered[..<phraseRange.lowerBound].lastIndex(of: ".") {
+                                sentenceStart = lowered.index(after: dot)
+                            } else {
+                                sentenceStart = lowered.startIndex
+                            }
+                            return descRange.lowerBound >= sentenceStart
+                                && descRange.upperBound <= phraseRange.lowerBound
+                        }
+                        if isProcessDescription { continue }
                     }
                     return (status, phrase)
                 }
