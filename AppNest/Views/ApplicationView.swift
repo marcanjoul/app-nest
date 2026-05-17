@@ -6,6 +6,15 @@ enum SortOption: String, CaseIterable {
     case dateOldest = "Oldest"
     case companyAZ  = "Company A–Z"
     case companyZA  = "Company Z–A"
+
+    var shortLabel: String {
+        switch self {
+        case .dateNewest: return "Newest"
+        case .dateOldest: return "Oldest"
+        case .companyAZ:  return "A–Z"
+        case .companyZA:  return "Z–A"
+        }
+    }
 }
 
 struct ApplicationView: View {
@@ -62,10 +71,13 @@ struct ApplicationView: View {
 
             List {
                 // Header
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text("App Nest")
                         .font(.system(size: 40, weight: .bold, design: .default))
                         .foregroundStyle(DarkTheme.textPrimary)
+                    Text("\(applications.count) application\(applications.count == 1 ? "" : "s")")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(DarkTheme.textSecondary)
                 }
                 .opacity(contentAppeared ? 1 : 0)
                 .offset(y: contentAppeared ? 0 : 20)
@@ -107,11 +119,12 @@ struct ApplicationView: View {
                         .listRowSeparator(.hidden)
                 } else {
                     ForEach(filteredAndSorted) { job in
-                        ZStack {
-                            NavigationLink(destination: JobDetailView(job: job)) { EmptyView() }
-                                .opacity(0)
+                        NavigationLink {
+                            JobDetailView(job: job)
+                        } label: {
                             DarkJobCardView(job: job)
                         }
+                        .buttonStyle(CardPressStyle())
                         .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
@@ -174,8 +187,9 @@ struct ApplicationView: View {
                             }
                     }
                     .buttonStyle(FABStyle())
+                    .scaleEffect(contentAppeared ? 1 : 0.75)
                     .opacity(contentAppeared ? 1 : 0)
-                    .animation(.spring(response: 0.55, dampingFraction: 0.82).delay(0.18), value: contentAppeared)
+                    .animation(.spring(response: 0.55, dampingFraction: 0.75).delay(0.18), value: contentAppeared)
                     .padding(.trailing, 20)
                     .padding(.bottom, 20)
                 }
@@ -232,25 +246,24 @@ struct ApplicationView: View {
                     }
                 }
             } label: {
-                ZStack(alignment: .topTrailing) {
+                VStack(spacing: 2) {
                     Image(systemName: "arrow.up.arrow.down")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(sortOption == .dateNewest ? DarkTheme.textPrimary : Color.accentColor)
-                        .frame(width: 44, height: 44)
-                        .background {
-                            Circle()
-                                .fill(.ultraThinMaterial)
-                                .overlay(Circle().strokeBorder(
-                                    sortOption == .dateNewest ? Color.primary.opacity(0.08) : Color.accentColor.opacity(0.35),
-                                    lineWidth: sortOption == .dateNewest ? 1 : 1.5
-                                ))
-                        }
                     if sortOption != .dateNewest {
-                        Circle()
-                            .fill(Color.accentColor)
-                            .frame(width: 8, height: 8)
-                            .offset(x: 2, y: -2)
+                        Text(sortOption.shortLabel)
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Color.accentColor)
                     }
+                }
+                .frame(width: 44, height: 44)
+                .background {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .overlay(Circle().strokeBorder(
+                            sortOption == .dateNewest ? Color.primary.opacity(0.08) : Color.accentColor.opacity(0.35),
+                            lineWidth: sortOption == .dateNewest ? 1 : 1.5
+                        ))
                 }
             }
         }
@@ -272,9 +285,10 @@ struct ApplicationView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(orderedFilterStatuses, id: \.self) { status in
+                        let count = searchFiltered.filter { $0.status == status }.count
                         StatChip(
                             status: status,
-                            number: searchFiltered.filter { $0.status == status }.count,
+                            number: count,
                             isSelected: selectedStatus == status,
                             action: {
                                 withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
@@ -283,6 +297,8 @@ struct ApplicationView: View {
                             }
                         )
                         .id(status)
+                        .opacity(count == 0 && selectedStatus != status ? 0.4 : 1.0)
+                        .animation(.spring(response: 0.28, dampingFraction: 0.7), value: count)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -351,6 +367,14 @@ private struct FABStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+private struct CardPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.easeOut(duration: 0.10), value: configuration.isPressed)
     }
 }
 

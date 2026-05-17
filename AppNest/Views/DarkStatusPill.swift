@@ -106,14 +106,14 @@ struct StatChip: View {
             .padding(.vertical, 10)
             .background(
                 Capsule()
-                    .fill(isSelected ? AnyShapeStyle(style.fillColor) : AnyShapeStyle(style.gradient))
+                    .fill(isSelected ? AnyShapeStyle(style.gradient) : AnyShapeStyle(style.fillColor))
                     .overlay(
                         Capsule().strokeBorder(
-                            isSelected ? style.tintColor.opacity(0.55) : style.borderColor,
-                            lineWidth: isSelected ? 1.4 : 0.8
+                            isSelected ? style.tintColor.opacity(0.70) : style.borderColor,
+                            lineWidth: isSelected ? 1.5 : 0.8
                         )
                     )
-                    .shadow(color: isSelected ? style.tintColor.opacity(0.15) : .clear, radius: 6, y: 2)
+                    .shadow(color: isSelected ? style.tintColor.opacity(0.20) : .clear, radius: 8, y: 3)
             )
         }
         .buttonStyle(.plain)
@@ -172,8 +172,8 @@ struct DarkJobCardView: View {
                     .foregroundStyle(.quaternary)
                 Spacer()
                 Text(dateText)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(16)
