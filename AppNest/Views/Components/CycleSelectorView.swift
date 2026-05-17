@@ -31,10 +31,6 @@ struct CyclePickerSheet: View {
 
                     divider
                     newCycleRow
-
-                    if cycles.count >= 2 {
-                        viewAllRow
-                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
@@ -111,22 +107,6 @@ struct CyclePickerSheet: View {
             newCycleName = ""
             isAddingCycle = true
         }
-    }
-
-    private var viewAllRow: some View {
-        NavigationLink(destination: CycleListView(dismissSheet: { isPresented = false })) {
-            rowContent(
-                icon: "list.bullet",
-                iconColor: DarkTheme.textSecondary,
-                circleFill: Color.primary.opacity(0.07),
-                title: "View All Cycles",
-                subtitle: "\(cycles.count) cycles",
-                titleColor: DarkTheme.textPrimary,
-                isActive: false,
-                chevron: true
-            )
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Row builder
