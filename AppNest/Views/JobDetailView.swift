@@ -164,6 +164,8 @@ struct JobDetailView: View {
     // MARK: - Body
 
     var body: some View {
+        let shakingSection: FormSection? = shakeMissingFields ? firstMissingSection : nil
+
         ZStack {
             AmbientBackground()
 
@@ -178,14 +180,14 @@ struct JobDetailView: View {
                             pickerItem: $pickerItem
                         )
                         .id(FormSection.info)
-                        .modifier(ShakeEffect(animatableData: shakeMissingFields && firstMissingSection == .info ? 1 : 0))
+                        .modifier(ShakeEffect(animatableData: shakingSection == .info ? 1 : 0))
 
                         TypePickerSection(type: $type)
                             .id(FormSection.type)
-                            .modifier(ShakeEffect(animatableData: shakeMissingFields && firstMissingSection == .type ? 1 : 0))
+                            .modifier(ShakeEffect(animatableData: shakingSection == .type ? 1 : 0))
                         StatusPickerSection(status: $status)
                             .id(FormSection.status)
-                            .modifier(ShakeEffect(animatableData: shakeMissingFields && firstMissingSection == .status ? 1 : 0))
+                            .modifier(ShakeEffect(animatableData: shakingSection == .status ? 1 : 0))
                         if isSeasonAllowed {
                             SeasonPickerSection(season: $season)
                                 .transition(.asymmetric(
@@ -258,15 +260,7 @@ struct JobDetailView: View {
             )
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            saveBar.hidden()
-        }
-        .overlay {
-            VStack(spacing: 0) {
-                Spacer(minLength: 0)
-                    .allowsHitTesting(false)
-                saveBar
-            }
-            .ignoresSafeArea(.keyboard, edges: .bottom)
+            saveBar
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {

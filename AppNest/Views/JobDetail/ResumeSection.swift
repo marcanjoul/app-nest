@@ -388,9 +388,7 @@ struct QuickLookPreview: UIViewControllerRepresentable {
         return controller
     }
 
-    func updateUIViewController(_ uiViewController: QLPreviewController, context: Context) {
-        uiViewController.reloadData()
-    }
+    func updateUIViewController(_ uiViewController: QLPreviewController, context: Context) {}
 
     func makeCoordinator() -> Coordinator { Coordinator(url: url) }
 
