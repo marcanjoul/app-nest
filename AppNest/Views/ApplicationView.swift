@@ -24,6 +24,8 @@ struct ApplicationView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \JobApplication.dateApplied, order: .reverse) private var applications: [JobApplication]
 
+    @Namespace private var filterNS
+
     @State private var searchText: String = ""
     @State private var isPresentingNewApplication = false
     @State private var selectedStatuses: Set<ApplicationStatus> = []
@@ -187,7 +189,11 @@ struct ApplicationView: View {
                     Button { searchText = "" } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(DarkTheme.textSecondary)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Clear search")
                 }
             }
             .padding(.horizontal, 14)
@@ -241,29 +247,54 @@ struct ApplicationView: View {
 
     private var statsSection: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(filterStatuses, id: \.self) { status in
-                    let count = searchFiltered.filter { $0.status == status }.count
-                    StatChip(
-                        status: status,
-                        number: count,
-                        isSelected: selectedStatuses.contains(status),
-                        action: {
-                            withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
-                                if selectedStatuses.contains(status) {
-                                    selectedStatuses.remove(status)
-                                } else {
-                                    selectedStatuses.insert(status)
-                                }
-                            }
+            HStack(alignment: .center, spacing: 0) {
+                // Selected group — tight spacing, visually clustered
+                if !selectedStatuses.isEmpty {
+                    HStack(spacing: 4) {
+                        ForEach(filterStatuses.filter { selectedStatuses.contains($0) }, id: \.self) { status in
+                            chipView(for: status)
+                                .matchedGeometryEffect(id: status, in: filterNS)
                         }
-                    )
-                    .opacity(count == 0 && !selectedStatuses.contains(status) ? 0.4 : 1.0)
-                    .animation(.spring(response: 0.28, dampingFraction: 0.7), value: count)
+                    }
+
+                    if selectedStatuses.count < filterStatuses.count {
+                        Capsule()
+                            .fill(Color.primary.opacity(0.15))
+                            .frame(width: 1, height: 22)
+                            .padding(.horizontal, 10)
+                            .transition(.opacity)
+                    }
+                }
+
+                // Unselected group
+                HStack(spacing: 10) {
+                    ForEach(filterStatuses.filter { !selectedStatuses.contains($0) }, id: \.self) { status in
+                        chipView(for: status)
+                            .matchedGeometryEffect(id: status, in: filterNS)
+                    }
                 }
             }
             .padding(.horizontal, 20)
+            .animation(.spring(response: 0.38, dampingFraction: 0.82), value: selectedStatuses)
         }
+    }
+
+    @ViewBuilder
+    private func chipView(for status: ApplicationStatus) -> some View {
+        let count = searchFiltered.filter { $0.status == status }.count
+        StatChip(
+            status: status,
+            number: count,
+            isSelected: selectedStatuses.contains(status),
+            action: {
+                if selectedStatuses.contains(status) {
+                    selectedStatuses.remove(status)
+                } else {
+                    selectedStatuses.insert(status)
+                }
+            }
+        )
+        .opacity(count == 0 && !selectedStatuses.contains(status) ? 0.4 : 1.0)
     }
 
     // MARK: - Empty States

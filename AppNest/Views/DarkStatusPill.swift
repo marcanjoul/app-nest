@@ -95,29 +95,29 @@ struct StatChip: View {
             HStack(spacing: 8) {
                 Image(systemName: style.iconName)
                     .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(style.tintColor)
+                    .foregroundStyle(isSelected ? Color.white : style.tintColor)
 
                 Text("\(number)")
                     .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(isSelected ? Color.white : DarkTheme.textPrimary)
 
                 Text(label)
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(isSelected ? Color.white.opacity(0.88) : DarkTheme.textSecondary)
                     .lineLimit(1)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .background(
                 Capsule()
-                    .fill(isSelected ? AnyShapeStyle(style.tintColor.opacity(0.20)) : AnyShapeStyle(style.fillColor))
+                    .fill(isSelected ? AnyShapeStyle(style.tintColor) : AnyShapeStyle(style.fillColor))
                     .overlay(
                         Capsule().strokeBorder(
-                            isSelected ? style.tintColor.opacity(0.70) : style.borderColor,
-                            lineWidth: isSelected ? 1.5 : 0.8
+                            isSelected ? Color.clear : style.borderColor,
+                            lineWidth: isSelected ? 0 : 0.8
                         )
                     )
-                    .shadow(color: isSelected ? style.tintColor.opacity(0.20) : .clear, radius: 8, y: 3)
+                    .shadow(color: isSelected ? style.tintColor.opacity(0.28) : .clear, radius: 10, y: 3)
             )
         }
         .buttonStyle(.plain)
@@ -181,7 +181,7 @@ struct DarkJobCardView: View {
             }
         }
         .padding(16)
-        .glassCard(cornerRadius: DarkTheme.cardRadius, fillOpacity: 0.8)
+        .glassCard(cornerRadius: DarkTheme.cardRadius)
     }
 
     @ViewBuilder
