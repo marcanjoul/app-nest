@@ -176,6 +176,7 @@ struct EmailParser {
 
         // Strip leading noise that may have leaked into the capture group
         let leadingNoise = ["role of the ", "position of the ", "role of ", "position of ",
+                            "for the ", "for a ", "for an ",
                             "the ", "our ", "a ", "an "]
         for noise in leadingNoise {
             if s.lowercased().hasPrefix(noise) {
@@ -240,7 +241,8 @@ struct EmailParser {
             (.offer, [
                 "pleased to offer", "we'd like to offer", "offer letter",
                 "we are excited to offer", "officially offer", "happy to offer",
-                "extend an offer", "welcome to the team"
+                "extend an offer", "extended an offer", "welcome to the team",
+                "welcome aboard", "offer package", "you have been selected for the"
             ]),
             (.rejected, [
                 "unfortunately", "not moving forward", "will not be moving",
