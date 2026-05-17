@@ -52,11 +52,6 @@ struct ProfileView: View {
         applications.filter { $0.status == .offer }.count
     }
 
-    private var trackingSubtitle: String {
-        if totalCount == 0 { return "Ready to start tracking applications." }
-        return "Tracking \(totalCount) application\(totalCount == 1 ? "" : "s")"
-    }
-
     private var profileInitial: String {
         let trimmed = profileDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let first = trimmed.first else { return "" }
@@ -87,8 +82,8 @@ struct ProfileView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Profile")
-        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.large)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -147,8 +142,6 @@ struct ProfileView: View {
 
     private var identitySection: some View {
         VStack(spacing: 18) {
-            brandMark
-
             PhotosPicker(selection: $avatarSelection, matching: .images) {
                 avatarView
                     .frame(width: 100, height: 100)
@@ -181,33 +174,26 @@ struct ProfileView: View {
                 }
             }
 
-            VStack(spacing: 6) {
-                TextField(
-                    "",
-                    text: $profileDisplayName,
-                    prompt: Text("Add Your Name")
-                        .foregroundColor(.white.opacity(0.55))
-                )
-                .font(.system(size: 26, weight: .heavy, design: .rounded))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.white)
-                .tint(.white)
-                .textInputAutocapitalization(.words)
-                .autocorrectionDisabled()
-                .focused($isNameFocused)
-                .frame(maxWidth: 280)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 4)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(.white.opacity(isNameFocused ? 0.15 : 0))
-                )
-
-                Text(trackingSubtitle)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.85))
-                    .multilineTextAlignment(.center)
-            }
+            TextField(
+                "",
+                text: $profileDisplayName,
+                prompt: Text("Add Your Name")
+                    .foregroundColor(.white.opacity(0.55))
+            )
+            .font(.system(size: 26, weight: .heavy, design: .rounded))
+            .multilineTextAlignment(.center)
+            .foregroundStyle(.white)
+            .tint(.white)
+            .textInputAutocapitalization(.words)
+            .autocorrectionDisabled()
+            .focused($isNameFocused)
+            .frame(maxWidth: 280)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 4)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(.white.opacity(isNameFocused ? 0.15 : 0))
+            )
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 26)
@@ -219,23 +205,6 @@ struct ProfileView: View {
                 .strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
         )
         .shadow(color: Color.accentColor.opacity(0.30), radius: 18, y: 8)
-    }
-
-    private var brandMark: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "leaf.fill")
-                .font(.system(size: 10, weight: .bold))
-            Text("APPNEST")
-                .font(.system(size: 11, weight: .heavy, design: .rounded))
-                .tracking(2.8)
-        }
-        .foregroundStyle(.white.opacity(0.92))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 5)
-        .background(
-            Capsule().fill(.white.opacity(0.16))
-                .overlay(Capsule().strokeBorder(.white.opacity(0.22), lineWidth: 0.8))
-        )
     }
 
     @ViewBuilder
