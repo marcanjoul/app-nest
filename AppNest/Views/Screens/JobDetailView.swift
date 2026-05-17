@@ -10,7 +10,9 @@ struct JobDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss)      private var dismiss
     @Environment(\.openURL)      private var openURL
+    @Environment(AppState.self)  private var appState
     @Query(sort: \ResumeDocument.createdAt, order: .reverse) private var resumes: [ResumeDocument]
+    @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
 
     var job: JobApplication?
 
@@ -376,6 +378,7 @@ struct JobDetailView: View {
 
             updateReminder(for: job, wantsReminder: wantsReminder)
         } else {
+            let selectedCycle = appState.selectedCycleID.flatMap { id in cycles.first { $0.id == id } }
             let newJob = JobApplication(
                 companyName: companyName,
                 companyLogoImageData: companyLogoImageData,
@@ -383,6 +386,7 @@ struct JobDetailView: View {
                 jobType: type,
                 status: status,
                 season: season,
+                cycle: selectedCycle,
                 dateApplied: dateApplied,
                 jobNotes: jobNotes,
                 resumeFileName: resumeFileName,
@@ -841,5 +845,6 @@ private struct JobNotesSection: View {
             dateApplied: Date()
         ))
     }
-    .modelContainer(for: [JobApplication.self, ResumeDocument.self], inMemory: true)
+    .environment(AppState())
+    .modelContainer(for: [JobApplication.self, ResumeDocument.self, JobCycle.self], inMemory: true)
 }

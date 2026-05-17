@@ -22,7 +22,9 @@ enum SortOption: String, CaseIterable {
 
 struct ApplicationView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(AppState.self) private var appState
     @Query(sort: \JobApplication.dateApplied, order: .reverse) private var applications: [JobApplication]
+    @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
 
     @Namespace private var filterNS
 
@@ -34,11 +36,21 @@ struct ApplicationView: View {
     @State private var pendingDeleteJob: JobApplication? = nil
     @State private var undoTask: Task<Void, Never>? = nil
     @State private var toastDragY: CGFloat = 0
+    @State private var isShowingCyclePicker = false
+    @State private var isAddingFirstCycle = false
+    @State private var newCycleName = ""
+
+    // Cycle-filtered base (before search/status)
+    private var cycleFiltered: [JobApplication] {
+        let base = applications.filter { $0 !== pendingDeleteJob }
+        guard let id = appState.selectedCycleID else { return base }
+        return base.filter { $0.cycle?.id == id }
+    }
 
     // Search-only filtered list — used for chip counts so they reflect search but not status filter
     private var searchFiltered: [JobApplication] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let base = applications.filter { $0 !== pendingDeleteJob }
+        let base = cycleFiltered
         guard !query.isEmpty else { return base }
         return base.filter {
             $0.position.lowercased().contains(query) ||
@@ -77,9 +89,11 @@ struct ApplicationView: View {
                     Text("App Nest")
                         .font(.system(size: 40, weight: .bold))
                         .foregroundStyle(DarkTheme.textPrimary)
-                    Text("\(applications.count) application\(applications.count == 1 ? "" : "s")")
+                    Text("\(cycleFiltered.count) application\(cycleFiltered.count == 1 ? "" : "s")")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(DarkTheme.textSecondary)
+                    cycleSelectorChip
+                        .padding(.top, 6)
                 }
                 .opacity(contentAppeared ? 1 : 0)
                 .offset(y: contentAppeared ? 0 : 20)
@@ -107,7 +121,13 @@ struct ApplicationView: View {
                     .listRowSeparator(.hidden)
 
                 // Content
-                if applications.isEmpty {
+                if cycleFiltered.isEmpty && !applications.isEmpty && appState.selectedCycleID != nil {
+                    emptyCycleState
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                } else if applications.isEmpty {
                     emptyState
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
                         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
@@ -236,6 +256,19 @@ struct ApplicationView: View {
         }
         .sheet(isPresented: $isPresentingNewApplication) {
             NavigationStack { JobDetailView(job: nil) }
+        }
+        .sheet(isPresented: $isShowingCyclePicker) {
+            NavigationStack { CyclePickerSheet(isPresented: $isShowingCyclePicker) }
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
+        .alert("New Cycle", isPresented: $isAddingFirstCycle) {
+            TextField("e.g. Summer 2026", text: $newCycleName)
+                .autocorrectionDisabled()
+            Button("Create") { createFirstCycle() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Name this job search cycle.")
         }
     }
 
@@ -418,6 +451,92 @@ struct ApplicationView: View {
         .padding(.vertical, 60)
     }
 
+    // MARK: - Cycle Selector
+
+    @ViewBuilder
+    private var cycleSelectorChip: some View {
+        if cycles.isEmpty {
+            Button {
+                newCycleName = ""
+                isAddingFirstCycle = true
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("Start a job cycle")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                .foregroundStyle(Color.accentColor)
+                .padding(.horizontal, 11)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(Color.accentColor.opacity(0.11))
+                        .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.25), lineWidth: 1))
+                )
+            }
+            .buttonStyle(.plain)
+        } else {
+            Button { isShowingCyclePicker = true } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: appState.selectedCycleID != nil ? "tray.fill" : "tray.2.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                    Group {
+                        if let id = appState.selectedCycleID,
+                           let cycle = cycles.first(where: { $0.id == id }) {
+                            Text(cycle.name)
+                        } else {
+                            Text("All Applications")
+                        }
+                    }
+                    .font(.system(size: 12, weight: .semibold))
+                    .lineLimit(1)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9, weight: .bold))
+                }
+                .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : DarkTheme.textSecondary)
+                .padding(.horizontal, 11)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.11) : Color.primary.opacity(0.07))
+                        .overlay(Capsule().strokeBorder(
+                            appState.selectedCycleID != nil ? Color.accentColor.opacity(0.28) : Color.primary.opacity(0.08),
+                            lineWidth: 1
+                        ))
+                )
+            }
+            .buttonStyle(.plain)
+            .animation(.appCrisp, value: appState.selectedCycleID)
+        }
+    }
+
+    private var emptyCycleState: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "tray.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(DarkTheme.textSecondary.opacity(0.5))
+            Text("No applications in this cycle")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(DarkTheme.textPrimary)
+            Text("Add applications or switch to a different cycle.")
+                .font(.subheadline)
+                .foregroundStyle(DarkTheme.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 60)
+    }
+
+    private func createFirstCycle() {
+        let trimmed = newCycleName.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        let cycle = JobCycle(name: trimmed)
+        modelContext.insert(cycle)
+        appState.selectedCycleID = cycle.id
+        AppHaptics.shared.success()
+    }
+
     // MARK: - Delete with Undo
 
     private func scheduleDelete(_ job: JobApplication) {
@@ -581,7 +700,7 @@ private struct JobCardSwipeRow: View {
 
 #Preview {
     let container = try! ModelContainer(
-        for: JobApplication.self, ResumeDocument.self,
+        for: JobApplication.self, ResumeDocument.self, JobCycle.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     let ctx = container.mainContext
@@ -601,5 +720,7 @@ private struct JobCardSwipeRow: View {
             dateApplied: Date().addingTimeInterval(-86_400 * Double(days))
         ))
     }
-    return NavigationStack { ApplicationView() }.modelContainer(container)
+    return NavigationStack { ApplicationView() }
+        .environment(AppState())
+        .modelContainer(container)
 }

@@ -8,11 +8,18 @@ import UIKit
 /// stats about the user's applications: KPI summary, status breakdown,
 /// conversion funnel, and top companies.
 struct ProfileStatsView: View {
+    @Environment(AppState.self) private var appState
     @Query(sort: \JobApplication.dateApplied, order: .reverse) private var applications: [JobApplication]
+    @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
+
+    private var displayedApplications: [JobApplication] {
+        guard let id = appState.selectedCycleID else { return applications }
+        return applications.filter { $0.cycle?.id == id }
+    }
 
     // MARK: - Computed metrics
 
-    private var totalCount: Int { applications.count }
+    private var totalCount: Int { displayedApplications.count }
     private var appliedCount: Int { count(for: .applied) }
     private var interviewCount: Int { count(for: .interview) }
     private var offerCount: Int { count(for: .offer) }
@@ -36,7 +43,7 @@ struct ProfileStatsView: View {
     }
 
     private var topCompanies: [(name: String, count: Int, sample: JobApplication?)] {
-        Dictionary(grouping: applications, by: { $0.companyName })
+        Dictionary(grouping: displayedApplications, by: { $0.companyName })
             .map { (name: $0.key, count: $0.value.count, sample: $0.value.first) }
             .sorted { lhs, rhs in
                 if lhs.count == rhs.count { return lhs.name < rhs.name }
@@ -53,7 +60,7 @@ struct ProfileStatsView: View {
             AmbientBackground()
 
             ScrollView {
-                if applications.isEmpty {
+                if displayedApplications.isEmpty {
                     emptyState
                         .padding(.top, 60)
                         .padding(.horizontal, 24)
@@ -234,7 +241,7 @@ struct ProfileStatsView: View {
     // MARK: - Helpers
 
     private func count(for status: ApplicationStatus) -> Int {
-        applications.filter { $0.status == status }.count
+        displayedApplications.filter { $0.status == status }.count
     }
 }
 
@@ -435,5 +442,6 @@ private struct TopCompanyRow: View {
     NavigationStack {
         ProfileStatsView()
     }
-    .modelContainer(for: [JobApplication.self, ResumeDocument.self], inMemory: true)
+    .environment(AppState())
+    .modelContainer(for: [JobApplication.self, ResumeDocument.self, JobCycle.self], inMemory: true)
 }

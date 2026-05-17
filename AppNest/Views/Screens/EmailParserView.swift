@@ -4,7 +4,9 @@ import SwiftData
 struct EmailParserView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(AppState.self) private var appState
     @Query(sort: \ResumeDocument.createdAt, order: .reverse) private var resumes: [ResumeDocument]
+    @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
 
     // Input state
     @State private var emailText        = ""
@@ -402,6 +404,7 @@ struct EmailParserView: View {
 
     private func saveApplication() {
         let attached = defaultResume
+        let selectedCycle = appState.selectedCycleID.flatMap { id in cycles.first { $0.id == id } }
         modelContext.insert(JobApplication(
             companyName: editCompany.isEmpty  ? "Unknown Company"  : editCompany,
             companyLogoImageData: fetchedLogoData,
@@ -409,6 +412,7 @@ struct EmailParserView: View {
             jobType:     editJobType,
             status:      editStatus,
             season:      editSeason,
+            cycle:       selectedCycle,
             dateApplied: editDate,
             resumeFileName: attached?.fileName,
             resumeBookmark: attached?.bookmark,

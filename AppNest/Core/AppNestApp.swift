@@ -4,7 +4,8 @@ import SwiftData
 @main
 struct AppNestApp: App {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    
+    @State private var appState = AppState()
+
     var body: some Scene {
         WindowGroup {
             Group {
@@ -14,8 +15,9 @@ struct AppNestApp: App {
                     OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
                 }
             }
+            .environment(appState)
             .fontDesign(.rounded)
         }
-        .modelContainer(for: [JobApplication.self, ResumeDocument.self])
+        .modelContainer(for: [JobApplication.self, ResumeDocument.self, JobCycle.self])
     }
 }

@@ -118,6 +118,9 @@ class JobApplication {
     
     /// Season when the position is expected to start.
     var season: ApplicationSeason?
+
+    /// The job search cycle this application belongs to (optional).
+    var cycle: JobCycle?
     
     /// Date the application was submitted.
     var dateApplied: Date
@@ -174,6 +177,7 @@ class JobApplication {
         jobType: ApplicationType? = nil,
         status: ApplicationStatus? = .applied,
         season: ApplicationSeason? = nil,
+        cycle: JobCycle? = nil,
         dateApplied: Date = Date(),
         jobNotes: String? = nil,
         resumeFileName: String? = nil,
@@ -192,6 +196,7 @@ class JobApplication {
         self.jobType = jobType
         self.status = status
         self.season = season
+        self.cycle = cycle
         self.dateApplied = dateApplied
         self.jobNotes = jobNotes
         self.resumeFileName = resumeFileName

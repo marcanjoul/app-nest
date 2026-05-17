@@ -11,8 +11,10 @@ struct ProfileView: View {
     private static let avatarStorageKey      = "profile.avatarDataBase64"
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(AppState.self) private var appState
     @Query(sort: \JobApplication.dateApplied, order: .reverse) private var applications: [JobApplication]
     @Query(sort: \ResumeDocument.createdAt, order: .reverse) private var resumes: [ResumeDocument]
+    @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
 
     @AppStorage(Self.displayNameStorageKey) private var profileDisplayName: String = ""
     @AppStorage(Self.avatarStorageKey)      private var profileAvatarDataBase64: String = ""
@@ -23,10 +25,16 @@ struct ProfileView: View {
     @State private var csvFileURL: URL?        = nil
     @State private var resumePendingDeletion: ResumeDocument?
     @State private var isShowingResumeManager  = false
+    @State private var isShowingCyclePicker    = false
 
     @FocusState private var isNameFocused: Bool
 
     // MARK: - Derived
+
+    private var cycleFilteredApplications: [JobApplication] {
+        guard let id = appState.selectedCycleID else { return applications }
+        return applications.filter { $0.cycle?.id == id }
+    }
 
     private var orderedResumes: [ResumeDocument] {
         guard let def = resumes.first(where: \.isDefault) else { return resumes }
@@ -40,7 +48,7 @@ struct ProfileView: View {
         return Data(base64Encoded: profileAvatarDataBase64)
     }
 
-    private var totalCount: Int { applications.count }
+    private var totalCount: Int { cycleFilteredApplications.count }
 
     private var profileInitial: String {
         let trimmed = profileDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -58,7 +66,7 @@ struct ProfileView: View {
     private let pipelineStatuses: [ApplicationStatus] = [.toApply, .applied, .interview, .offer, .rejected]
 
     private func count(for status: ApplicationStatus) -> Int {
-        applications.filter { $0.status == status }.count
+        cycleFilteredApplications.filter { $0.status == status }.count
     }
 
     private func pipelineLabel(for status: ApplicationStatus) -> String {
@@ -142,6 +150,11 @@ struct ProfileView: View {
                 onUpload: { isShowingDocumentPicker = true }
             )
         }
+        .sheet(isPresented: $isShowingCyclePicker) {
+            NavigationStack { CyclePickerSheet(isPresented: $isShowingCyclePicker) }
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
         .onChange(of: avatarSelection) { _, newValue in
             guard let newValue else { return }
             Task { await updateProfileAvatar(from: newValue) }
@@ -182,7 +195,7 @@ struct ProfileView: View {
                 }
             }
 
-            VStack(spacing: 6) {
+            VStack(spacing: 8) {
                 TextField(
                     "",
                     text: $profileDisplayName,
@@ -196,6 +209,10 @@ struct ProfileView: View {
                 .autocorrectionDisabled()
                 .focused($isNameFocused)
                 .frame(maxWidth: 260)
+
+                if !cycles.isEmpty {
+                    profileCycleChip
+                }
 
                 Text("\(totalCount) application\(totalCount == 1 ? "" : "s")")
                     .font(.system(size: 13, weight: .medium))
@@ -237,6 +254,42 @@ struct ProfileView: View {
                     .foregroundStyle(.white)
             }
         }
+    }
+
+    // MARK: - Cycle chip
+
+    private var profileCycleChip: some View {
+        Button { isShowingCyclePicker = true } label: {
+            HStack(spacing: 5) {
+                Image(systemName: appState.selectedCycleID != nil ? "tray.fill" : "tray.2.fill")
+                    .font(.system(size: 10, weight: .semibold))
+                Group {
+                    if let id = appState.selectedCycleID,
+                       let cycle = cycles.first(where: { $0.id == id }) {
+                        Text(cycle.name)
+                    } else {
+                        Text("All Applications")
+                    }
+                }
+                .font(.system(size: 12, weight: .semibold))
+                .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .bold))
+            }
+            .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : DarkTheme.textSecondary)
+            .padding(.horizontal, 11)
+            .padding(.vertical, 6)
+            .background(
+                Capsule()
+                    .fill(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.11) : Color.primary.opacity(0.07))
+                    .overlay(Capsule().strokeBorder(
+                        appState.selectedCycleID != nil ? Color.accentColor.opacity(0.28) : Color.primary.opacity(0.08),
+                        lineWidth: 1
+                    ))
+            )
+        }
+        .buttonStyle(.plain)
+        .animation(.appCrisp, value: appState.selectedCycleID)
     }
 
     // MARK: - Pipeline
@@ -367,19 +420,20 @@ struct ProfileView: View {
     // MARK: - Export row
 
     private var exportRow: some View {
-        Button { exportCSV() } label: {
+        let empty = cycleFilteredApplications.isEmpty
+        return Button { exportCSV() } label: {
             HStack(spacing: 14) {
                 Image(systemName: "square.and.arrow.up")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(applications.isEmpty ? DarkTheme.textTertiary : Color.accentColor)
+                    .foregroundStyle(empty ? DarkTheme.textTertiary : Color.accentColor)
                     .frame(width: 32, height: 32)
                     .background(Circle().fill(
-                        applications.isEmpty ? Color.primary.opacity(0.06) : Color.accentColor.opacity(0.12)
+                        empty ? Color.primary.opacity(0.06) : Color.accentColor.opacity(0.12)
                     ))
 
                 Text("Export as CSV")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(applications.isEmpty ? DarkTheme.textSecondary : DarkTheme.textPrimary)
+                    .foregroundStyle(empty ? DarkTheme.textSecondary : DarkTheme.textPrimary)
 
                 Spacer()
 
@@ -399,8 +453,8 @@ struct ProfileView: View {
             }
         }
         .buttonStyle(.plain)
-        .disabled(applications.isEmpty)
-        .opacity(applications.isEmpty ? 0.45 : 1)
+        .disabled(empty)
+        .opacity(empty ? 0.45 : 1)
     }
 
     // MARK: - Helpers
@@ -458,7 +512,7 @@ struct ProfileView: View {
         dateFormatter.dateFormat = "yyyy-MM-dd"
 
         let header = "Company,Position,Type,Status,Season,Date Applied,Compensation,Currency,Resume,Notes\n"
-        let rows = applications
+        let rows = cycleFilteredApplications
             .sorted { $0.dateApplied > $1.dateApplied }
             .map { app -> String in
                 let compensation: String = {
@@ -673,5 +727,6 @@ private struct ShareSheet: UIViewControllerRepresentable {
 
 #Preview {
     NavigationStack { ProfileView() }
-        .modelContainer(for: [JobApplication.self, ResumeDocument.self], inMemory: true)
+        .environment(AppState())
+        .modelContainer(for: [JobApplication.self, ResumeDocument.self, JobCycle.self], inMemory: true)
 }

@@ -37,7 +37,7 @@ struct RootView: View {
 
 #Preview {
     let container = try! ModelContainer(
-        for: JobApplication.self, ResumeDocument.self,
+        for: JobApplication.self, ResumeDocument.self, JobCycle.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     let ctx = container.mainContext
@@ -55,5 +55,7 @@ struct RootView: View {
             dateApplied: Date().addingTimeInterval(-86_400 * Double(days))
         ))
     }
-    return RootView().modelContainer(container)
+    return RootView()
+        .environment(AppState())
+        .modelContainer(container)
 }
