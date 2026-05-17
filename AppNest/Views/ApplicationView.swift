@@ -31,12 +31,15 @@ struct ApplicationView: View {
     @State private var selectedStatuses: Set<ApplicationStatus> = []
     @State private var sortOption: SortOption = .dateNewest
     @State private var contentAppeared = false
+    @State private var pendingDeleteJob: JobApplication? = nil
+    @State private var undoTask: Task<Void, Never>? = nil
 
     // Search-only filtered list — used for chip counts so they reflect search but not status filter
     private var searchFiltered: [JobApplication] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !query.isEmpty else { return applications }
-        return applications.filter {
+        let base = applications.filter { $0 !== pendingDeleteJob }
+        guard !query.isEmpty else { return base }
+        return base.filter {
             $0.position.lowercased().contains(query) ||
             $0.companyName.lowercased().contains(query) ||
             ($0.jobType?.rawValue.lowercased().contains(query) ?? false)
@@ -117,7 +120,7 @@ struct ApplicationView: View {
                         .listRowSeparator(.hidden)
                 } else {
                     ForEach(filteredAndSorted) { job in
-                        JobCardSwipeRow(job: job)
+                        JobCardSwipeRow(job: job, onDelete: { scheduleDelete(job) })
                             .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
@@ -161,7 +164,43 @@ struct ApplicationView: View {
                     .padding(.bottom, 20)
                 }
             }
+
+            // Undo delete toast
+            if pendingDeleteJob != nil {
+                VStack {
+                    Spacer()
+                    HStack(spacing: 12) {
+                        Image(systemName: "trash.fill")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color(red: 0.93, green: 0.38, blue: 0.44))
+                        Text("Application deleted")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(DarkTheme.textPrimary)
+                        Spacer()
+                        Button("Undo") {
+                            undoDelete()
+                        }
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(Color.accentColor)
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(DarkTheme.cardFill)
+                            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .strokeBorder(DarkTheme.cardBorder, lineWidth: 1))
+                    )
+                    .shadow(color: .black.opacity(0.14), radius: 12, y: 4)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 90)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                .allowsHitTesting(true)
+            }
         }
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: pendingDeleteJob != nil)
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             contentAppeared = true
@@ -217,25 +256,28 @@ struct ApplicationView: View {
                     }
                 }
             } label: {
-                VStack(spacing: 2) {
-                    Image(systemName: "arrow.up.arrow.down")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(sortOption == .dateNewest ? DarkTheme.textPrimary : Color.accentColor)
-                    if sortOption != .dateNewest {
-                        Text(sortOption.shortLabel)
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(Color.accentColor)
+                Image(systemName: "arrow.up.arrow.down")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(sortOption == .dateNewest ? DarkTheme.textPrimary : Color.accentColor)
+                    .frame(width: 44, height: 44)
+                    .background {
+                        Circle()
+                            .fill(DarkTheme.cardFill)
+                            .overlay(Circle().strokeBorder(
+                                sortOption == .dateNewest ? Color.primary.opacity(0.08) : Color.accentColor.opacity(0.35),
+                                lineWidth: sortOption == .dateNewest ? 1 : 1.5
+                            ))
                     }
-                }
-                .frame(width: 44, height: 44)
-                .background {
-                    Circle()
-                        .fill(DarkTheme.cardFill)
-                        .overlay(Circle().strokeBorder(
-                            sortOption == .dateNewest ? Color.primary.opacity(0.08) : Color.accentColor.opacity(0.35),
-                            lineWidth: sortOption == .dateNewest ? 1 : 1.5
-                        ))
-                }
+                    .overlay(alignment: .topTrailing) {
+                        if sortOption != .dateNewest {
+                            Circle()
+                                .fill(Color.accentColor)
+                                .frame(width: 7, height: 7)
+                                .padding(9)
+                                .transition(.scale.combined(with: .opacity))
+                        }
+                    }
+                    .animation(.spring(response: 0.25, dampingFraction: 0.8), value: sortOption)
             }
         }
         .padding(.horizontal, 20)
@@ -346,6 +388,34 @@ struct ApplicationView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 60)
     }
+
+    // MARK: - Delete with Undo
+
+    private func scheduleDelete(_ job: JobApplication) {
+        withAnimation {
+            pendingDeleteJob = job
+        }
+        undoTask?.cancel()
+        undoTask = Task {
+            do { try await Task.sleep(for: .seconds(4)) } catch { return }
+            await MainActor.run {
+                modelContext.delete(job)
+                withAnimation { pendingDeleteJob = nil }
+            }
+        }
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        #endif
+    }
+
+    private func undoDelete() {
+        undoTask?.cancel()
+        undoTask = nil
+        withAnimation { pendingDeleteJob = nil }
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        #endif
+    }
 }
 
 private struct FABStyle: ButtonStyle {
@@ -360,8 +430,8 @@ private struct FABStyle: ButtonStyle {
 
 private struct JobCardSwipeRow: View {
     let job: JobApplication
+    let onDelete: () -> Void
 
-    @Environment(\.modelContext) private var modelContext
     @GestureState private var dragOffset: CGFloat = 0
 
     private let advanceThresholds: [CGFloat] = [65, 130, 200]
@@ -413,10 +483,7 @@ private struct JobCardSwipeRow: View {
                         }
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     } else if dx < -deleteThreshold {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                            modelContext.delete(job)
-                        }
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        onDelete()
                     }
                 }
         )
