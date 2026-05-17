@@ -88,7 +88,7 @@ struct JobInfoSection: View {
                                 )
                             )
                         Text(logoInitial)
-                            .font(.system(size: 32, weight: .heavy, design: .rounded))
+                            .font(.system(size: 40, weight: .heavy, design: .rounded))
                             .foregroundStyle(.white)
                     }
                     .opacity(hasLogo ? 0 : 1)
@@ -107,7 +107,7 @@ struct JobInfoSection: View {
                             )
                     }
                 }
-                .frame(width: 80, height: 80)
+                .frame(width: 100, height: 100)
                 .clipShape(Circle())
                 .overlay(
                     Circle()
