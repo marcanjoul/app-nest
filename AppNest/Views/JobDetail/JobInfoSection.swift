@@ -15,6 +15,9 @@ struct JobInfoSection: View {
 
     private enum Field: Hashable { case position, company }
     @FocusState private var focused: Field?
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var isFetchingLogo = false
+    @State private var isLogoAutoFetched = false
 
     private static let tintPalette: [Color] = [
         Color(red: 0.36, green: 0.66, blue: 0.96),
@@ -114,13 +117,22 @@ struct JobInfoSection: View {
                         Circle()
                             .fill(Color(UIColor.systemBackground))
                             .frame(width: 24, height: 24)
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 20, height: 20)
-                            .background(Circle().fill(accentTint))
+                        if isFetchingLogo {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .scaleEffect(0.65)
+                                .frame(width: 20, height: 20)
+                                .background(Circle().fill(accentTint.opacity(0.85)))
+                        } else {
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 20, height: 20)
+                                .background(Circle().fill(accentTint))
+                        }
                     }
                     .offset(x: 2, y: 2)
+                    .animation(.easeInOut(duration: 0.2), value: isFetchingLogo)
                 }
             }
             .onChange(of: pickerItem) { _, newValue in
@@ -128,15 +140,36 @@ struct JobInfoSection: View {
                 Task {
                     if let data = try? await item.loadTransferable(type: Data.self) {
                         companyLogoImageData = data
+                        isLogoAutoFetched = false
                     }
                 }
             }
             .contextMenu {
                 if companyLogoImageData != nil {
-                    Button(role: .destructive) { companyLogoImageData = nil } label: {
-                        Label("Remove Custom Logo", systemImage: "trash")
+                    Button(role: .destructive) {
+                        companyLogoImageData = nil
+                        isLogoAutoFetched = false
+                    } label: {
+                        Label("Remove Logo", systemImage: "trash")
                     }
                 }
+            }
+            .task(id: companyName) {
+                if isLogoAutoFetched {
+                    companyLogoImageData = nil
+                    isLogoAutoFetched = false
+                }
+                guard companyLogoImageData == nil else { return }
+                let trimmed = companyName.trimmingCharacters(in: .whitespaces)
+                guard trimmed.count >= 2 else { isFetchingLogo = false; return }
+                do { try await Task.sleep(for: .milliseconds(600)) } catch { return }
+                guard !Task.isCancelled else { return }
+                isFetchingLogo = true
+                if let data = await LogoFetcher.fetchLogoData(for: trimmed, darkMode: colorScheme == .dark) {
+                    companyLogoImageData = data
+                    isLogoAutoFetched = true
+                }
+                isFetchingLogo = false
             }
 
             VStack(spacing: 6) {

@@ -3,6 +3,7 @@ import SwiftData
 
 struct EmailParserView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @Query(sort: \ResumeDocument.createdAt, order: .reverse) private var resumes: [ResumeDocument]
 
     // Input state
@@ -24,6 +25,7 @@ struct EmailParserView: View {
     @State private var parseCount      = 0
     @State private var saveSuccess     = false
     @State private var scrollToResults = false
+    @State private var fetchedLogoData: Data? = nil
 
     private let parser = EmailParser()
 
@@ -81,6 +83,14 @@ struct EmailParserView: View {
             withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.1)) {
                 cardAppeared = true
             }
+        }
+        .task(id: editCompany) {
+            fetchedLogoData = nil
+            let trimmed = editCompany.trimmingCharacters(in: .whitespaces)
+            guard trimmed.count >= 2 else { return }
+            do { try await Task.sleep(for: .milliseconds(600)) } catch { return }
+            guard !Task.isCancelled else { return }
+            fetchedLogoData = await LogoFetcher.fetchLogoData(for: trimmed, darkMode: colorScheme == .dark)
         }
     }
 
@@ -332,7 +342,8 @@ struct EmailParserView: View {
             dateApplied: editDate,
             resumeFileName: attached?.fileName,
             resumeBookmark: attached?.bookmark,
-            resumeID: attached?.id
+            resumeID: attached?.id,
+            companyLogoImageData: fetchedLogoData
         ))
         #if canImport(UIKit)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
@@ -351,6 +362,7 @@ struct EmailParserView: View {
                 editStatus      = .applied
                 editDate        = Date()
                 isEmailExpanded = true
+                fetchedLogoData = nil
             }
         }
     }

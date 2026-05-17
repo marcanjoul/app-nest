@@ -13,3 +13,4 @@ build/
 skills-lock.json
 .agents/skills/
 PRODUCT.md
+AppNest/APIKeys.swift
