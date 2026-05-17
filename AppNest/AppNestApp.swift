@@ -7,11 +7,14 @@ struct AppNestApp: App {
     
     var body: some Scene {
         WindowGroup {
-            if hasCompletedOnboarding {
-                RootView()
-            } else {
-                OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
+            Group {
+                if hasCompletedOnboarding {
+                    RootView()
+                } else {
+                    OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
+                }
             }
+            .fontDesign(.rounded)
         }
         .modelContainer(for: [JobApplication.self, ResumeDocument.self])
     }

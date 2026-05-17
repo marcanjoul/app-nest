@@ -67,7 +67,7 @@ struct ApplicationView: View {
                 // Header
                 VStack(alignment: .leading, spacing: 2) {
                     Text("App Nest")
-                        .font(.system(size: 40, weight: .bold, design: .default))
+                        .font(.system(size: 40, weight: .bold))
                         .foregroundStyle(DarkTheme.textPrimary)
                     Text("\(applications.count) application\(applications.count == 1 ? "" : "s")")
                         .font(.system(size: 13, weight: .medium))

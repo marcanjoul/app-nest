@@ -264,6 +264,10 @@ struct JobDetailView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             saveBar
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            floatingNavBar
+        }
+        .toolbar(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -277,40 +281,6 @@ struct JobDetailView: View {
                 }
                 .accessibilityLabel("Dismiss keyboard")
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button { isShowingLogoAttribution.toggle() } label: {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
-                .popover(isPresented: $isShowingLogoAttribution, arrowEdge: .top) {
-                    HStack(spacing: 4) {
-                        Text("Company logos from")
-                            .foregroundStyle(.secondary)
-                        Link("Logo.dev", destination: URL(string: "https://logo.dev")!)
-                    }
-                    .font(.footnote)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .presentationCompactAdaptation(.popover)
-                }
-                .accessibilityLabel("Logo attribution")
-            }
-            if isNewApplication {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
-                }
-            } else {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(role: .destructive) {
-                        isShowingDeleteConfirmation = true
-                    } label: {
-                        Image(systemName: "trash")
-                            .foregroundStyle(Color.red)
-                    }
-                    .accessibilityLabel("Delete application")
-                }
-            }
         }
         .confirmationDialog(
             "Delete this application?",
@@ -322,8 +292,75 @@ struct JobDetailView: View {
         } message: {
             Text("This will permanently remove the job and cancel any pending reminders.")
         }
-        .navigationTitle(isNewApplication ? "New Application" : "Job Details")
-        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    // MARK: - Floating Nav Bar
+
+    private var floatingNavBar: some View {
+        HStack(spacing: 10) {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: isNewApplication ? "xmark" : "chevron.left")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(DarkTheme.textPrimary)
+                    .frame(width: 40, height: 40)
+                    .background {
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                            .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                    }
+            }
+            .buttonStyle(PressScaleButtonStyle())
+            .accessibilityLabel(isNewApplication ? "Cancel" : "Back")
+
+            Spacer()
+
+            HStack(spacing: 10) {
+                Button { isShowingLogoAttribution.toggle() } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(DarkTheme.textSecondary)
+                        .frame(width: 40, height: 40)
+                        .background {
+                            Circle()
+                                .fill(.ultraThinMaterial)
+                                .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                        }
+                }
+                .buttonStyle(PressScaleButtonStyle())
+                .popover(isPresented: $isShowingLogoAttribution, arrowEdge: .top) {
+                    HStack(spacing: 4) {
+                        Text("Company logos from").foregroundStyle(.secondary)
+                        Link("Logo.dev", destination: URL(string: "https://logo.dev")!)
+                    }
+                    .font(.footnote)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .presentationCompactAdaptation(.popover)
+                }
+                .accessibilityLabel("Logo attribution")
+
+                if !isNewApplication {
+                    Button { isShowingDeleteConfirmation = true } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(Color(red: 0.93, green: 0.38, blue: 0.44))
+                            .frame(width: 40, height: 40)
+                            .background {
+                                Circle()
+                                    .fill(Color(red: 0.93, green: 0.38, blue: 0.44).opacity(0.10))
+                                    .overlay(Circle().strokeBorder(Color(red: 0.93, green: 0.38, blue: 0.44).opacity(0.22), lineWidth: 1))
+                            }
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
+                    .accessibilityLabel("Delete application")
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
     }
 
     // MARK: - Save

@@ -102,8 +102,15 @@ struct OnboardingView: View {
                     Button("Skip") {
                         hasCompletedOnboarding = true
                     }
-                    .font(.subheadline)
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(DarkTheme.textSecondary)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 11)
+                    .background(
+                        Capsule()
+                            .fill(.ultraThinMaterial)
+                            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+                    )
                     .padding(.top, 12)
                     .padding(.bottom, 32)
                 } else {
