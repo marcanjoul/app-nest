@@ -9,6 +9,7 @@ import UIKit
 struct JobDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss)      private var dismiss
+    @Environment(\.openURL)      private var openURL
     @Query(sort: \ResumeDocument.createdAt, order: .reverse) private var resumes: [ResumeDocument]
 
     var job: JobApplication?
@@ -274,6 +275,16 @@ struct JobDetailView: View {
                         .font(.system(size: 14, weight: .semibold))
                 }
                 .accessibilityLabel("Dismiss keyboard")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    openURL(URL(string: "https://logo.dev")!)
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityLabel("Logos provided by Logo.dev")
             }
             if isNewApplication {
                 ToolbarItem(placement: .topBarLeading) {

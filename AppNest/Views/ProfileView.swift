@@ -440,17 +440,6 @@ struct ProfileView: View {
                 Spacer()
             }
 
-            Link(destination: URL(string: "https://logo.dev")!) {
-                HStack(spacing: 6) {
-                    Image(systemName: "photo.on.rectangle.angled")
-                        .font(.system(size: 11, weight: .semibold))
-                    Text("Company logos by Logo.dev")
-                        .font(.system(size: 12, weight: .medium))
-                }
-                .foregroundStyle(DarkTheme.textTertiary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
             Button { exportCSV() } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "tablecells")
