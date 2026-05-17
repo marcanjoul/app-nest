@@ -74,7 +74,7 @@ struct ProfileStatsView: View {
         }
         .navigationTitle("Insights")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbarBackground(Color(UIColor.systemBackground), for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
     }
 
@@ -270,12 +270,7 @@ private struct StatsKPITile: View {
         .padding(14)
         .background {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [tint.opacity(0.18), tint.opacity(0.06)],
-                        startPoint: .topLeading, endPoint: .bottomTrailing
-                    )
-                )
+                .fill(tint.opacity(0.12))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .strokeBorder(tint.opacity(0.28), lineWidth: 0.8)
@@ -365,12 +360,7 @@ private struct FunnelRow: View {
                     Capsule()
                         .fill(Color.primary.opacity(0.06))
                     Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: [tint, tint.opacity(0.72)],
-                                startPoint: .leading, endPoint: .trailing
-                            )
-                        )
+                        .fill(tint)
                         .frame(width: max(4, geo.size.width * clampedProgress))
                 }
             }

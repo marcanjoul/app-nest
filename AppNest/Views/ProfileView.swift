@@ -83,7 +83,7 @@ struct ProfileView: View {
         .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.large)
-        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbarBackground(Color(UIColor.systemBackground), for: .navigationBar)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -210,19 +210,7 @@ struct ProfileView: View {
     @ViewBuilder
     private var heroBackground: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color.accentColor,
-                    Color.accentColor.opacity(0.78)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            LinearGradient(
-                colors: [.white.opacity(0.20), .clear],
-                startPoint: .top,
-                endPoint: .center
-            )
+            Color.accentColor
             Circle()
                 .fill(.white.opacity(0.07))
                 .frame(width: 240, height: 240)
@@ -252,14 +240,7 @@ struct ProfileView: View {
     @ViewBuilder
     private var initialAvatar: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color.white.opacity(0.32),
-                    Color.white.opacity(0.10)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            Color.white.opacity(0.18)
             if profileInitial.isEmpty {
                 Image(systemName: "person.fill")
                     .font(.system(size: 38, weight: .bold))
@@ -292,16 +273,7 @@ struct ProfileView: View {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("\(totalCount)")
                         .font(.system(size: 48, weight: .heavy, design: .rounded))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [
-                                    Color.accentColor,
-                                    Color.accentColor.opacity(0.65)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .foregroundStyle(Color.accentColor)
                     Text(totalCount == 1 ? "Application" : "Applications")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(DarkTheme.textSecondary)
@@ -326,18 +298,7 @@ struct ProfileView: View {
             .padding(18)
             .background {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .overlay {
-                        LinearGradient(
-                            colors: [
-                                Color.accentColor.opacity(0.14),
-                                Color.clear
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                    }
+                    .fill(DarkTheme.cardFill)
                     .overlay {
                         RoundedRectangle(cornerRadius: 20, style: .continuous)
                             .strokeBorder(Color.accentColor.opacity(0.22), lineWidth: 1)

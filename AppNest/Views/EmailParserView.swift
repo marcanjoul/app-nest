@@ -67,7 +67,7 @@ struct EmailParserView: View {
         }
         .navigationTitle("Parse Email")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbarBackground(Color(UIColor.systemBackground), for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -203,13 +203,6 @@ struct EmailParserView: View {
                     .background {
                         Capsule()
                             .fill(isParseDisabled ? Color.secondary.opacity(0.3) : Color.accentColor)
-                            .overlay {
-                                LinearGradient(
-                                    colors: [Color.white.opacity(0.20), Color.clear],
-                                    startPoint: .top, endPoint: .center
-                                )
-                                .clipShape(Capsule())
-                            }
                             .shadow(color: isParseDisabled ? .clear : Color.accentColor.opacity(0.27), radius: 10, y: 3)
                     }
                 }
@@ -287,13 +280,6 @@ struct EmailParserView: View {
                                  : Color.accentColor
                     Capsule()
                         .fill(c)
-                        .overlay {
-                            LinearGradient(
-                                colors: [Color.white.opacity(0.20), Color.clear],
-                                startPoint: .top, endPoint: .center
-                            )
-                            .clipShape(Capsule())
-                        }
                         .shadow(color: isSaveDisabled ? .clear : c.opacity(0.27), radius: 10, y: 3)
                 }
                 .animation(.spring(response: 0.3, dampingFraction: 0.8), value: saveSuccess)

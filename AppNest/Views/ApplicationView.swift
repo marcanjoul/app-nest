@@ -26,7 +26,7 @@ struct ApplicationView: View {
 
     @State private var searchText: String = ""
     @State private var isPresentingNewApplication = false
-    @State private var selectedStatus: ApplicationStatus? = nil
+    @State private var selectedStatuses: Set<ApplicationStatus> = []
     @State private var sortOption: SortOption = .dateNewest
     @State private var contentAppeared = false
 
@@ -44,8 +44,10 @@ struct ApplicationView: View {
     private var filteredAndSorted: [JobApplication] {
         var result = searchFiltered
 
-        if let status = selectedStatus {
-            result = result.filter { $0.status == status }
+        if !selectedStatuses.isEmpty {
+            result = result.filter { job in
+                job.status.map { selectedStatuses.contains($0) } ?? false
+            }
         }
 
         switch sortOption {
@@ -146,13 +148,6 @@ struct ApplicationView: View {
                             .background {
                                 Capsule()
                                     .fill(Color.accentColor)
-                                    .overlay {
-                                        LinearGradient(
-                                            colors: [Color.white.opacity(0.25), Color.clear],
-                                            startPoint: .top, endPoint: .center
-                                        )
-                                        .clipShape(Capsule())
-                                    }
                                     .shadow(color: Color.accentColor.opacity(0.30), radius: 14, y: 5)
                             }
                     }
@@ -199,7 +194,7 @@ struct ApplicationView: View {
             .padding(.vertical, 12)
             .background {
                 Capsule()
-                    .fill(.ultraThinMaterial)
+                    .fill(DarkTheme.cardFill)
                     .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
             }
 
@@ -229,7 +224,7 @@ struct ApplicationView: View {
                 .frame(width: 44, height: 44)
                 .background {
                     Circle()
-                        .fill(.ultraThinMaterial)
+                        .fill(DarkTheme.cardFill)
                         .overlay(Circle().strokeBorder(
                             sortOption == .dateNewest ? Color.primary.opacity(0.08) : Color.accentColor.opacity(0.35),
                             lineWidth: sortOption == .dateNewest ? 1 : 1.5
@@ -244,10 +239,8 @@ struct ApplicationView: View {
 
     private var orderedFilterStatuses: [ApplicationStatus] {
         let base: [ApplicationStatus] = [.toApply, .applied, .interview, .offer, .rejected]
-        if let selected = selectedStatus, base.contains(selected) {
-            return [selected] + base.filter { $0 != selected }
-        }
-        return base
+        guard !selectedStatuses.isEmpty else { return base }
+        return base.filter { selectedStatuses.contains($0) } + base.filter { !selectedStatuses.contains($0) }
     }
 
     private var statsSection: some View {
@@ -259,21 +252,25 @@ struct ApplicationView: View {
                         StatChip(
                             status: status,
                             number: count,
-                            isSelected: selectedStatus == status,
+                            isSelected: selectedStatuses.contains(status),
                             action: {
                                 withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
-                                    selectedStatus = (selectedStatus == status) ? nil : status
+                                    if selectedStatuses.contains(status) {
+                                        selectedStatuses.remove(status)
+                                    } else {
+                                        selectedStatuses.insert(status)
+                                    }
                                 }
                             }
                         )
                         .id(status)
-                        .opacity(count == 0 && selectedStatus != status ? 0.4 : 1.0)
+                        .opacity(count == 0 && !selectedStatuses.contains(status) ? 0.4 : 1.0)
                         .animation(.spring(response: 0.28, dampingFraction: 0.7), value: count)
                     }
                 }
                 .padding(.horizontal, 20)
             }
-            .onChange(of: selectedStatus) { _, _ in
+            .onChange(of: selectedStatuses) { _, _ in
                 if let first = orderedFilterStatuses.first {
                     withAnimation(.smooth) { proxy.scrollTo(first, anchor: .leading) }
                 }
@@ -315,7 +312,7 @@ struct ApplicationView: View {
             Button {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                     searchText = ""
-                    selectedStatus = nil
+                    selectedStatuses = []
                 }
             } label: {
                 Text("Clear filters")

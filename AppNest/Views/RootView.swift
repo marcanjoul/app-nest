@@ -7,7 +7,7 @@ struct RootView: View {
             NavigationStack {
                 ApplicationView()
             }
-            .toolbarBackground(.ultraThinMaterial, for: .tabBar)
+            .toolbarBackground(Color(UIColor.systemBackground), for: .tabBar)
             .toolbarBackground(.visible, for: .tabBar)
             .tabItem {
                 Label("Applications", systemImage: "briefcase.fill")
@@ -16,7 +16,7 @@ struct RootView: View {
             NavigationStack {
                 EmailParserView()
             }
-            .toolbarBackground(.ultraThinMaterial, for: .tabBar)
+            .toolbarBackground(Color(UIColor.systemBackground), for: .tabBar)
             .toolbarBackground(.visible, for: .tabBar)
             .tabItem {
                 Label("Email", systemImage: "envelope.open.fill")
@@ -25,7 +25,7 @@ struct RootView: View {
             NavigationStack {
                 ProfileView()
             }
-            .toolbarBackground(.ultraThinMaterial, for: .tabBar)
+            .toolbarBackground(Color(UIColor.systemBackground), for: .tabBar)
             .toolbarBackground(.visible, for: .tabBar)
             .tabItem {
                 Label("Profile", systemImage: "person.crop.circle.fill")

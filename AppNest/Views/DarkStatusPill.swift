@@ -32,7 +32,7 @@ struct DarkStatusPill: View {
         .padding(.vertical, 6)
         .background(
             Capsule()
-                .fill(style.gradient)
+                .fill(style.fillColor)
                 .overlay(Capsule().strokeBorder(style.borderColor, lineWidth: 0.8))
         )
     }
@@ -110,7 +110,7 @@ struct StatChip: View {
             .padding(.vertical, 10)
             .background(
                 Capsule()
-                    .fill(isSelected ? AnyShapeStyle(style.gradient) : AnyShapeStyle(style.fillColor))
+                    .fill(isSelected ? AnyShapeStyle(style.tintColor.opacity(0.20)) : AnyShapeStyle(style.fillColor))
                     .overlay(
                         Capsule().strokeBorder(
                             isSelected ? style.tintColor.opacity(0.70) : style.borderColor,

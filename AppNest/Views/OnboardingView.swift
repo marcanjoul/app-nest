@@ -85,13 +85,6 @@ struct OnboardingView: View {
                         .background {
                             Capsule()
                                 .fill(pages[currentPage].color)
-                                .overlay {
-                                    LinearGradient(
-                                        colors: [Color.white.opacity(0.25), Color.clear],
-                                        startPoint: .top, endPoint: .center
-                                    )
-                                    .clipShape(Capsule())
-                                }
                                 .shadow(color: pages[currentPage].color.opacity(0.30), radius: 14, y: 5)
                         }
                 }
@@ -108,8 +101,8 @@ struct OnboardingView: View {
                     .padding(.vertical, 11)
                     .background(
                         Capsule()
-                            .fill(.ultraThinMaterial)
-                            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+                            .fill(Color.primary.opacity(0.08))
+                            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.10), lineWidth: 1))
                     )
                     .padding(.top, 12)
                     .padding(.bottom, 32)

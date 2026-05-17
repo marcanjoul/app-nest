@@ -119,13 +119,6 @@ struct JobDetailView: View {
                         .background {
                             Capsule()
                                 .fill(isSaveDisabled ? Color.secondary.opacity(0.3) : Color.accentColor)
-                                .overlay {
-                                    LinearGradient(
-                                        colors: [Color.white.opacity(0.20), Color.clear],
-                                        startPoint: .top, endPoint: .center
-                                    )
-                                    .clipShape(Capsule())
-                                }
                                 .shadow(color: isSaveDisabled ? .clear : Color.accentColor.opacity(0.27), radius: 10, y: 3)
                         }
                 }
@@ -133,7 +126,7 @@ struct JobDetailView: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
-            .background(.ultraThinMaterial)
+            .background(Color(UIColor.systemBackground))
         }
         .animation(.easeOut(duration: 0.18), value: isSaveDisabled)
     }
@@ -324,7 +317,7 @@ struct JobDetailView: View {
                         .frame(width: 40, height: 40)
                         .background {
                             Circle()
-                                .fill(.ultraThinMaterial)
+                                .fill(DarkTheme.cardFill)
                                 .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
                         }
                 }

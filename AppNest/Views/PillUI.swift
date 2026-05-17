@@ -15,19 +15,6 @@ struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == 
     var icon: String? = nil
     let onTap: () -> Void
 
-    private var fillGradient: LinearGradient {
-        if isSelected {
-            return LinearGradient(
-                colors: [color, color.opacity(0.78)],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            )
-        }
-        return LinearGradient(
-            colors: [color.opacity(0.22), color.opacity(0.07)],
-            startPoint: .topLeading, endPoint: .bottomTrailing
-        )
-    }
-
     var body: some View {
         Button {
             #if canImport(UIKit)
@@ -49,7 +36,7 @@ struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == 
             .padding(.vertical, isSelected ? 9 : 8)
             .background(
                 Capsule()
-                    .fill(fillGradient)
+                    .fill(isSelected ? color : color.opacity(0.12))
                     .overlay(
                         Capsule().strokeBorder(
                             isSelected ? Color.clear : color.opacity(0.28),
@@ -161,15 +148,7 @@ struct ResumePill: View {
             .padding(.vertical, verticalPadding)
             .background(
                 Capsule()
-                    .fill(
-                        LinearGradient(
-                            colors: isSelected
-                                ? [tint, tint.opacity(0.75)]
-                                : [tint.opacity(style == .deleted ? 0.12 : 0.18), tint.opacity(0.08)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(isSelected ? tint : tint.opacity(style == .deleted ? 0.12 : 0.14))
                     .overlay(Capsule().strokeBorder(isSelected ? tint.opacity(0.0) : tint.opacity(style == .deleted ? 0.20 : 0.25), lineWidth: 0.8))
             )
             .shadow(color: isSelected && showsGlow ? tint.opacity(0.21) : .clear, radius: 6, y: 2)

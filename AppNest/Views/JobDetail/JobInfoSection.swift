@@ -81,12 +81,7 @@ struct JobInfoSection: View {
                     // Fallback initial — dematerializes when logo lands
                     ZStack {
                         Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [accentTint, accentTint.opacity(0.72)],
-                                    startPoint: .topLeading, endPoint: .bottomTrailing
-                                )
-                            )
+                            .fill(accentTint)
                         Text(logoInitial)
                             .font(.system(size: 40, weight: .heavy, design: .rounded))
                             .foregroundStyle(.white)
@@ -111,13 +106,7 @@ struct JobInfoSection: View {
                 .clipShape(Circle())
                 .overlay(
                     Circle()
-                        .strokeBorder(
-                            LinearGradient(
-                                colors: [Color.white.opacity(0.5), Color.white.opacity(0.05)],
-                                startPoint: .topLeading, endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
+                        .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
                 )
                 .shadow(color: .black.opacity(0.20), radius: 10, y: 5)
                 // Loading veil — fades + scales in quickly, out just as fast
