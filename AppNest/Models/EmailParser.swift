@@ -247,7 +247,10 @@ struct EmailParser {
                 "decided not to", "other candidates", "filled the vacancy",
                 "regret to inform", "unable to offer", "wish you the best",
                 "after careful consideration", "position has been filled",
-                "no longer considering", "we will not be"
+                "no longer considering", "we will not be",
+                "not advancing", "not be advancing", "not been selected",
+                "have not been selected", "not selected to", "not able to move forward",
+                "not able to offer", "unable to move forward"
             ]),
             (.interview, [
                 "schedule an interview", "interview invitation", "like to interview",
