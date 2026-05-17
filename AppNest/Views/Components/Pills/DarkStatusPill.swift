@@ -192,10 +192,6 @@ struct DarkJobCardView: View {
             Image(uiImage: ui)
                 .resizable()
                 .scaledToFill()
-        } else if !job.companyLogoName.isEmpty, UIImage(named: job.companyLogoName) != nil {
-            Image(job.companyLogoName)
-                .resizable()
-                .scaledToFill()
         } else {
             Text(initial)
                 .font(.system(size: 20, weight: .bold))
@@ -235,7 +231,6 @@ struct DarkJobCardView: View {
 
             DarkJobCardView(job: JobApplication(
                 companyName: "Google",
-                companyLogoName: "google",
                 position: "Software Engineering Intern",
                 jobType: .internship,
                 status: .applied,

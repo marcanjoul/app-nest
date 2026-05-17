@@ -104,9 +104,6 @@ class JobApplication {
     /// Name of the company applied to (e.g., "Apple").
     var companyName: String
     
-    /// Asset catalog name for the company's logo image.
-    var companyLogoName: String
-    
     /// Optional custom image data uploaded by user for company logo.
     var companyLogoImageData: Data?
     
@@ -161,7 +158,6 @@ class JobApplication {
     /// All parameters are persisted to storage. Defaults are provided for optional values.
     /// - Parameters:
     ///   - companyName: Name of the company.
-    ///   - companyLogoName: Asset name for pre-defined logos (default "").
     ///   - companyLogoImageData: Custom logo image data, if provided.
     ///   - position: Job position/title applied for.
     ///   - jobType: Employment type (optional).
@@ -173,7 +169,6 @@ class JobApplication {
     ///   - resumeBookmark: Security-scoped bookmark data for resume (optional).
     init(
         companyName: String,
-        companyLogoName: String = "",
         companyLogoImageData: Data? = nil,
         position: String,
         jobType: ApplicationType? = nil,
@@ -192,7 +187,6 @@ class JobApplication {
         reminderNotificationID: String? = nil
     ) {
         self.companyName = companyName
-        self.companyLogoName = companyLogoName
         self.companyLogoImageData = companyLogoImageData
         self.position = position
         self.jobType = jobType

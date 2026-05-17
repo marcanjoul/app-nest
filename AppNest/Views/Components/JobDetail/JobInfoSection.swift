@@ -6,7 +6,6 @@ import UIKit
 
 struct JobInfoSection: View {
     @Binding var companyName: String
-    @Binding var companyLogoName: String
     @Binding var companyLogoImageData: Data?
     @Binding var position: String
     @Binding var pickerItem: PhotosPickerItem?
@@ -32,25 +31,15 @@ struct JobInfoSection: View {
         return Self.tintPalette[abs(key.hashValue) % Self.tintPalette.count]
     }
 
-    #if canImport(UIKit)
     private var logoImage: Image? {
-        if let data = companyLogoImageData, let ui = UIImage(data: data) {
-            return Image(uiImage: ui)
-        } else if !companyLogoName.isEmpty, UIImage(named: companyLogoName) != nil {
-            return Image(companyLogoName)
-        }
-        return nil
+        guard let data = companyLogoImageData, let ui = UIImage(data: data) else { return nil }
+        return Image(uiImage: ui)
     }
+
     private var hasLogo: Bool {
-        if let data = companyLogoImageData, UIImage(data: data) != nil { return true }
-        return !companyLogoName.isEmpty && UIImage(named: companyLogoName) != nil
+        guard let data = companyLogoImageData else { return false }
+        return UIImage(data: data) != nil
     }
-    #else
-    private var logoImage: Image? {
-        companyLogoName.isEmpty ? nil : Image(companyLogoName)
-    }
-    private var hasLogo: Bool { !companyLogoName.isEmpty }
-    #endif
 
     private var logoInitial: String {
         let trimmed = companyName.trimmingCharacters(in: .whitespaces)

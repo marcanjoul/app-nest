@@ -17,7 +17,6 @@ struct JobDetailView: View {
     // MARK: - State
 
     @State private var companyName:       String
-    @State private var companyLogoName:   String
     @State private var companyLogoImageData: Data?
     @State private var position:          String
     @State private var type:              ApplicationType?
@@ -68,7 +67,6 @@ struct JobDetailView: View {
     init(job: JobApplication?) {
         self.job = job
         _companyName            = State(initialValue: job?.companyName ?? "")
-        _companyLogoName        = State(initialValue: job?.companyLogoName ?? "")
         _companyLogoImageData   = State(initialValue: job?.companyLogoImageData)
         _position               = State(initialValue: job?.position ?? "")
         _type                   = State(initialValue: job?.jobType)
@@ -165,7 +163,6 @@ struct JobDetailView: View {
                     VStack(spacing: 16) {
                         JobInfoSection(
                             companyName: $companyName,
-                            companyLogoName: $companyLogoName,
                             companyLogoImageData: $companyLogoImageData,
                             position: $position,
                             pickerItem: $pickerItem
@@ -361,7 +358,6 @@ struct JobDetailView: View {
 
         if let job {
             job.companyName         = companyName
-            job.companyLogoName     = companyLogoName
             job.companyLogoImageData = companyLogoImageData
             job.position            = position
             job.jobType             = type
@@ -382,7 +378,6 @@ struct JobDetailView: View {
         } else {
             let newJob = JobApplication(
                 companyName: companyName,
-                companyLogoName: companyLogoName,
                 companyLogoImageData: companyLogoImageData,
                 position: position,
                 jobType: type,
@@ -842,7 +837,6 @@ private struct JobNotesSection: View {
     NavigationStack {
         JobDetailView(job: JobApplication(
             companyName: "Meta",
-            companyLogoName: "meta",
             position: "Software Engineering Intern – 2026",
             dateApplied: Date()
         ))

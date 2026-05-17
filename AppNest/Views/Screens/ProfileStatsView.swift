@@ -413,8 +413,6 @@ private struct TopCompanyRow: View {
         #if canImport(UIKit)
         if let sample, let data = sample.companyLogoImageData, let image = UIImage(data: data) {
             Image(uiImage: image).resizable().scaledToFill()
-        } else if let sample, !sample.companyLogoName.isEmpty, UIImage(named: sample.companyLogoName) != nil {
-            Image(sample.companyLogoName).resizable().scaledToFill()
         } else {
             initialAvatar
         }

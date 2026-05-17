@@ -36,6 +36,8 @@ struct EmailParser {
             #"(?:joining|join)\s+(?:our\s+team\s+at\s+|the\s+team\s+at\s+)?([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
             // "role/position/internship at Company"
             #"(?:role|position|opportunity|internship|job)\s+(?:at|with)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
+            // "applied to [POSITION] at Company" — skip past the position title to find the company
+            #"(?:apply|applied|applying)\s+(?:to|for)\s+.+?\s+at\s+([A-Z][A-Za-z0-9&®\s\.]+?)(?:\s+on\b|\s+via\b|\.|,|\!|\n|$)"#,
             // "apply/applied/applying to/at Company"
             #"(?:apply|applied|applying)\s+(?:to|at|for)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
             // "team/company at/of Company"
@@ -50,7 +52,7 @@ struct EmailParser {
             if let result = extractCaptureGroup(from: text, pattern: pattern) {
                 var cleaned = result
                     .trimmingCharacters(in: .whitespacesAndNewlines)
-                    .trimmingCharacters(in: CharacterSet(charactersIn: ".,;:"))
+                    .trimmingCharacters(in: CharacterSet(charactersIn: ".,;:®™"))
 
                 let prefixes = ["position ", "role ", "the position ", "the role ", "the "]
                 for prefix in prefixes {
