@@ -18,20 +18,22 @@ struct ApplicationView: View {
     @State private var sortOption: SortOption = .dateNewest
     @State private var contentAppeared = false
 
+    // Search-only filtered list — used for chip counts so they reflect search but not status filter
+    private var searchFiltered: [JobApplication] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !query.isEmpty else { return applications }
+        return applications.filter {
+            $0.position.lowercased().contains(query) ||
+            $0.companyName.lowercased().contains(query) ||
+            ($0.jobType?.rawValue.lowercased().contains(query) ?? false)
+        }
+    }
+
     private var filteredAndSorted: [JobApplication] {
-        var result = applications
+        var result = searchFiltered
 
         if let status = selectedStatus {
             result = result.filter { $0.status == status }
-        }
-
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if !query.isEmpty {
-            result = result.filter {
-                $0.position.lowercased().contains(query) ||
-                $0.companyName.lowercased().contains(query) ||
-                ($0.jobType?.rawValue.lowercased().contains(query) ?? false)
-            }
         }
 
         switch sortOption {
@@ -42,6 +44,15 @@ struct ApplicationView: View {
         }
 
         return result
+    }
+
+    private func nextStatus(for job: JobApplication) -> ApplicationStatus? {
+        switch job.status {
+        case .toApply:   return .applied
+        case .applied:   return .interview
+        case .interview: return .offer
+        case .offer, .rejected, .none: return nil
+        }
     }
 
     var body: some View {
@@ -111,6 +122,18 @@ struct ApplicationView: View {
                                 Label("Delete", systemImage: "trash")
                             }
                         }
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            if let next = nextStatus(for: job) {
+                                Button {
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                                        job.status = next
+                                    }
+                                } label: {
+                                    Label(next.rawValue, systemImage: "arrow.right.circle.fill")
+                                }
+                                .tint(.indigo)
+                            }
+                        }
                     }
                 }
 
@@ -122,6 +145,7 @@ struct ApplicationView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .scrollDismissesKeyboard(.interactively)
 
             // Pill FAB
             VStack {
@@ -208,15 +232,26 @@ struct ApplicationView: View {
                     }
                 }
             } label: {
-                Image(systemName: "arrow.up.arrow.down")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
-                    .frame(width: 44, height: 44)
-                    .background {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(sortOption == .dateNewest ? DarkTheme.textPrimary : Color.accentColor)
+                        .frame(width: 44, height: 44)
+                        .background {
+                            Circle()
+                                .fill(.ultraThinMaterial)
+                                .overlay(Circle().strokeBorder(
+                                    sortOption == .dateNewest ? Color.primary.opacity(0.08) : Color.accentColor.opacity(0.35),
+                                    lineWidth: sortOption == .dateNewest ? 1 : 1.5
+                                ))
+                        }
+                    if sortOption != .dateNewest {
                         Circle()
-                            .fill(.ultraThinMaterial)
-                            .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+                            .fill(Color.accentColor)
+                            .frame(width: 8, height: 8)
+                            .offset(x: 2, y: -2)
                     }
+                }
             }
         }
         .padding(.horizontal, 20)
@@ -225,7 +260,7 @@ struct ApplicationView: View {
     // MARK: - Stats Section
 
     private var orderedFilterStatuses: [ApplicationStatus] {
-        let base: [ApplicationStatus] = [.applied, .interview, .offer, .rejected]
+        let base: [ApplicationStatus] = [.toApply, .applied, .interview, .offer, .rejected]
         if let selected = selectedStatus, base.contains(selected) {
             return [selected] + base.filter { $0 != selected }
         }
@@ -239,7 +274,7 @@ struct ApplicationView: View {
                     ForEach(orderedFilterStatuses, id: \.self) { status in
                         StatChip(
                             status: status,
-                            number: applications.filter { $0.status == status }.count,
+                            number: searchFiltered.filter { $0.status == status }.count,
                             isSelected: selectedStatus == status,
                             action: {
                                 withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
@@ -291,6 +326,20 @@ struct ApplicationView: View {
                 .font(.subheadline)
                 .foregroundStyle(DarkTheme.textSecondary)
                 .multilineTextAlignment(.center)
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    searchText = ""
+                    selectedStatus = nil
+                }
+            } label: {
+                Text("Clear filters")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(Capsule().fill(Color.accentColor.opacity(0.12)))
+            }
+            .buttonStyle(.plain)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 60)
