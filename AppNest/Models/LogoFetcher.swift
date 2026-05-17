@@ -4,7 +4,6 @@ enum LogoFetcher {
     private static let cache = NSCache<NSString, NSData>()
 
     static func fetchLogoData(for company: String, darkMode: Bool = true) async -> Data? {
-        let theme = darkMode ? "dark" : "light"
         let query = company.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? company
 
         // Step 1: Search for the company domain using the secret key
@@ -19,15 +18,14 @@ enum LogoFetcher {
             let results = try JSONDecoder().decode([LogoSearchResult].self, from: searchData)
             guard let domain = results.first?.domain, !domain.isEmpty else { return nil }
 
-            let cacheKey = "\(domain)_\(theme)" as NSString
-            if let cached = cache.object(forKey: cacheKey) { return cached as Data }
+            if let cached = cache.object(forKey: domain as NSString) { return cached as Data }
 
             // Step 2: Fetch the logo from the CDN using the publishable key
-            guard let logoURL = URL(string: "https://img.logo.dev/\(domain)?token=\(APIKeys.logoDevPublicKey)&size=256&theme=\(theme)") else { return nil }
+            guard let logoURL = URL(string: "https://img.logo.dev/\(domain)?token=\(APIKeys.logoDevPublicKey)&size=256") else { return nil }
             let (logoData, logoResponse) = try await URLSession.shared.data(from: logoURL)
             guard (logoResponse as? HTTPURLResponse)?.statusCode == 200, !logoData.isEmpty else { return nil }
 
-            cache.setObject(logoData as NSData, forKey: cacheKey)
+            cache.setObject(logoData as NSData, forKey: domain as NSString)
             return logoData
         } catch {
             return nil
