@@ -37,6 +37,7 @@ struct JobDetailView: View {
     @State private var pickerItem: PhotosPickerItem? = nil
     @State private var reminderEnabled: Bool
     @State private var isShowingDeleteConfirmation = false
+    @State private var isShowingLogoAttribution = false
     @State private var shakeMissingFields = false
     @State private var scrollTargetSection: FormSection?
 
@@ -277,14 +278,23 @@ struct JobDetailView: View {
                 .accessibilityLabel("Dismiss keyboard")
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    openURL(URL(string: "https://logo.dev")!)
-                } label: {
+                Button { isShowingLogoAttribution.toggle() } label: {
                     Image(systemName: "info.circle")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
-                .accessibilityLabel("Logos provided by Logo.dev")
+                .popover(isPresented: $isShowingLogoAttribution, arrowEdge: .top) {
+                    HStack(spacing: 4) {
+                        Text("Company logos from")
+                            .foregroundStyle(.secondary)
+                        Link("Logo.dev", destination: URL(string: "https://logo.dev")!)
+                    }
+                    .font(.footnote)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .presentationCompactAdaptation(.popover)
+                }
+                .accessibilityLabel("Logo attribution")
             }
             if isNewApplication {
                 ToolbarItem(placement: .topBarLeading) {
