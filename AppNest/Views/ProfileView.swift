@@ -33,9 +33,7 @@ struct ProfileView: View {
         return [def] + resumes.filter { $0.id != def.id }
     }
 
-    private var inlineResumes: [ResumeDocument] {
-        Array(orderedResumes.prefix(5))
-    }
+    private var inlineResumes: [ResumeDocument] { Array(orderedResumes.prefix(5)) }
 
     private var profileAvatarData: Data? {
         guard !profileAvatarDataBase64.isEmpty else { return nil }
@@ -43,14 +41,6 @@ struct ProfileView: View {
     }
 
     private var totalCount: Int { applications.count }
-
-    private var activeCount: Int {
-        applications.filter { $0.status == .applied || $0.status == .interview }.count
-    }
-
-    private var offerCount: Int {
-        applications.filter { $0.status == .offer }.count
-    }
 
     private var profileInitial: String {
         let trimmed = profileDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -63,6 +53,28 @@ struct ProfileView: View {
         return trimmed.isEmpty ? "AppNest" : trimmed
     }
 
+    // MARK: - Pipeline data
+
+    private let pipelineStatuses: [ApplicationStatus] = [.toApply, .applied, .interview, .offer, .rejected]
+
+    private func count(for status: ApplicationStatus) -> Int {
+        applications.filter { $0.status == status }.count
+    }
+
+    private func pipelineLabel(for status: ApplicationStatus) -> String {
+        switch status {
+        case .toApply:   return "To Apply"
+        case .applied:   return "Applied"
+        case .interview: return "Interview"
+        case .offer:     return "Offers"
+        case .rejected:  return "Rejected"
+        }
+    }
+
+    private var pipelineSegments: [PipelineSegmentedBar.Segment] {
+        pipelineStatuses.map { PipelineSegmentedBar.Segment(id: $0, count: count(for: $0)) }
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -70,20 +82,22 @@ struct ProfileView: View {
             AmbientBackground()
 
             ScrollView {
-                VStack(spacing: 18) {
+                VStack(spacing: 0) {
                     identitySection
-                    insightsCard
-                    resumeSection
-                    exportSection
+
+                    VStack(spacing: 14) {
+                        pipelineSection
+                        resumeSection
+                        exportRow
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 20)
+                    .padding(.bottom, 20)
                 }
-                .padding()
-                .padding(.bottom, 12)
             }
         }
         .scrollDismissesKeyboard(.interactively)
-        .navigationTitle("Profile")
-        .navigationBarTitleDisplayMode(.large)
-        .toolbarBackground(Color(UIColor.systemBackground), for: .navigationBar)
+        .toolbar(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -109,12 +123,8 @@ struct ProfileView: View {
             if let url = csvFileURL { ShareSheet(activityItems: [url]) }
         }
         .alert("Delete Resume?", isPresented: deletionAlertBinding, presenting: resumePendingDeletion) { resume in
-            Button("Cancel", role: .cancel) {
-                resumePendingDeletion = nil
-            }
-            Button("Delete", role: .destructive) {
-                deleteResume(resume)
-            }
+            Button("Cancel", role: .cancel) { resumePendingDeletion = nil }
+            Button("Delete", role: .destructive) { deleteResume(resume) }
         } message: { resume in
             let count = attachmentCount(for: resume)
             if count > 0 {
@@ -138,29 +148,27 @@ struct ProfileView: View {
         }
     }
 
-    // MARK: - Identity (branded hero)
+    // MARK: - Identity header
 
     private var identitySection: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 14) {
             PhotosPicker(selection: $avatarSelection, matching: .images) {
                 avatarView
-                    .frame(width: 100, height: 100)
+                    .frame(width: 88, height: 88)
                     .clipShape(Circle())
-                    .overlay(
-                        Circle().strokeBorder(Color.white.opacity(0.35), lineWidth: 2)
-                    )
-                    .shadow(color: .black.opacity(0.28), radius: 14, y: 6)
+                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.10), lineWidth: 1.5))
+                    .shadow(color: .black.opacity(0.14), radius: 10, y: 4)
                     .overlay(alignment: .bottomTrailing) {
                         ZStack {
                             Circle()
-                                .fill(.white)
-                                .frame(width: 30, height: 30)
+                                .fill(Color.accentColor)
+                                .frame(width: 26, height: 26)
                             Image(systemName: "camera.fill")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(Color.accentColor)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.white)
                         }
-                        .shadow(color: .black.opacity(0.20), radius: 3, y: 1)
-                        .offset(x: 4, y: 4)
+                        .shadow(color: Color.accentColor.opacity(0.28), radius: 4, y: 2)
+                        .offset(x: 2, y: 2)
                     }
             }
             .buttonStyle(.plain)
@@ -174,52 +182,30 @@ struct ProfileView: View {
                 }
             }
 
-            TextField(
-                "",
-                text: $profileDisplayName,
-                prompt: Text("Add Your Name")
-                    .foregroundColor(.white.opacity(0.55))
-            )
-            .font(.system(size: 26, weight: .heavy, design: .rounded))
-            .multilineTextAlignment(.center)
-            .foregroundStyle(.white)
-            .tint(.white)
-            .textInputAutocapitalization(.words)
-            .autocorrectionDisabled()
-            .focused($isNameFocused)
-            .frame(maxWidth: 280)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 4)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(.white.opacity(isNameFocused ? 0.15 : 0))
-            )
+            VStack(spacing: 6) {
+                TextField(
+                    "",
+                    text: $profileDisplayName,
+                    prompt: Text("Your Name").foregroundColor(DarkTheme.textSecondary)
+                )
+                .font(.system(size: 26, weight: .bold))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(DarkTheme.textPrimary)
+                .tint(.accentColor)
+                .textInputAutocapitalization(.words)
+                .autocorrectionDisabled()
+                .focused($isNameFocused)
+                .frame(maxWidth: 260)
+
+                Text("\(totalCount) application\(totalCount == 1 ? "" : "s")")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(DarkTheme.textTertiary)
+            }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 26)
+        .padding(.top, 36)
+        .padding(.bottom, 28)
         .padding(.horizontal, 20)
-        .background(heroBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
-        )
-        .shadow(color: Color.accentColor.opacity(0.30), radius: 18, y: 8)
-    }
-
-    @ViewBuilder
-    private var heroBackground: some View {
-        ZStack {
-            Color.accentColor
-            Circle()
-                .fill(.white.opacity(0.07))
-                .frame(width: 240, height: 240)
-                .offset(x: -130, y: -110)
-            Circle()
-                .fill(.white.opacity(0.05))
-                .frame(width: 200, height: 200)
-                .offset(x: 140, y: 110)
-        }
     }
 
     @ViewBuilder
@@ -240,76 +226,64 @@ struct ProfileView: View {
     @ViewBuilder
     private var initialAvatar: some View {
         ZStack {
-            Color.white.opacity(0.18)
+            DarkTheme.avatarGradient(for: avatarGradientKey)
             if profileInitial.isEmpty {
                 Image(systemName: "person.fill")
-                    .font(.system(size: 38, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.92))
+                    .font(.system(size: 34, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.88))
             } else {
                 Text(profileInitial)
-                    .font(.system(size: 40, weight: .heavy, design: .rounded))
+                    .font(.system(size: 36, weight: .heavy, design: .rounded))
                     .foregroundStyle(.white)
             }
         }
     }
 
-    // MARK: - Insights
+    // MARK: - Pipeline
 
-    private var insightsCard: some View {
-        NavigationLink {
-            ProfileStatsView()
-        } label: {
+    private var pipelineSection: some View {
+        NavigationLink(destination: ProfileStatsView()) {
             VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 8) {
-                    Label("Insights", systemImage: "chart.bar.xaxis")
+                HStack {
+                    Text("Pipeline")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(DarkTheme.textPrimary)
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(Color.accentColor.opacity(0.7))
+                        .foregroundStyle(DarkTheme.textSecondary.opacity(0.6))
                 }
 
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("\(totalCount)")
-                        .font(.system(size: 48, weight: .heavy, design: .rounded))
-                        .foregroundStyle(Color.accentColor)
-                    Text(totalCount == 1 ? "Application" : "Applications")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(DarkTheme.textSecondary)
-                }
+                PipelineSegmentedBar(segments: pipelineSegments, total: totalCount)
 
-                HStack(spacing: 8) {
-                    InsightPill(
-                        count: activeCount,
-                        label: "Active",
-                        tint: Color(red: 0.35, green: 0.65, blue: 0.96),
-                        icon: "paperplane.fill"
-                    )
-                    InsightPill(
-                        count: offerCount,
-                        label: offerCount == 1 ? "Offer" : "Offers",
-                        tint: Color(red: 0.30, green: 0.80, blue: 0.45),
-                        icon: "checkmark.seal.fill"
-                    )
-                    Spacer(minLength: 0)
+                HStack(spacing: 0) {
+                    ForEach(pipelineStatuses, id: \.self) { status in
+                        let c = count(for: status)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("\(c)")
+                                .font(.system(size: 17, weight: .bold, design: .rounded))
+                                .foregroundStyle(c > 0 ? DarkTheme.textPrimary : DarkTheme.textTertiary)
+                            Text(pipelineLabel(for: status))
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(
+                                    c > 0
+                                        ? DarkTheme.statusStyle(for: status).tintColor
+                                        : DarkTheme.textTertiary
+                                )
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
             }
             .padding(18)
-            .background {
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(DarkTheme.cardFill)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .strokeBorder(Color.accentColor.opacity(0.22), lineWidth: 1)
-                    }
-            }
-            .shadow(color: .black.opacity(0.10), radius: 8, y: 3)
+            .glassCard()
         }
         .buttonStyle(.plain)
     }
 
-    // MARK: - Resume Section (restored original look)
+    // MARK: - Resume Section
 
     private var resumeSection: some View {
         VStack(spacing: 14) {
@@ -390,48 +364,43 @@ struct ProfileView: View {
         .glassCard()
     }
 
-    // MARK: - Export
+    // MARK: - Export row
 
-    private var exportSection: some View {
-        VStack(spacing: 14) {
-            HStack {
-                Label("Export Data", systemImage: "square.and.arrow.up")
+    private var exportRow: some View {
+        Button { exportCSV() } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(applications.isEmpty ? DarkTheme.textTertiary : Color.accentColor)
+                    .frame(width: 32, height: 32)
+                    .background(Circle().fill(
+                        applications.isEmpty ? Color.primary.opacity(0.06) : Color.accentColor.opacity(0.12)
+                    ))
+
+                Text("Export as CSV")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(applications.isEmpty ? DarkTheme.textSecondary : DarkTheme.textPrimary)
+
                 Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(DarkTheme.textTertiary)
             }
-
-            Button { exportCSV() } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "tablecells")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(applications.isEmpty ? DarkTheme.textTertiary : Color.accentColor)
-                        .frame(width: 32, height: 32)
-                        .background(
-                            Circle().fill(
-                                applications.isEmpty
-                                    ? Color.primary.opacity(0.06)
-                                    : Color.accentColor.opacity(0.12)
-                            )
-                        )
-
-                    Text("Export as CSV")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(applications.isEmpty ? DarkTheme.textSecondary : DarkTheme.textPrimary)
-
-                    Spacer()
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(DarkTheme.textTertiary)
-                }
-                .padding(.vertical, 6)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background {
+                RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                    .fill(DarkTheme.cardFill)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                            .strokeBorder(DarkTheme.cardBorder, lineWidth: 1)
+                    }
             }
-            .buttonStyle(.plain)
-            .disabled(applications.isEmpty)
         }
-        .padding(18)
-        .glassCard()
+        .buttonStyle(.plain)
+        .disabled(applications.isEmpty)
+        .opacity(applications.isEmpty ? 0.45 : 1)
     }
 
     // MARK: - Helpers
@@ -456,12 +425,9 @@ struct ProfileView: View {
     private func savePickedResume(fileName: String, bookmark: Data) {
         if let existing = resumes.first(where: { $0.fileName == fileName }) {
             existing.bookmark = bookmark
-            if !resumes.contains(where: \.isDefault) {
-                setDefaultResume(existing)
-            }
+            if !resumes.contains(where: \.isDefault) { setDefaultResume(existing) }
             return
         }
-
         let resume = ResumeDocument(
             fileName: fileName,
             bookmark: bookmark,
@@ -474,7 +440,6 @@ struct ProfileView: View {
         let wasDefault = resume.isDefault
         modelContext.delete(resume)
         resumePendingDeletion = nil
-
         if wasDefault, let replacement = resumes.first(where: { $0.id != resume.id }) {
             replacement.isDefault = true
         }
@@ -538,40 +503,44 @@ struct ProfileView: View {
     }
 }
 
-// MARK: - Insight Pill
+// MARK: - Pipeline Segmented Bar
 
-private struct InsightPill: View {
-    let count: Int
-    let label: String
-    let tint: Color
-    let icon: String
+private struct PipelineSegmentedBar: View {
+    struct Segment: Identifiable {
+        let id: ApplicationStatus
+        let count: Int
+        var color: Color { DarkTheme.statusStyle(for: id).tintColor }
+    }
+
+    let segments: [Segment]
+    let total: Int
+
+    private var active: [Segment] { segments.filter { $0.count > 0 } }
 
     var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(tint)
-            Text("\(count)")
-                .font(.system(size: 14, weight: .bold, design: .rounded))
-                .foregroundStyle(DarkTheme.textPrimary)
-            Text(label)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(DarkTheme.textSecondary)
-        }
-        .padding(.horizontal, 11)
-        .padding(.vertical, 7)
-        .background(
+        if total == 0 || active.isEmpty {
             Capsule()
-                .fill(tint.opacity(0.12))
-                .overlay(Capsule().strokeBorder(tint.opacity(0.25), lineWidth: 0.8))
-        )
+                .fill(Color.primary.opacity(0.07))
+                .frame(maxWidth: .infinity, height: 8)
+        } else {
+            GeometryReader { geo in
+                let spacing: CGFloat = 2
+                let available = geo.size.width - spacing * CGFloat(active.count - 1)
+                HStack(spacing: spacing) {
+                    ForEach(active.indices, id: \.self) { i in
+                        active[i].color
+                            .frame(width: max(6, available * CGFloat(active[i].count) / CGFloat(total)))
+                    }
+                }
+                .clipShape(Capsule())
+            }
+            .frame(height: 8)
+        }
     }
 }
 
 // MARK: - Resume Manager Sheet
 
-/// Full-list resume management surface presented from the Profile resumes "View All" button.
-/// Mirrors the inline row UI: per-resume star-as-default and trash-to-delete actions.
 private struct ResumeManagerSheet: View {
     @Environment(\.dismiss) private var dismiss
 
