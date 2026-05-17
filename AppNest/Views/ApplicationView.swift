@@ -143,8 +143,6 @@ struct ApplicationView: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
-        .toolbarBackground(.ultraThinMaterial, for: .tabBar)
-        .toolbarBackground(.visible, for: .tabBar)
         .sheet(isPresented: $isPresentingNewApplication) {
             NavigationStack { JobDetailView(job: nil) }
         }

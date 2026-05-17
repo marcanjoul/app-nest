@@ -7,6 +7,8 @@ struct RootView: View {
             NavigationStack {
                 ApplicationView()
             }
+            .toolbarBackground(.ultraThinMaterial, for: .tabBar)
+            .toolbarBackground(.visible, for: .tabBar)
             .tabItem {
                 Label("Applications", systemImage: "briefcase.fill")
             }
@@ -14,13 +16,17 @@ struct RootView: View {
             NavigationStack {
                 EmailParserView()
             }
+            .toolbarBackground(.ultraThinMaterial, for: .tabBar)
+            .toolbarBackground(.visible, for: .tabBar)
             .tabItem {
-                Label("Parse", systemImage: "envelope.open.fill")
+                Label("Email", systemImage: "envelope.open.fill")
             }
 
             NavigationStack {
                 ProfileView()
             }
+            .toolbarBackground(.ultraThinMaterial, for: .tabBar)
+            .toolbarBackground(.visible, for: .tabBar)
             .tabItem {
                 Label("Profile", systemImage: "person.crop.circle.fill")
             }
