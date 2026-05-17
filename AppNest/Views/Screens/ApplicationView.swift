@@ -388,6 +388,7 @@ struct ApplicationView: View {
         for job in toDelete {
             modelContext.delete(job)
         }
+        try? modelContext.save()
         withAnimation(.appSmooth) {
             isEditMode = false
             selectedJobIDs.removeAll()
@@ -400,6 +401,7 @@ struct ApplicationView: View {
         for job in toMove {
             job.cycle = cycle
         }
+        try? modelContext.save()
         withAnimation(.appSmooth) {
             isEditMode = false
             selectedJobIDs.removeAll()
@@ -727,6 +729,7 @@ private struct FABStyle: ButtonStyle {
 
 private struct JobCardSwipeRow: View {
     let job: JobApplication
+    let isEditMode: Bool
     let onDelete: () -> Void
 
     @GestureState private var dragOffset: CGFloat = 0
@@ -757,6 +760,7 @@ private struct JobCardSwipeRow: View {
             ZStack {
                 NavigationLink(destination: JobDetailView(job: job)) { EmptyView() }
                     .opacity(0)
+                    .disabled(isEditMode)
                 DarkJobCardView(job: job)
             }
             .offset(x: cardOffset(dragOffset))
@@ -765,12 +769,14 @@ private struct JobCardSwipeRow: View {
         .simultaneousGesture(
             DragGesture(minimumDistance: 12)
                 .updating($dragOffset) { value, state, _ in
+                    guard !isEditMode else { return }
                     let dx = value.translation.width
                     guard abs(dx) > abs(value.translation.height) else { return }
                     if dx > 0, pipeline.isEmpty { return }
                     state = dx
                 }
                 .onEnded { value in
+                    guard !isEditMode else { return }
                     let dx = value.translation.width
                     if dx > 0 {
                         let stage = stageFor(dx)

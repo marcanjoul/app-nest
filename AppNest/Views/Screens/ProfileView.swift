@@ -1042,6 +1042,7 @@ private struct CSVImportPreviewSheet: View {
             modelContext.insert(app)
         }
         
+        try? modelContext.save()
         appState.csvImportPreview = nil
         dismiss()
     }

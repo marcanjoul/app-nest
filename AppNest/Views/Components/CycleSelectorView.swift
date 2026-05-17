@@ -8,6 +8,7 @@ struct CyclePickerSheet: View {
     @Environment(AppState.self) private var appState
 
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
+    @Query private var applications: [JobApplication]
 
     @Binding var isPresented: Bool
 
@@ -199,7 +200,7 @@ struct CyclePickerSheet: View {
 
     // MARK: - Helpers
 
-    private var totalCount: Int { cycles.reduce(0) { $0 + $1.applications.count } }
+    private var totalCount: Int { applications.count }
 
     private func createCycle() {
         let trimmed = newCycleName.trimmingCharacters(in: .whitespaces)
