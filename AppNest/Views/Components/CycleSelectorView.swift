@@ -13,6 +13,9 @@ struct CyclePickerSheet: View {
     @Binding var isPresented: Bool
 
     @State private var isAddingCycle = false
+    @State private var isRenamingCycle = false
+    @State private var isConfirmingDelete = false
+    @State private var cycleToEdit: JobCycle?
     @State private var newCycleName  = ""
 
     var body: some View {
@@ -56,6 +59,24 @@ struct CyclePickerSheet: View {
         } message: {
             Text("Name this job search cycle.")
         }
+        .alert("Rename Cycle", isPresented: $isRenamingCycle) {
+            TextField("New Name", text: $newCycleName)
+                .autocorrectionDisabled()
+            Button("Rename") { renameCycle() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enter a new name for this cycle.")
+        }
+        .confirmationDialog(
+            "Delete \"\(cycleToEdit?.name ?? "")\"?",
+            isPresented: $isConfirmingDelete,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Cycle", role: .destructive) { deleteCycle() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Any applications in this cycle will be moved to \"All Applications\".")
+        }
     }
 
     // MARK: - Rows
@@ -91,6 +112,22 @@ struct CyclePickerSheet: View {
             appState.selectedCycleID = cycle.id
             AppHaptics.shared.light()
             isPresented = false
+        }
+        .contextMenu {
+            Button {
+                cycleToEdit = cycle
+                newCycleName = cycle.name
+                isRenamingCycle = true
+            } label: {
+                Label("Rename", systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                cycleToEdit = cycle
+                isConfirmingDelete = true
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
         }
     }
 
@@ -207,8 +244,30 @@ struct CyclePickerSheet: View {
         guard !trimmed.isEmpty else { return }
         let cycle = JobCycle(name: trimmed)
         modelContext.insert(cycle)
+        try? modelContext.save()
         appState.selectedCycleID = cycle.id
         AppHaptics.shared.success()
         isPresented = false
+    }
+
+    private func renameCycle() {
+        guard let cycle = cycleToEdit else { return }
+        let trimmed = newCycleName.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        cycle.name = trimmed
+        try? modelContext.save()
+        AppHaptics.shared.success()
+        cycleToEdit = nil
+    }
+
+    private func deleteCycle() {
+        guard let cycle = cycleToEdit else { return }
+        if appState.selectedCycleID == cycle.id {
+            appState.selectedCycleID = nil
+        }
+        modelContext.delete(cycle)
+        try? modelContext.save()
+        AppHaptics.shared.medium()
+        cycleToEdit = nil
     }
 }
