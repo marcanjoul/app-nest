@@ -24,6 +24,8 @@ struct DarkStatusPill: View {
                 .font(.system(size: 11, weight: .semibold))
             Text(displayText)
                 .font(.system(size: 12, weight: .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
         .foregroundStyle(style.tintColor)
         .padding(.horizontal, 10)
@@ -51,6 +53,8 @@ struct DarkTypeTag: View {
             }
             Text(text)
                 .font(.system(size: 12, weight: .medium))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
         .foregroundStyle(DarkTheme.textSecondary)
         .padding(.horizontal, 9)
@@ -154,12 +158,12 @@ struct DarkJobCardView: View {
                     .foregroundStyle(DarkTheme.textSecondary)
                     .lineLimit(1)
 
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 6) {
-                        pills
+                HStack(spacing: 6) {
+                    if let status = job.status {
+                        DarkStatusPill(status: status)
                     }
-                    VStack(alignment: .leading, spacing: 4) {
-                        pills
+                    if let type = job.jobType {
+                        DarkTypeTag(text: type.rawValue, icon: type.iconName)
                     }
                 }
                 .padding(.top, 2)
@@ -178,16 +182,6 @@ struct DarkJobCardView: View {
         }
         .padding(16)
         .glassCard(cornerRadius: DarkTheme.cardRadius, fillOpacity: 0.8)
-    }
-
-    @ViewBuilder
-    private var pills: some View {
-        if let status = job.status {
-            DarkStatusPill(status: status)
-        }
-        if let type = job.jobType {
-            DarkTypeTag(text: type.rawValue, icon: type.iconName)
-        }
     }
 
     @ViewBuilder

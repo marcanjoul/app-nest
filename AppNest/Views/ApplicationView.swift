@@ -1,5 +1,8 @@
 import SwiftUI
 import SwiftData
+#if canImport(UIKit)
+import UIKit
+#endif
 
 enum SortOption: String, CaseIterable {
     case dateNewest = "Newest"
@@ -114,13 +117,6 @@ struct ApplicationView: View {
                             .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                Button(role: .destructive) {
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { modelContext.delete(job) }
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
                     }
                 }
 
@@ -349,9 +345,11 @@ private struct FABStyle: ButtonStyle {
 private struct JobCardSwipeRow: View {
     let job: JobApplication
 
-    @GestureState private var dragX: CGFloat = 0
+    @Environment(\.modelContext) private var modelContext
+    @GestureState private var dragOffset: CGFloat = 0
 
-    private let thresholds: [CGFloat] = [65, 130, 200]
+    private let advanceThresholds: [CGFloat] = [65, 130, 200]
+    private let deleteThreshold: CGFloat = 80
 
     private var pipeline: [ApplicationStatus] {
         let all: [ApplicationStatus] = [.toApply, .applied, .interview, .offer]
@@ -361,66 +359,66 @@ private struct JobCardSwipeRow: View {
 
     private func stageFor(_ offset: CGFloat) -> Int {
         var stage = 0
-        for (i, threshold) in thresholds.enumerated() {
+        for (i, threshold) in advanceThresholds.enumerated() {
             guard i < pipeline.count else { break }
             if offset >= threshold { stage = i + 1 }
         }
         return stage
     }
 
-    private var currentStage: Int { stageFor(dragX) }
+    private var currentStage: Int { dragOffset > 0 ? stageFor(dragOffset) : 0 }
 
     var body: some View {
-        ZStack(alignment: .leading) {
+        ZStack(alignment: dragOffset < 0 ? .trailing : .leading) {
             swipeBackground
             ZStack {
                 NavigationLink(destination: JobDetailView(job: job)) { EmptyView() }
                     .opacity(0)
                 DarkJobCardView(job: job)
             }
-            .offset(x: cardOffset(dragX))
-            .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.85), value: dragX)
+            .offset(x: cardOffset(dragOffset))
+            .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.85), value: dragOffset)
         }
         .simultaneousGesture(
             DragGesture(minimumDistance: 12)
-                .updating($dragX) { value, state, _ in
+                .updating($dragOffset) { value, state, _ in
                     let dx = value.translation.width
-                    guard dx > 0, dx > abs(value.translation.height) else { return }
+                    guard abs(dx) > abs(value.translation.height) else { return }
+                    if dx > 0, pipeline.isEmpty { return }
                     state = dx
                 }
                 .onEnded { value in
-                    let dx = max(0, value.translation.width)
-                    let stage = stageFor(dx)
-                    guard stage > 0, stage - 1 < pipeline.count else { return }
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                        job.status = pipeline[stage - 1]
+                    let dx = value.translation.width
+                    if dx > 0 {
+                        let stage = stageFor(dx)
+                        guard stage > 0, stage - 1 < pipeline.count else { return }
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                            job.status = pipeline[stage - 1]
+                        }
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    } else if dx < -deleteThreshold {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                            modelContext.delete(job)
+                        }
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     }
-                    #if canImport(UIKit)
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    #endif
                 }
         )
         .onChange(of: currentStage) { old, new in
             guard new > old, new > 0 else { return }
-            #if canImport(UIKit)
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            #endif
         }
     }
 
     @ViewBuilder
     private var swipeBackground: some View {
-        if !pipeline.isEmpty {
-            let displayedIdx = max(0, min(currentStage - 1, pipeline.count - 1))
-            let displayed = pipeline[displayedIdx]
-            let style = DarkTheme.statusStyle(for: displayed)
-            let revealProgress = min(1.0, dragX / thresholds[0])
-
+        if dragOffset > 5, !pipeline.isEmpty {
+            let idx = max(0, min(currentStage - 1, pipeline.count - 1))
+            let target = pipeline[idx]
+            let style = DarkTheme.statusStyle(for: target)
             HStack(spacing: 8) {
-                Image(systemName: style.iconName)
-                    .font(.system(size: 16, weight: .bold))
-                Text(displayed.rawValue)
-                    .font(.system(size: 13, weight: .semibold))
+                Image(systemName: style.iconName).font(.system(size: 16, weight: .bold))
+                Text(target.rawValue).font(.system(size: 13, weight: .semibold))
             }
             .foregroundStyle(style.tintColor)
             .padding(.leading, 22)
@@ -428,22 +426,39 @@ private struct JobCardSwipeRow: View {
             .background(
                 RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
                     .fill(style.fillColor)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
-                            .strokeBorder(style.borderColor, lineWidth: 1)
-                    )
+                    .overlay(RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                        .strokeBorder(style.borderColor, lineWidth: 1))
             )
-            .opacity(revealProgress)
-            .animation(.easeOut(duration: 0.12), value: displayed)
+            .opacity(min(1.0, dragOffset / advanceThresholds[0]))
+            .animation(.easeOut(duration: 0.12), value: target)
+        } else if dragOffset < -5 {
+            let c = Color(red: 0.93, green: 0.38, blue: 0.44)
+            HStack(spacing: 8) {
+                Image(systemName: "trash.fill").font(.system(size: 16, weight: .bold))
+                Text("Delete").font(.system(size: 13, weight: .semibold))
+            }
+            .foregroundStyle(c)
+            .padding(.trailing, 22)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+            .background(
+                RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                    .fill(c.opacity(0.12))
+                    .overlay(RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                        .strokeBorder(c.opacity(0.28), lineWidth: 1))
+            )
+            .opacity(min(1.0, abs(dragOffset) / deleteThreshold))
         }
     }
 
     private func cardOffset(_ raw: CGFloat) -> CGFloat {
-        guard raw > 0 else { return 0 }
-        let damped = raw * 0.70
-        let limit: CGFloat = 165
-        guard damped > limit else { return damped }
-        return limit + (damped - limit) * 0.18
+        if raw > 0 {
+            let d = raw * 0.70
+            return d > 165 ? 165 + (d - 165) * 0.18 : d
+        } else if raw < 0 {
+            let d = raw * 0.70
+            return d < -110 ? -110 + (d + 110) * 0.18 : d
+        }
+        return 0
     }
 }
 
