@@ -154,12 +154,12 @@ struct DarkJobCardView: View {
                     .foregroundStyle(DarkTheme.textSecondary)
                     .lineLimit(1)
 
-                HStack(spacing: 6) {
-                    if let status = job.status {
-                        DarkStatusPill(status: status)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 6) {
+                        pills
                     }
-                    if let type = job.jobType {
-                        DarkTypeTag(text: type.rawValue, icon: type.iconName)
+                    VStack(alignment: .leading, spacing: 4) {
+                        pills
                     }
                 }
                 .padding(.top, 2)
@@ -178,6 +178,16 @@ struct DarkJobCardView: View {
         }
         .padding(16)
         .glassCard(cornerRadius: DarkTheme.cardRadius, fillOpacity: 0.8)
+    }
+
+    @ViewBuilder
+    private var pills: some View {
+        if let status = job.status {
+            DarkStatusPill(status: status)
+        }
+        if let type = job.jobType {
+            DarkTypeTag(text: type.rawValue, icon: type.iconName)
+        }
     }
 
     @ViewBuilder
