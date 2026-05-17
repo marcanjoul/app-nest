@@ -1,6 +1,15 @@
 import Foundation
 import NaturalLanguage
 
+// MARK: - Highlight types (used by EmailParserView to colour matched spans)
+
+enum HighlightField { case company, position, status, date }
+
+struct HighlightSpan {
+    let text:  String
+    let field: HighlightField
+}
+
 /// Parses job-related emails to extract application details.
 ///
 /// Uses a hybrid approach:
@@ -14,6 +23,7 @@ struct EmailParser {
         var jobType: ApplicationType?
         var status: ApplicationStatus?
         var dateApplied: Date?
+        var highlights: [HighlightSpan] = []
     }
 
     func parse(_ emailText: String) -> ParsedResult {
@@ -21,8 +31,18 @@ struct EmailParser {
         result.companyName = extractCompanyName(from: emailText)
         result.position    = extractPosition(from: emailText)
         result.jobType     = extractJobType(from: emailText)
-        result.status      = extractStatus(from: emailText)
-        result.dateApplied = extractDate(from: emailText)
+
+        let (status, statusPhrase) = extractStatusAndPhrase(from: emailText)
+        result.status = status
+
+        let (date, dateText) = extractDateAndText(from: emailText)
+        result.dateApplied = date
+
+        if let v = result.companyName, !v.isEmpty  { result.highlights.append(.init(text: v,      field: .company)) }
+        if let v = result.position,    !v.isEmpty  { result.highlights.append(.init(text: v,      field: .position)) }
+        if let p = statusPhrase                    { result.highlights.append(.init(text: p,      field: .status)) }
+        if let d = dateText,           !d.isEmpty  { result.highlights.append(.init(text: d,      field: .date)) }
+
         return result
     }
 
@@ -204,7 +224,7 @@ struct EmailParser {
 
     // MARK: - Status
 
-    private func extractStatus(from text: String) -> ApplicationStatus? {
+    private func extractStatusAndPhrase(from text: String) -> (ApplicationStatus, String?) {
         let lowered = text.lowercased()
 
         let conditionalPrefixes = ["if you are ", "if you're ", "in case you ", "should you "]
@@ -234,7 +254,8 @@ struct EmailParser {
                 "application has been submitted", "successfully submitted",
                 "we have received your application", "thank you for your interest",
                 "confirm your application", "received your application",
-                "reviewing your application", "we received your application"
+                "reviewing your application", "we received your application",
+                "successfully applied"
             ]),
         ]
 
@@ -254,32 +275,35 @@ struct EmailParser {
                         }
                         if isConditional { continue }
                     }
-                    return status
+                    return (status, phrase)
                 }
             }
         }
 
-        return .applied
+        return (.applied, nil)
     }
 
     // MARK: - Date (NSDataDetector)
 
-    private func extractDate(from text: String) -> Date? {
-        let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.date.rawValue)
-        let range = NSRange(text.startIndex..., in: text)
-        let matches = detector?.matches(in: text, options: [], range: range) ?? []
+    private func extractDateAndText(from text: String) -> (Date?, String?) {
+        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.date.rawValue) else {
+            return (Date(), nil)
+        }
+        let nsRange = NSRange(text.startIndex..., in: text)
+        let matches = detector.matches(in: text, options: [], range: nsRange)
 
         let now = Date()
-        let sixMonthsAgo  = Calendar.current.date(byAdding: .month, value: -6, to: now)!
-        let oneMonthAhead = Calendar.current.date(byAdding: .month, value:  1, to: now)!
+        let twoYearsAgo   = Calendar.current.date(byAdding: .year, value: -2, to: now)!
+        let twoYearsAhead = Calendar.current.date(byAdding: .year, value:  2, to: now)!
 
         for match in matches {
-            if let date = match.date, date >= sixMonthsAgo && date <= oneMonthAhead {
-                return date
-            }
+            guard let date = match.date,
+                  date >= twoYearsAgo && date <= twoYearsAhead else { continue }
+            let dateText = Range(match.range, in: text).map { String(text[$0]) }
+            return (date, dateText)
         }
 
-        return Date()
+        return (Date(), nil)
     }
 
     // MARK: - Helpers

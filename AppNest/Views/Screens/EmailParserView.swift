@@ -26,6 +26,7 @@ struct EmailParserView: View {
     @State private var saveSuccess     = false
     @State private var scrollToResults = false
     @State private var fetchedLogoData: Data? = nil
+    @State private var highlights: [HighlightSpan] = []
 
     private let parser = EmailParser()
 
@@ -133,6 +134,23 @@ struct EmailParserView: View {
                             .foregroundStyle(DarkTheme.textSecondary)
                     }
                 }
+            }
+
+            if !isEmailExpanded && !emailText.isEmpty && !highlights.isEmpty {
+                Text(buildHighlightedString(emailText, spans: highlights))
+                    .font(.system(size: 12))
+                    .lineLimit(3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .foregroundStyle(DarkTheme.textSecondary)
+                    .padding(.top, 10)
+                    .mask(
+                        LinearGradient(
+                            colors: [.black, .black, .clear],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
             if isEmailExpanded {
@@ -313,6 +331,7 @@ struct EmailParserView: View {
                 hasResult       = true
                 isEmailExpanded = false
                 parseCount     += 1
+                highlights      = result.highlights
             }
             scrollToResults = true
         }
@@ -347,8 +366,42 @@ struct EmailParserView: View {
                 editDate        = Date()
                 isEmailExpanded = true
                 fetchedLogoData = nil
+                highlights      = []
             }
         }
+    }
+
+    // MARK: - Highlight helpers
+
+    private func highlightColor(for field: HighlightField) -> Color {
+        switch field {
+        case .company:  return Color.accentColor
+        case .position: return Color(red: 0.96, green: 0.73, blue: 0.28)
+        case .status:   return Color(red: 0.30, green: 0.80, blue: 0.45)
+        case .date:     return Color(red: 0.62, green: 0.52, blue: 0.96)
+        }
+    }
+
+    private func buildHighlightedString(_ raw: String, spans: [HighlightSpan]) -> AttributedString {
+        var result = AttributedString(raw)
+        let nsRaw = raw as NSString
+        for span in spans {
+            let color = highlightColor(for: span.field)
+            var searchStart = 0
+            while searchStart < nsRaw.length {
+                let searchRange = NSRange(location: searchStart, length: nsRaw.length - searchStart)
+                let found = nsRaw.range(of: span.text, options: .caseInsensitive, range: searchRange)
+                guard found.location != NSNotFound else { break }
+                if let swiftRange = Range(found, in: raw) {
+                    let lo = result.index(result.startIndex, offsetByCharacters: raw.distance(from: raw.startIndex, to: swiftRange.lowerBound))
+                    let hi = result.index(result.startIndex, offsetByCharacters: raw.distance(from: raw.startIndex, to: swiftRange.upperBound))
+                    result[lo..<hi].foregroundColor = color
+                    result[lo..<hi].font = Font.system(size: 12, weight: .semibold)
+                }
+                searchStart = found.location + found.length
+            }
+        }
+        return result
     }
 }
 
