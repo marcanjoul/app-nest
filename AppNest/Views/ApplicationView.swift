@@ -119,12 +119,11 @@ struct ApplicationView: View {
                         .listRowSeparator(.hidden)
                 } else {
                     ForEach(filteredAndSorted) { job in
-                        NavigationLink {
-                            JobDetailView(job: job)
-                        } label: {
+                        ZStack {
+                            NavigationLink(destination: JobDetailView(job: job)) { EmptyView() }
+                                .opacity(0)
                             DarkJobCardView(job: job)
                         }
-                        .buttonStyle(CardPressStyle())
                         .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
@@ -367,14 +366,6 @@ private struct FABStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-    }
-}
-
-private struct CardPressStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .animation(.easeOut(duration: 0.10), value: configuration.isPressed)
     }
 }
 
