@@ -97,6 +97,7 @@ struct ProfileView: View {
                         pipelineSection
                         resumeSection
                         exportRow
+                        importRow
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 20)
@@ -158,6 +159,30 @@ struct ProfileView: View {
         .onChange(of: avatarSelection) { _, newValue in
             guard let newValue else { return }
             Task { await updateProfileAvatar(from: newValue) }
+        }
+        .fileImporter(
+            isPresented: Binding(
+                get: { appState.isImportingCSV },
+                set: { appState.isImportingCSV = $0 }
+            ),
+            allowedContentTypes: [.commaSeparatedText, .csv],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    importCSV(at: url)
+                }
+            case .failure(let error):
+                print("CSV Import failed: \(error.localizedDescription)")
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { appState.isShowingImportPreview },
+            set: { appState.isShowingImportPreview = $0 }
+        )) {
+            CSVImportPreviewSheet()
+                .environment(appState)
         }
     }
 
@@ -457,6 +482,39 @@ struct ProfileView: View {
         .opacity(empty ? 0.45 : 1)
     }
 
+    private var importRow: some View {
+        Button { appState.isImportingCSV = true } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "square.and.arrow.down")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 32, height: 32)
+                    .background(Circle().fill(Color.accentColor.opacity(0.12)))
+
+                Text("Import CSV")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(DarkTheme.textPrimary)
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(DarkTheme.textTertiary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background {
+                RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                    .fill(DarkTheme.cardFill)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                            .strokeBorder(DarkTheme.cardBorder, lineWidth: 1)
+                    }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
     // MARK: - Helpers
 
     private var deletionAlertBinding: Binding<Bool> {
@@ -502,6 +560,25 @@ struct ProfileView: View {
     private func updateProfileAvatar(from item: PhotosPickerItem) async {
         if let data = try? await item.loadTransferable(type: Data.self) {
             profileAvatarDataBase64 = data.base64EncodedString()
+        }
+    }
+
+    private func importCSV(at url: URL) {
+        let _ = url.startAccessingSecurityScopedResource()
+        defer { url.stopAccessingSecurityScopedResource() }
+
+        do {
+            let data = try String(contentsOf: url)
+            let rows = CSVImporter.parse(data)
+            if rows.isEmpty {
+                // In a real app, show an alert. For now, just print.
+                print("No rows found in CSV.")
+                return
+            }
+            appState.csvImportPreview = rows
+            appState.isShowingImportPreview = true
+        } catch {
+            print("Failed to read CSV: \(error)")
         }
     }
 
@@ -723,6 +800,221 @@ private struct ShareSheet: UIViewControllerRepresentable {
         UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
     }
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - CSV Import UI
+
+private struct CSVImportPreviewSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @Environment(AppState.self) private var appState
+    @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
+
+    @State private var editingRow: CSVImportRow?
+    @State private var localRows: [CSVImportRow] = []
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AmbientBackground()
+                
+                if localRows.isEmpty {
+                    ContentUnavailableView("No rows found", systemImage: "doc.text.magnifyingglass")
+                } else {
+                    List {
+                        Section {
+                            ForEach(localRows) { row in
+                                Button {
+                                    editingRow = row
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(row.companyName.isEmpty ? "Missing Company" : row.companyName)
+                                                .font(.system(size: 16, weight: .bold))
+                                                .foregroundStyle(row.companyName.isEmpty ? Color.red : DarkTheme.textPrimary)
+                                            
+                                            Text(row.position.isEmpty ? "Missing Position" : row.position)
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundStyle(row.position.isEmpty ? Color.red : DarkTheme.textSecondary)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        if !row.isComplete {
+                                            Image(systemName: "exclamationmark.triangle.fill")
+                                                .foregroundStyle(Color.orange)
+                                                .font(.system(size: 14))
+                                        }
+                                        
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundStyle(DarkTheme.textTertiary)
+                                    }
+                                    .padding(.vertical, 4)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .onDelete { indices in
+                                localRows.remove(atOffsets: indices)
+                            }
+                        } header: {
+                            Text("\(localRows.count) rows found")
+                        } footer: {
+                            if localRows.contains(where: { !$0.isComplete }) {
+                                Text("Some rows are missing required fields (Company or Position). Tap to edit.")
+                                    .foregroundStyle(Color.orange)
+                            }
+                        }
+                    }
+                    .listStyle(.insetGrouped)
+                    .scrollContentBackground(.hidden)
+                }
+            }
+            .navigationTitle("Import Preview")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Import All") {
+                        finalizeImport()
+                    }
+                    .disabled(localRows.isEmpty || localRows.contains(where: { !$0.isComplete }))
+                }
+            }
+            .onAppear {
+                if let preview = appState.csvImportPreview {
+                    localRows = preview
+                }
+            }
+            .sheet(item: $editingRow) { row in
+                EditImportRowView(row: row) { updated in
+                    if let index = localRows.firstIndex(where: { $0.id == updated.id }) {
+                        localRows[index] = updated
+                    }
+                }
+            }
+        }
+    }
+
+    private func finalizeImport() {
+        let cycle = cycles.first(where: { $0.id == appState.selectedCycleID })
+        
+        for row in localRows {
+            let app = JobApplication(
+                companyName: row.companyName,
+                position: row.position,
+                jobType: row.jobType,
+                status: row.status ?? .applied,
+                season: row.season,
+                cycle: cycle,
+                dateApplied: row.dateApplied,
+                jobNotes: row.notes,
+                compensationKind: row.compensationKind,
+                compensationAmount: row.compensationAmount,
+                compensationCurrency: row.compensationCurrency,
+                salaryPeriod: row.salaryPeriod
+            )
+            modelContext.insert(app)
+        }
+        
+        appState.csvImportPreview = nil
+        dismiss()
+    }
+}
+
+private struct EditImportRowView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State var row: CSVImportRow
+    var onSave: (CSVImportRow) -> Void
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Basic Info") {
+                    TextField("Company Name", text: $row.companyName)
+                    TextField("Position", text: $row.position)
+                }
+                
+                Section("Status & Type") {
+                    Picker("Type", selection: $row.jobType) {
+                        Text("Not Set").tag(nil as ApplicationType?)
+                        ForEach(ApplicationType.allCases, id: \.self) { t in
+                            Text(t.rawValue).tag(t as ApplicationType?)
+                        }
+                    }
+                    
+                    Picker("Status", selection: $row.status) {
+                        Text("Not Set").tag(nil as ApplicationStatus?)
+                        ForEach(ApplicationStatus.allCases, id: \.self) { s in
+                            Text(s.rawValue).tag(s as ApplicationStatus?)
+                        }
+                    }
+                    
+                    Picker("Season", selection: $row.season) {
+                        Text("Not Set").tag(nil as ApplicationSeason?)
+                        ForEach(ApplicationSeason.allCases, id: \.self) { s in
+                            Text(s.rawValue).tag(s as ApplicationSeason?)
+                        }
+                    }
+                }
+                
+                Section("Date") {
+                    DatePicker("Applied On", selection: $row.dateApplied, displayedComponents: .date)
+                }
+                
+                Section("Compensation") {
+                    HStack {
+                        TextField("Amount", value: $row.compensationAmount, format: .number)
+                            .keyboardType(.decimalPad)
+                        
+                        Picker("", selection: $row.compensationCurrency) {
+                            ForEach(Currency.allCases, id: \.self) { c in
+                                Text(c.rawValue).tag(c as Currency?)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .fixedSize()
+                    }
+                    
+                    Picker("Kind", selection: $row.compensationKind) {
+                        Text("Not Set").tag(nil as CompensationKind?)
+                        ForEach(CompensationKind.allCases, id: \.self) { k in
+                            Text(k.rawValue).tag(k as CompensationKind?)
+                        }
+                    }
+                    
+                    if row.compensationKind == .salary {
+                        Picker("Period", selection: $row.salaryPeriod) {
+                            Text("Not Set").tag(nil as SalaryPeriod?)
+                            ForEach(SalaryPeriod.allCases, id: \.self) { p in
+                                Text(p.rawValue).tag(p as SalaryPeriod?)
+                            }
+                        }
+                    }
+                }
+                
+                Section("Notes") {
+                    TextField("Notes", text: $row.notes, axis: .vertical)
+                        .lineLimit(3...10)
+                }
+            }
+            .navigationTitle("Edit Row")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        onSave(row)
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
 }
 
 #Preview {
