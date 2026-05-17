@@ -337,7 +337,8 @@ struct EmailParserView: View {
                 )
                 JobTypePickerRow(jobType: $editJobType, index: 2)
                 StatusPickerRow(status: $editStatus, index: 3)
-                DatePickerRow(date: $editDate, index: 4)
+                SeasonPickerRow(season: $editSeason, index: 4)
+                DatePickerRow(date: $editDate, index: 5)
             }
             .id(parseCount)
 
@@ -426,6 +427,7 @@ struct EmailParserView: View {
                 editPosition    = ""
                 editJobType     = nil
                 editStatus      = .applied
+                editSeason      = nil
                 editDate        = Date()
                 isEmailExpanded = true
                 fetchedLogoData     = nil
@@ -545,6 +547,11 @@ private struct JobTypePickerRow: View {
 
     @State private var appeared = false
 
+    private var sortedTypes: [ApplicationType] {
+        guard let sel = jobType else { return ApplicationType.allCases }
+        return [sel] + ApplicationType.allCases.filter { $0 != sel }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
@@ -559,7 +566,7 @@ private struct JobTypePickerRow: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(ApplicationType.allCases, id: \.self) { t in
+                    ForEach(sortedTypes, id: \.self) { t in
                         SelectablePill(
                             option: t,
                             isSelected: jobType == t,
@@ -575,6 +582,7 @@ private struct JobTypePickerRow: View {
                     }
                 }
                 .padding(.vertical, 2)
+                .animation(.appCrisp, value: jobType)
             }
         }
         .opacity(appeared ? 1 : 0)
@@ -595,6 +603,10 @@ private struct StatusPickerRow: View {
 
     @State private var appeared = false
 
+    private var sortedStatuses: [ApplicationStatus] {
+        [status] + ApplicationStatus.allCases.filter { $0 != status }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
@@ -609,7 +621,7 @@ private struct StatusPickerRow: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(ApplicationStatus.allCases, id: \.self) { s in
+                    ForEach(sortedStatuses, id: \.self) { s in
                         SelectablePill(
                             option: s,
                             isSelected: status == s,
@@ -625,6 +637,63 @@ private struct StatusPickerRow: View {
                     }
                 }
                 .padding(.vertical, 2)
+                .animation(.appCrisp, value: status)
+            }
+        }
+        .opacity(appeared ? 1 : 0)
+        .offset(x: appeared ? 0 : -14)
+        .onAppear {
+            withAnimation(.appSmooth.delay(Double(index) * 0.05)) {
+                appeared = true
+            }
+        }
+    }
+}
+
+// MARK: - Season Picker Row
+
+private struct SeasonPickerRow: View {
+    @Binding var season: ApplicationSeason?
+    let index: Int
+
+    @State private var appeared = false
+
+    private var sortedSeasons: [ApplicationSeason] {
+        guard let sel = season else { return ApplicationSeason.allCases }
+        return [sel] + ApplicationSeason.allCases.filter { $0 != sel }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "calendar.badge.clock")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(DarkTheme.textSecondary)
+                    .frame(width: 14)
+                Text("Season")
+                    .font(.caption)
+                    .foregroundStyle(DarkTheme.textSecondary)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(sortedSeasons, id: \.self) { s in
+                        SelectablePill(
+                            option: s,
+                            isSelected: season == s,
+                            color: s.color,
+                            icon: s.iconName,
+                            onTap: {
+                                withAnimation(.appCrisp) {
+                                    season = season == s ? nil : s
+                                }
+                                AppHaptics.shared.light()
+                            }
+                        )
+                    }
+                }
+                .padding(.vertical, 2)
+                .animation(.appCrisp, value: season)
             }
         }
         .opacity(appeared ? 1 : 0)
