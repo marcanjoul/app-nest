@@ -237,44 +237,32 @@ struct ApplicationView: View {
 
     // MARK: - Stats Section
 
-    private var orderedFilterStatuses: [ApplicationStatus] {
-        let base: [ApplicationStatus] = [.toApply, .applied, .interview, .offer, .rejected]
-        guard !selectedStatuses.isEmpty else { return base }
-        return base.filter { selectedStatuses.contains($0) } + base.filter { !selectedStatuses.contains($0) }
-    }
+    private let filterStatuses: [ApplicationStatus] = [.toApply, .applied, .interview, .offer, .rejected]
 
     private var statsSection: some View {
-        ScrollViewReader { proxy in
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(orderedFilterStatuses, id: \.self) { status in
-                        let count = searchFiltered.filter { $0.status == status }.count
-                        StatChip(
-                            status: status,
-                            number: count,
-                            isSelected: selectedStatuses.contains(status),
-                            action: {
-                                withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
-                                    if selectedStatuses.contains(status) {
-                                        selectedStatuses.remove(status)
-                                    } else {
-                                        selectedStatuses.insert(status)
-                                    }
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(filterStatuses, id: \.self) { status in
+                    let count = searchFiltered.filter { $0.status == status }.count
+                    StatChip(
+                        status: status,
+                        number: count,
+                        isSelected: selectedStatuses.contains(status),
+                        action: {
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
+                                if selectedStatuses.contains(status) {
+                                    selectedStatuses.remove(status)
+                                } else {
+                                    selectedStatuses.insert(status)
                                 }
                             }
-                        )
-                        .id(status)
-                        .opacity(count == 0 && !selectedStatuses.contains(status) ? 0.4 : 1.0)
-                        .animation(.spring(response: 0.28, dampingFraction: 0.7), value: count)
-                    }
-                }
-                .padding(.horizontal, 20)
-            }
-            .onChange(of: selectedStatuses) { _, _ in
-                if let first = orderedFilterStatuses.first {
-                    withAnimation(.smooth) { proxy.scrollTo(first, anchor: .leading) }
+                        }
+                    )
+                    .opacity(count == 0 && !selectedStatuses.contains(status) ? 0.4 : 1.0)
+                    .animation(.spring(response: 0.28, dampingFraction: 0.7), value: count)
                 }
             }
+            .padding(.horizontal, 20)
         }
     }
 
