@@ -568,7 +568,7 @@ struct ProfileView: View {
         defer { url.stopAccessingSecurityScopedResource() }
 
         do {
-            let data = try String(contentsOf: url)
+            let data = try String(contentsOf: url, encoding: .utf8)
             let rows = CSVImporter.parse(data)
             if rows.isEmpty {
                 // In a real app, show an alert. For now, just print.

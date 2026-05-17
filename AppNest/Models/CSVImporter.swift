@@ -197,7 +197,7 @@ enum CSVImporter {
 
     private static func parseCompensation(comp: String, curr: String, into row: inout CSVImportRow) {
         guard !comp.isEmpty else { return }
-        var cleaned = comp
+        let cleaned = comp
             .replacingOccurrences(of: ",", with: "")
             .replacingOccurrences(of: "$", with: "")
             .trimmingCharacters(in: .whitespaces)
