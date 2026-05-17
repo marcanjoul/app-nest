@@ -35,11 +35,11 @@ struct EmailParser {
             // "joining BillionToOne" / "join our team at Acme"
             #"(?:joining|join)\s+(?:our\s+team\s+at\s+|the\s+team\s+at\s+)?([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
             // "role/position/internship at Company"
-            #"(?:role|position|opportunity|internship|job)\s+(?:at|with)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\n|$)"#,
+            #"(?:role|position|opportunity|internship|job)\s+(?:at|with)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
             // "apply/applied/applying to/at Company"
-            #"(?:apply|applied|applying)\s+(?:to|at|for)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\n|$)"#,
+            #"(?:apply|applied|applying)\s+(?:to|at|for)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
             // "team/company at/of Company"
-            #"(?:team|company)\s+(?:at|of)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\n|$)"#,
+            #"(?:team|company)\s+(?:at|of)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
             // "welcome to / offer from Company"
             #"(?:welcome to|offer from)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
             // "interest in Company" — but NOT "interest in joining" (handled by pattern above)
@@ -52,7 +52,7 @@ struct EmailParser {
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                     .trimmingCharacters(in: CharacterSet(charactersIn: ".,;:"))
 
-                let prefixes = ["position ", "role ", "the position ", "the role "]
+                let prefixes = ["position ", "role ", "the position ", "the role ", "the "]
                 for prefix in prefixes {
                     if cleaned.lowercased().hasPrefix(prefix) {
                         cleaned = String(cleaned.dropFirst(prefix.count))
@@ -104,6 +104,8 @@ struct EmailParser {
 
     private func extractPosition(from text: String) -> String? {
         let patterns = [
+            // "applying for the Intern, Software Engineer position at Company" — full title before "position/role at"
+            #"(?:application|applied|applying)\s+(?:for|to)\s+(?:the\s+)?(.+?)\s+(?:position|role)\s+(?:at|with|@)"#,
             // "application/applied/applying for/to [POSITION] at Company"
             #"(?:application|applied|applying)\s+(?:for|to)\s+(?:the\s+)?(.+?)(?:\s+(?:at|with|@)\s+|,|\.\s|\n|$)"#,
             // "vacancy/opening for [the/our/a] [POSITION] role/position"
