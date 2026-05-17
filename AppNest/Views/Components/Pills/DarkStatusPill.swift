@@ -141,21 +141,21 @@ struct DarkJobCardView: View {
     private var initial: String { String(job.companyName.prefix(1)).uppercased() }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .center, spacing: 16) {
             avatarView
-                .frame(width: 52, height: 52)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .frame(width: 60, height: 60)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .shadow(color: .black.opacity(0.20), radius: 4, y: 2)
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(job.position)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(DarkTheme.textPrimary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
 
                 Text(job.companyName)
-                    .font(.system(size: 13))
+                    .font(.system(size: 14))
                     .foregroundStyle(DarkTheme.textSecondary)
                     .lineLimit(1)
 
@@ -177,7 +177,7 @@ struct DarkJobCardView: View {
                     .foregroundStyle(.quaternary)
                 Spacer()
                 Text(dateText)
-                    .font(.caption)
+                    .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
         }

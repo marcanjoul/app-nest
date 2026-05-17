@@ -21,7 +21,7 @@ struct JobCardView: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .center, spacing: 16) {
             // Company avatar — image or letter fallback
             Group {
                 #if canImport(UIKit)
@@ -31,31 +31,31 @@ struct JobCardView: View {
                         .scaledToFill()
                 } else {
                     Text(initial)
-                        .font(.title3.weight(.semibold))
+                        .font(.system(size: 20, weight: .bold))
                         .foregroundStyle(avatarColors.foreground)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(avatarColors.background)
                 }
                 #else
                 Text(initial)
-                    .font(.title3.weight(.semibold))
+                    .font(.system(size: 20, weight: .bold))
                     .foregroundStyle(avatarColors.foreground)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(avatarColors.background)
                 #endif
             }
-            .frame(width: 48, height: 48)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .frame(width: 60, height: 60)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(job.position)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(.primary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                     
                 Text(job.companyName)
-                    .font(.footnote)
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 
