@@ -183,6 +183,20 @@ struct DarkJobCardView: View {
         }
         .padding(16)
         .glassCard(cornerRadius: DarkTheme.cardRadius)
+        .task(id: job.companyName) {
+            guard job.companyLogoImageData == nil else { return }
+            let trimmed = job.companyName.trimmingCharacters(in: .whitespaces)
+            guard trimmed.count >= 2 else { return }
+            
+            // Fetch logo
+            if let data = await LogoFetcher.fetchLogoData(for: trimmed) {
+                await MainActor.run {
+                    withAnimation(.appSmooth) {
+                        job.companyLogoImageData = data
+                    }
+                }
+            }
+        }
     }
 
     @ViewBuilder

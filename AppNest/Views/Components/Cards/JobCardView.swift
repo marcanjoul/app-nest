@@ -94,6 +94,19 @@ struct JobCardView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color(.separator).opacity(0.3), lineWidth: 0.5)
         )
+        .task(id: job.companyName) {
+            guard job.companyLogoImageData == nil else { return }
+            let trimmed = job.companyName.trimmingCharacters(in: .whitespaces)
+            guard trimmed.count >= 2 else { return }
+            
+            if let data = await LogoFetcher.fetchLogoData(for: trimmed) {
+                await MainActor.run {
+                    withAnimation(.appSmooth) {
+                        job.companyLogoImageData = data
+                    }
+                }
+            }
+        }
     }
 }
 
