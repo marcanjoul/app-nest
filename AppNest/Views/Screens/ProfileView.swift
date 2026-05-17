@@ -521,7 +521,8 @@ private struct PipelineSegmentedBar: View {
         if total == 0 || active.isEmpty {
             Capsule()
                 .fill(Color.primary.opacity(0.07))
-                .frame(maxWidth: .infinity, height: 8)
+                .frame(maxWidth: .infinity)
+                .frame(height: 8)
         } else {
             GeometryReader { geo in
                 let spacing: CGFloat = 2

@@ -41,32 +41,44 @@ The email parser uses a hybrid approach: Apple's `NLTagger` handles named entity
 
 ```
 AppNest/
-├── AppNestApp.swift              # Entry point, ModelContainer + onboarding gate
-├── Theme.swift                   # Centralized color system and design tokens
-├── DarkTheme.swift               # Dark-mode palette, glass card, ambient background
-├── Assets.xcassets               # Image and color assets
+├── Core/
+│   ├── AppNestApp.swift          # Entry point, ModelContainer + onboarding gate
+│   └── APIKeys.swift             # API Keys (Gitignored)
+├── DesignSystem/
+│   ├── Theme/
+│   │   ├── Theme.swift           # Centralized color system and design tokens
+│   │   └── DarkTheme.swift       # Dark-mode palette, glass card, ambient background
+│   ├── Motion/
+│   │   └── Animations.swift      # Standardized springs, easings, and button scales
+│   └── Haptics/
+│       └── Haptics.swift         # Centralized haptic feedback engine
 ├── Models/
-│   ├── JobApplication.swift      # @Model data class + enums (type, status, season, compensation, currency)
-│   ├── EmailParser.swift         # NLP + regex parsing engine
-│   ├── LogoFetcher.swift         # Logo.dev lookup and image fetcher
-│   └── NotificationManager.swift # Local reminder scheduling
-└── Views/
-    ├── RootView.swift            # Tab bar (Applications, Parse, Profile)
-    ├── ApplicationView.swift     # Main list with search, sort, filter
-    ├── JobCardView.swift         # Card component with themed avatars
-    ├── JobDetailView.swift       # Add/edit form: state, save, reminders, type/status/season/date/notes sections
-    ├── JobDetail/
-    │   ├── SectionLabel.swift        # Shared label row used by detail sections
-    │   ├── JobInfoSection.swift      # Hero header: logo picker, position, company name
-    │   ├── CompensationSection.swift # Hourly/Salary + currency + period picker
-    │   └── ResumeSection.swift       # Inline resume pills, library sheet, document picker
-    ├── EmailParserView.swift     # Paste email → extract fields UI
-    ├── ProfileView.swift         # Profile, resume manager, stats summary, CSV export
-    ├── ProfileStatsView.swift    # Deeper analytics view
-    ├── OnboardingView.swift      # First-launch walkthrough
-    ├── PillUI.swift              # Reusable pill components
-    ├── SelectablePill.swift      # Selectable pill used in JobDetailView pickers
-    └── DarkStatusPill.swift      # Status pill with colored dot indicator
+│   ├── JobApplication.swift      # SwiftData @Model + Domain Enums
+│   ├── EmailParser.swift         # NLP + Regex extraction engine
+│   ├── LogoFetcher.swift         # Logo.dev integration
+│   └── NotificationManager.swift # Local reminders
+├── Views/
+│   ├── Screens/                  # Top-level feature views
+│   │   ├── RootView.swift
+│   │   ├── ApplicationView.swift
+│   │   ├── JobDetailView.swift
+│   │   ├── EmailParserView.swift
+│   │   ├── ProfileView.swift
+│   │   ├── ProfileStatsView.swift
+│   │   └── OnboardingView.swift
+│   └── Components/               # Reusable atomic UI elements
+│       ├── Pills/
+│       │   ├── PillUI.swift
+│       │   ├── DarkStatusPill.swift
+│       │   └── SelectablePill.swift
+│       ├── Cards/
+│       │   └── JobCardView.swift
+│       └── JobDetail/            # Modular sections for the Detail form
+│           ├── SectionLabel.swift
+│           ├── JobInfoSection.swift
+│           ├── CompensationSection.swift
+│           └── ResumeSection.swift
+└── Assets.xcassets               # Static assets and colors
 ```
 
 ---
@@ -98,16 +110,16 @@ The project currently has `IPHONEOS_DEPLOYMENT_TARGET = 26.0`. If you want broad
    git clone https://github.com/marcanjoul/AppNest.git
    cd AppNest
    ```
-2. Create `AppNest/APIKeys.swift` from the example below.
+2. Create `AppNest/Core/APIKeys.swift` from the example below.
 3. Open `AppNest.xcodeproj` in Xcode.
 4. Select an iOS simulator or connected device.
 5. Build and run.
 
 ### Logo.dev API Keys
 
-`AppNest/APIKeys.swift` is intentionally gitignored so real credentials do not get committed. A fresh clone needs this file because `LogoFetcher` references `APIKeys`.
+`AppNest/Core/APIKeys.swift` is intentionally gitignored so real credentials do not get committed. A fresh clone needs this file because `LogoFetcher` references `APIKeys`.
 
-Create a new file at `AppNest/APIKeys.swift` and add:
+Create a new file at `AppNest/Core/APIKeys.swift` and add:
 
 ```swift
 enum APIKeys {
@@ -116,7 +128,7 @@ enum APIKeys {
 }
 ```
 
-You can find the key shape in `AppNest/APIKeys.example.swift`.
+You can find the key shape in `AppNest/Core/APIKeys.example.swift`.
 
 ### Offline Behavior
 
