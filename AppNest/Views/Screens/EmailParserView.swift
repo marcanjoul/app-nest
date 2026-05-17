@@ -26,8 +26,9 @@ struct EmailParserView: View {
     @State private var saveSuccess     = false
     @State private var scrollToResults = false
     @State private var fetchedLogoData: Data? = nil
-    @State private var isFetchingLogo  = false
+    @State private var isFetchingLogo       = false
     @State private var highlights: [HighlightSpan] = []
+    @State private var isHighlightExpanded  = false
 
     private let parser = EmailParser()
 
@@ -141,20 +142,43 @@ struct EmailParserView: View {
             }
 
             if !isEmailExpanded && !emailText.isEmpty && !highlights.isEmpty {
-                Text(buildHighlightedString(emailText, spans: highlights))
-                    .font(.system(size: 12))
-                    .lineLimit(3)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .foregroundStyle(DarkTheme.textSecondary)
-                    .padding(.top, 10)
-                    .mask(
-                        LinearGradient(
-                            colors: [.black, .black, .clear],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                VStack(alignment: .leading, spacing: 8) {
+                    if isHighlightExpanded {
+                        Text(buildHighlightedString(emailText, spans: highlights))
+                            .font(.system(size: 12))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .foregroundStyle(DarkTheme.textSecondary)
+                    } else {
+                        Text(buildHighlightedString(emailText, spans: highlights))
+                            .font(.system(size: 12))
+                            .lineLimit(3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .foregroundStyle(DarkTheme.textSecondary)
+                            .mask(
+                                LinearGradient(
+                                    colors: [.black, .black, .clear],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                    }
+
+                    Button {
+                        withAnimation(.appCrisp) {
+                            isHighlightExpanded.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(isHighlightExpanded ? "Show less" : "Show full email")
+                                .font(.caption.weight(.medium))
+                            Image(systemName: isHighlightExpanded ? "chevron.up" : "chevron.down")
+                                .font(.caption2.weight(.semibold))
+                        }
+                        .foregroundStyle(Color.accentColor.opacity(0.85))
+                    }
+                }
+                .padding(.top, 10)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
             if isEmailExpanded {
@@ -364,9 +388,10 @@ struct EmailParserView: View {
                 editDate        = result.dateApplied ?? Date()
                 isParsing       = false
                 hasResult       = true
-                isEmailExpanded = false
-                parseCount     += 1
-                highlights      = result.highlights
+                isEmailExpanded     = false
+                parseCount         += 1
+                highlights          = result.highlights
+                isHighlightExpanded = false
             }
             scrollToResults = true
         }
@@ -400,9 +425,10 @@ struct EmailParserView: View {
                 editStatus      = .applied
                 editDate        = Date()
                 isEmailExpanded = true
-                fetchedLogoData = nil
-                isFetchingLogo  = false
-                highlights      = []
+                fetchedLogoData     = nil
+                isFetchingLogo      = false
+                highlights          = []
+                isHighlightExpanded = false
             }
         }
     }

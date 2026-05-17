@@ -86,6 +86,13 @@ struct EmailParser {
                     cleaned = String(cleaned[..<idRange.lowerBound])
                 }
 
+                // Strip "a <noun> at <Company>" / "an <noun> at <Company>" — the regex engine's
+                // caseInsensitive flag makes [A-Z] match lowercase, so "interest in a career at Microsoft"
+                // captures "a career at Microsoft" instead of just "Microsoft".
+                if let m = cleaned.range(of: #"^(?:a|an)\s+\w+\s+at\s+"#, options: [.regularExpression, .caseInsensitive]) {
+                    cleaned = String(cleaned[m.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+
                 cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !cleaned.isEmpty && cleaned.count < 100 {
                     return cleaned
