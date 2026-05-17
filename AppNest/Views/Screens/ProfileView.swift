@@ -812,6 +812,9 @@ private struct CSVImportPreviewSheet: View {
 
     @State private var editingRow: CSVImportRow?
     @State private var localRows: [CSVImportRow] = []
+    @State private var selectedRows = Set<UUID>()
+    @State private var isAddingNewCycle = false
+    @State private var newCycleName = ""
 
     var body: some View {
         NavigationStack {
@@ -821,13 +824,32 @@ private struct CSVImportPreviewSheet: View {
                 if localRows.isEmpty {
                     ContentUnavailableView("No rows found", systemImage: "doc.text.magnifyingglass")
                 } else {
-                    List {
+                    List(selection: $selectedRows) {
                         Section {
-                            ForEach(localRows) { row in
+                            ForEach($localRows) { $row in
                                 Button {
                                     editingRow = row
                                 } label: {
                                     HStack(spacing: 12) {
+                                        // Logo Preview
+                                        ZStack {
+                                            if let data = row.logoData, let ui = UIImage(data: data) {
+                                                Image(uiImage: ui)
+                                                    .resizable()
+                                                    .scaledToFill()
+                                            } else {
+                                                let avatarColors = Theme.avatarColor(for: row.companyName)
+                                                let initial = String(row.companyName.prefix(1)).uppercased()
+                                                Circle()
+                                                    .fill(avatarColors.background)
+                                                Text(initial.isEmpty ? "?" : initial)
+                                                    .font(.system(size: 14, weight: .bold))
+                                                    .foregroundStyle(avatarColors.foreground)
+                                            }
+                                        }
+                                        .frame(width: 32, height: 32)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                        
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text(row.companyName.isEmpty ? "Missing Company" : row.companyName)
                                                 .font(.system(size: 16, weight: .bold))
@@ -836,6 +858,15 @@ private struct CSVImportPreviewSheet: View {
                                             Text(row.position.isEmpty ? "Missing Position" : row.position)
                                                 .font(.system(size: 14, weight: .medium))
                                                 .foregroundStyle(row.position.isEmpty ? Color.red : DarkTheme.textSecondary)
+                                            
+                                            if let cycleID = row.cycleID, let cycle = cycles.first(where: { $0.id == cycleID }) {
+                                                Text(cycle.name)
+                                                    .font(.system(size: 10, weight: .bold))
+                                                    .foregroundStyle(Color.accentColor)
+                                                    .padding(.horizontal, 6)
+                                                    .padding(.vertical, 2)
+                                                    .background(Capsule().fill(Color.accentColor.opacity(0.12)))
+                                            }
                                         }
                                         
                                         Spacer()
@@ -853,12 +884,35 @@ private struct CSVImportPreviewSheet: View {
                                     .padding(.vertical, 4)
                                 }
                                 .buttonStyle(.plain)
+                                .tag(row.id)
+                                .task(id: row.companyName) {
+                                    guard row.logoData == nil else { return }
+                                    let trimmed = row.companyName.trimmingCharacters(in: .whitespaces)
+                                    guard trimmed.count >= 2 else { return }
+                                    if let data = await LogoFetcher.fetchLogoData(for: trimmed) {
+                                        withAnimation(.appSmooth) {
+                                            row.logoData = data
+                                        }
+                                    }
+                                }
                             }
                             .onDelete { indices in
                                 localRows.remove(atOffsets: indices)
                             }
                         } header: {
-                            Text("\(localRows.count) rows found")
+                            HStack {
+                                Text("\(localRows.count) rows found")
+                                Spacer()
+                                Button(selectedRows.count == localRows.count ? "Deselect All" : "Select All") {
+                                    if selectedRows.count == localRows.count {
+                                        selectedRows.removeAll()
+                                    } else {
+                                        selectedRows = Set(localRows.map(\.id))
+                                    }
+                                }
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.accentColor)
+                            }
                         } footer: {
                             if localRows.contains(where: { !$0.isComplete }) {
                                 Text("Some rows are missing required fields (Company or Position). Tap to edit.")
@@ -868,6 +922,7 @@ private struct CSVImportPreviewSheet: View {
                     }
                     .listStyle(.insetGrouped)
                     .scrollContentBackground(.hidden)
+                    .environment(\.editMode, .constant(.active))
                 }
             }
             .navigationTitle("Import Preview")
@@ -882,6 +937,47 @@ private struct CSVImportPreviewSheet: View {
                     }
                     .disabled(localRows.isEmpty || localRows.contains(where: { !$0.isComplete }))
                 }
+                
+                ToolbarItemGroup(placement: .bottomBar) {
+                    if !selectedRows.isEmpty {
+                        Button(role: .destructive) {
+                            deleteSelected()
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                        .foregroundStyle(Color.red)
+                        
+                        Spacer()
+                        
+                        Menu {
+                            Button {
+                                isAddingNewCycle = true
+                            } label: {
+                                Label("New Cycle...", systemImage: "plus")
+                            }
+                            
+                            if !cycles.isEmpty {
+                                Divider()
+                                ForEach(cycles) { cycle in
+                                    Button(cycle.name) {
+                                        moveToCycle(cycle)
+                                    }
+                                }
+                            }
+                        } label: {
+                            Label("Move to Cycle", systemImage: "folder")
+                        }
+                    }
+                }
+            }
+            .alert("New Cycle", isPresented: $isAddingNewCycle) {
+                TextField("Cycle Name", text: $newCycleName)
+                Button("Create & Move") {
+                    createNewCycleAndMove()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Enter a name for the new job search cycle.")
             }
             .onAppear {
                 if let preview = appState.csvImportPreview {
@@ -898,17 +994,44 @@ private struct CSVImportPreviewSheet: View {
         }
     }
 
+    private func deleteSelected() {
+        localRows.removeAll { selectedRows.contains($0.id) }
+        selectedRows.removeAll()
+        AppHaptics.shared.light()
+    }
+
+    private func moveToCycle(_ cycle: JobCycle) {
+        for i in localRows.indices {
+            if selectedRows.contains(localRows[i].id) {
+                localRows[i].cycleID = cycle.id
+            }
+        }
+        selectedRows.removeAll()
+        AppHaptics.shared.success()
+    }
+
+    private func createNewCycleAndMove() {
+        let name = newCycleName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+        let cycle = JobCycle(name: name)
+        modelContext.insert(cycle)
+        moveToCycle(cycle)
+        newCycleName = ""
+    }
+
     private func finalizeImport() {
-        let cycle = cycles.first(where: { $0.id == appState.selectedCycleID })
+        let defaultCycle = cycles.first(where: { $0.id == appState.selectedCycleID })
         
         for row in localRows {
+            let rowCycle = row.cycleID.flatMap { id in cycles.first(where: { $0.id == id }) }
             let app = JobApplication(
                 companyName: row.companyName,
+                companyLogoImageData: row.logoData,
                 position: row.position,
                 jobType: row.jobType,
                 status: row.status ?? .applied,
                 season: row.season,
-                cycle: cycle,
+                cycle: rowCycle ?? defaultCycle,
                 dateApplied: row.dateApplied,
                 jobNotes: row.notes,
                 compensationKind: row.compensationKind,
@@ -926,12 +1049,52 @@ private struct CSVImportPreviewSheet: View {
 
 private struct EditImportRowView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+    @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
     @State var row: CSVImportRow
     var onSave: (CSVImportRow) -> Void
 
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    HStack {
+                        Spacer()
+                        ZStack {
+                            if let data = row.logoData, let ui = UIImage(data: data) {
+                                Image(uiImage: ui)
+                                    .resizable()
+                                    .scaledToFill()
+                            } else {
+                                let avatarColors = Theme.avatarColor(for: row.companyName)
+                                let initial = String(row.companyName.prefix(1)).uppercased()
+                                Circle()
+                                    .fill(avatarColors.background)
+                                Text(initial.isEmpty ? "?" : initial)
+                                    .font(.system(size: 32, weight: .bold))
+                                    .foregroundStyle(avatarColors.foreground)
+                            }
+                        }
+                        .frame(width: 80, height: 80)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+                        Spacer()
+                    }
+                    .listRowBackground(Color.clear)
+                    .task(id: row.companyName) {
+                        let trimmed = row.companyName.trimmingCharacters(in: .whitespaces)
+                        guard trimmed.count >= 2 else { return }
+                        // Small delay to avoid aggressive fetching while typing
+                        try? await Task.sleep(for: .milliseconds(500))
+                        guard !Task.isCancelled else { return }
+                        if let data = await LogoFetcher.fetchLogoData(for: trimmed, darkMode: colorScheme == .dark) {
+                            withAnimation(.appSmooth) {
+                                row.logoData = data
+                            }
+                        }
+                    }
+                }
+
                 Section("Basic Info") {
                     TextField("Company Name", text: $row.companyName)
                     TextField("Position", text: $row.position)
@@ -956,6 +1119,13 @@ private struct EditImportRowView: View {
                         Text("Not Set").tag(nil as ApplicationSeason?)
                         ForEach(ApplicationSeason.allCases, id: \.self) { s in
                             Text(s.rawValue).tag(s as ApplicationSeason?)
+                        }
+                    }
+
+                    Picker("Cycle", selection: $row.cycleID) {
+                        Text("Default").tag(nil as UUID?)
+                        ForEach(cycles) { cycle in
+                            Text(cycle.name).tag(cycle.id as UUID?)
                         }
                     }
                 }

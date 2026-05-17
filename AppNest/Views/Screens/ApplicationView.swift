@@ -38,7 +38,10 @@ struct ApplicationView: View {
     @State private var toastDragY: CGFloat = 0
     @State private var isShowingCyclePicker = false
     @State private var isAddingFirstCycle = false
+    @State private var isAddingCycleFromBulk = false
     @State private var newCycleName = ""
+    @State private var selectedJobIDs = Set<PersistentIdentifier>()
+    @State private var isEditMode = false
 
     // Cycle-filtered base (before search/status)
     private var cycleFiltered: [JobApplication] {
@@ -83,14 +86,28 @@ struct ApplicationView: View {
             // Adaptive ambient gradient background
             AmbientBackground()
 
-            List {
+            List(selection: $selectedJobIDs) {
                 // Header
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("App Nest")
-                        .font(.system(size: 40, weight: .bold))
-                        .foregroundStyle(DarkTheme.textPrimary)
-                    cycleSelectorChip
-                        .padding(.top, 6)
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("App Nest")
+                            .font(.system(size: 40, weight: .bold))
+                            .foregroundStyle(DarkTheme.textPrimary)
+                        cycleSelectorChip
+                            .padding(.top, 6)
+                    }
+                    Spacer()
+                    if !applications.isEmpty {
+                        Button(isEditMode ? "Done" : "Edit") {
+                            withAnimation(.appSmooth) {
+                                isEditMode.toggle()
+                                if !isEditMode { selectedJobIDs.removeAll() }
+                            }
+                        }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.accentColor)
+                        .padding(.top, 12)
+                    }
                 }
                 .opacity(contentAppeared ? 1 : 0)
                 .offset(y: contentAppeared ? 0 : 20)
@@ -98,6 +115,7 @@ struct ApplicationView: View {
                 .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 8, trailing: 20))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
+                .selectionDisabled() // Header should not be selectable
 
                 // Search + Filter
                 searchFilterRow
@@ -107,6 +125,7 @@ struct ApplicationView: View {
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 10, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
+                    .selectionDisabled()
 
                 // Stats
                 statsSection
@@ -116,6 +135,7 @@ struct ApplicationView: View {
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 14, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
+                    .selectionDisabled()
 
                 // Content
                 if cycleFiltered.isEmpty && !applications.isEmpty && appState.selectedCycleID != nil {
@@ -124,21 +144,43 @@ struct ApplicationView: View {
                         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
+                        .selectionDisabled()
                 } else if applications.isEmpty {
                     emptyState
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
                         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
+                        .selectionDisabled()
                 } else if filteredAndSorted.isEmpty {
                     noResultsState
                         .transition(.opacity.combined(with: .scale(scale: 0.95)))
                         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
+                        .selectionDisabled()
                 } else {
+                    if isEditMode {
+                        HStack {
+                            Spacer()
+                            Button(selectedJobIDs.count == filteredAndSorted.count ? "Deselect All" : "Select All") {
+                                if selectedJobIDs.count == filteredAndSorted.count {
+                                    selectedJobIDs.removeAll()
+                                } else {
+                                    selectedJobIDs = Set(filteredAndSorted.map(\.id))
+                                }
+                            }
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.accentColor)
+                        }
+                        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 4, trailing: 24))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .selectionDisabled()
+                    }
+
                     ForEach(filteredAndSorted) { job in
-                        JobCardSwipeRow(job: job, onDelete: { scheduleDelete(job) })
+                        JobCardSwipeRow(job: job, isEditMode: isEditMode, onDelete: { scheduleDelete(job) })
                             .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
@@ -150,37 +192,99 @@ struct ApplicationView: View {
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
+                    .selectionDisabled()
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.interactively)
+            .environment(\.editMode, .constant(isEditMode ? .active : .inactive))
 
             // Pill FAB
-            VStack {
-                Spacer()
-                HStack {
+            if !isEditMode {
+                VStack {
                     Spacer()
-                    Button {
-                        isPresentingNewApplication = true
-                    } label: {
-                        Label("New", systemImage: "plus")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 22)
-                            .padding(.vertical, 15)
-                            .background {
-                                Capsule()
-                                    .fill(Color.accentColor)
-                                    .shadow(color: Color.accentColor.opacity(0.30), radius: 14, y: 5)
-                            }
+                    HStack {
+                        Spacer()
+                        Button {
+                            isPresentingNewApplication = true
+                        } label: {
+                            Label("New", systemImage: "plus")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 22)
+                                .padding(.vertical, 15)
+                                .background {
+                                    Capsule()
+                                        .fill(Color.accentColor)
+                                        .shadow(color: Color.accentColor.opacity(0.30), radius: 14, y: 5)
+                                }
+                        }
+                        .buttonStyle(FABStyle())
+                        .scaleEffect(contentAppeared ? 1 : 0.75)
+                        .opacity(contentAppeared ? 1 : 0)
+                        .animation(.appSmooth.delay(0.18), value: contentAppeared)
+                        .padding(.trailing, 20)
+                        .padding(.bottom, 20)
                     }
-                    .buttonStyle(FABStyle())
-                    .scaleEffect(contentAppeared ? 1 : 0.75)
-                    .opacity(contentAppeared ? 1 : 0)
-                    .animation(.appSmooth.delay(0.18), value: contentAppeared)
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 20)
                 }
+            }
+
+            // Bulk Actions Bar
+            if isEditMode && !selectedJobIDs.isEmpty {
+                VStack {
+                    Spacer()
+                    HStack(spacing: 0) {
+                        Button(role: .destructive) {
+                            deleteSelected()
+                        } label: {
+                            VStack(spacing: 4) {
+                                Image(systemName: "trash")
+                                Text("Delete")
+                            }
+                        }
+                        .foregroundStyle(Color.red)
+                        .frame(maxWidth: .infinity)
+
+                        Button {
+                            // Menu handled by overlay
+                        } label: {
+                            VStack(spacing: 4) {
+                                Image(systemName: "folder")
+                                Text("Move")
+                            }
+                        }
+                        .foregroundStyle(Color.accentColor)
+                        .frame(maxWidth: .infinity)
+                        .overlay {
+                            Menu {
+                                Button {
+                                    newCycleName = ""
+                                    isAddingCycleFromBulk = true
+                                } label: {
+                                    Label("New Cycle...", systemImage: "plus")
+                                }
+                                if !cycles.isEmpty {
+                                    Divider()
+                                    ForEach(cycles) { cycle in
+                                        Button(cycle.name) {
+                                            moveSelectedToCycle(cycle)
+                                        }
+                                    }
+                                }
+                            } label: {
+                                Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
+                            }
+                        }
+                    }
+                    .font(.system(size: 12, weight: .semibold))
+                    .padding(.top, 12)
+                    .padding(.bottom, 34)
+                    .background(.ultraThinMaterial)
+                    .overlay(alignment: .top) {
+                        Divider().opacity(0.5)
+                    }
+                }
+                .transition(.move(edge: .bottom))
             }
 
             // Undo delete toast
@@ -267,6 +371,49 @@ struct ApplicationView: View {
         } message: {
             Text("Name this job search cycle.")
         }
+        .alert("Move to New Cycle", isPresented: $isAddingCycleFromBulk) {
+            TextField("e.g. Full Time 2026", text: $newCycleName)
+                .autocorrectionDisabled()
+            Button("Create & Move") { createBulkCycleAndMove() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enter a name for the new cycle.")
+        }
+    }
+
+    // MARK: - Bulk Actions
+
+    private func deleteSelected() {
+        let toDelete = applications.filter { selectedJobIDs.contains($0.id) }
+        for job in toDelete {
+            modelContext.delete(job)
+        }
+        withAnimation(.appSmooth) {
+            isEditMode = false
+            selectedJobIDs.removeAll()
+        }
+        AppHaptics.shared.medium()
+    }
+
+    private func moveSelectedToCycle(_ cycle: JobCycle) {
+        let toMove = applications.filter { selectedJobIDs.contains($0.id) }
+        for job in toMove {
+            job.cycle = cycle
+        }
+        withAnimation(.appSmooth) {
+            isEditMode = false
+            selectedJobIDs.removeAll()
+        }
+        AppHaptics.shared.success()
+    }
+
+    private func createBulkCycleAndMove() {
+        let trimmed = newCycleName.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        let cycle = JobCycle(name: trimmed)
+        modelContext.insert(cycle)
+        moveSelectedToCycle(cycle)
+        newCycleName = ""
     }
 
     // MARK: - Search + Filter Row

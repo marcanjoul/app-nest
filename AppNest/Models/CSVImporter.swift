@@ -15,6 +15,8 @@ struct CSVImportRow: Identifiable {
     var compensationCurrency: Currency? = .usd
     var salaryPeriod: SalaryPeriod? = .yearly
     var notes: String = ""
+    var cycleID: UUID? = nil
+    var logoData: Data? = nil
 
     var missingFields: [String] {
         var f: [String] = []
