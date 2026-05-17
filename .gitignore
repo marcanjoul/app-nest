@@ -8,7 +8,7 @@ build/
 *.ipa
 *.dSYM.zip
 *.dSYM
-.claude/skills/emil-design-eng/SKILL.md
+.claude/skills/
 .gitignore
 skills-lock.json
-.agents/skills/emil-design-eng/SKILL.md
+.agents/skills/
