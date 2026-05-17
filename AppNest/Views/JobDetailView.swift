@@ -104,9 +104,7 @@ struct JobDetailView: View {
                     if isSaveDisabled {
                         handleInvalidSaveTap()
                     } else {
-                        #if canImport(UIKit)
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        #endif
+                        AppHaptics.shared.medium()
                         save()
                         dismiss()
                     }
@@ -128,7 +126,7 @@ struct JobDetailView: View {
             .padding(.vertical, 12)
             .background(Color(UIColor.systemBackground))
         }
-        .animation(.easeOut(duration: 0.18), value: isSaveDisabled)
+        .animation(.appFastOut, value: isSaveDisabled)
     }
 
     private var firstMissingSection: FormSection? {
@@ -142,9 +140,7 @@ struct JobDetailView: View {
     }
 
     private func handleInvalidSaveTap() {
-        #if canImport(UIKit)
-        UINotificationFeedbackGenerator().notificationOccurred(.warning)
-        #endif
+        AppHaptics.shared.warning()
         if let target = firstMissingSection {
             scrollTargetSection = target
         }
@@ -186,7 +182,7 @@ struct JobDetailView: View {
                         if isSeasonAllowed {
                             SeasonPickerSection(season: $season)
                                 .transition(.asymmetric(
-                                    insertion: .opacity.combined(with: .move(edge: .top)),
+                                    insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)),
                                     removal: .opacity
                                 ))
                         }
@@ -223,13 +219,13 @@ struct JobDetailView: View {
                     .onChange(of: type) { _, _ in
                         if !isSeasonAllowed { season = nil }
                     }
-                    .animation(.spring(response: 0.4, dampingFraction: 0.85), value: isSeasonAllowed)
+                    .animation(.appSmooth, value: isSeasonAllowed)
                     .padding()
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .onChange(of: scrollTargetSection) { _, target in
                     guard let target else { return }
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.78)) {
+                    withAnimation(.appSmooth) {
                         proxy.scrollTo(target, anchor: .top)
                     }
                     scrollTargetSection = nil
@@ -481,7 +477,7 @@ struct JobDetailView: View {
     }
 
     private func attachResume(_ resume: ResumeDocument) {
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.9)) {
+        withAnimation(.appSmooth) {
             resumeID = resume.id
             resumeFileName = resume.fileName
             _pendingResumeBookmark = resume.bookmark
@@ -505,9 +501,7 @@ struct JobDetailView: View {
         guard let job else { return }
         NotificationManager.cancelReminder(id: job.reminderNotificationID)
         modelContext.delete(job)
-        #if canImport(UIKit)
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
-        #endif
+        AppHaptics.shared.success()
         dismiss()
     }
 
@@ -540,14 +534,6 @@ private struct ShakeEffect: GeometryEffect {
     }
 }
 
-private struct PressScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-    }
-}
-
 // MARK: - Type Picker
 
 private struct TypePickerSection: View {
@@ -574,9 +560,10 @@ private struct TypePickerSection: View {
                                 color: option.color,
                                 icon: option.iconName,
                                 onTap: {
-                                    withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                                    withAnimation(.appCrisp) {
                                         type = (type == option ? nil : option)
                                     }
+                                    AppHaptics.shared.light()
                                 }
                             )
                             .id(option)
@@ -587,7 +574,7 @@ private struct TypePickerSection: View {
                 }
                 .onChange(of: type) { _, _ in
                     if let first = orderedOptions.first {
-                        withAnimation(.smooth) { proxy.scrollTo(first, anchor: .leading) }
+                        withAnimation(.appSmooth) { proxy.scrollTo(first, anchor: .leading) }
                     }
                 }
             }
@@ -623,9 +610,10 @@ private struct StatusPickerSection: View {
                                 color: option.color,
                                 icon: option.iconName,
                                 onTap: {
-                                    withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                                    withAnimation(.appCrisp) {
                                         status = (status == option ? nil : option)
                                     }
+                                    AppHaptics.shared.light()
                                 }
                             )
                             .id(option)
@@ -636,7 +624,7 @@ private struct StatusPickerSection: View {
                 }
                 .onChange(of: status) { _, _ in
                     if let first = orderedOptions.first {
-                        withAnimation(.smooth) { proxy.scrollTo(first, anchor: .leading) }
+                        withAnimation(.appSmooth) { proxy.scrollTo(first, anchor: .leading) }
                     }
                 }
             }
@@ -672,9 +660,10 @@ private struct SeasonPickerSection: View {
                                 color: option.color,
                                 icon: option.iconName,
                                 onTap: {
-                                    withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                                    withAnimation(.appCrisp) {
                                         season = (season == option ? nil : option)
                                     }
+                                    AppHaptics.shared.light()
                                 }
                             )
                             .id(option)
@@ -685,7 +674,7 @@ private struct SeasonPickerSection: View {
                 }
                 .onChange(of: season) { _, _ in
                     if let first = orderedOptions.first {
-                        withAnimation(.smooth) { proxy.scrollTo(first, anchor: .leading) }
+                        withAnimation(.appSmooth) { proxy.scrollTo(first, anchor: .leading) }
                     }
                 }
             }
@@ -776,7 +765,7 @@ private struct DateAppliedSection: View {
                     }
                 }
                 .padding(.top, 4)
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .transition(.opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)))
                 .onChange(of: reminderEnabled) { _, newValue in
                     guard newValue else { return }
                     Task {
@@ -796,8 +785,8 @@ private struct DateAppliedSection: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassCard()
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: isToApply)
-        .animation(.easeOut(duration: 0.18), value: permissionDenied)
+        .animation(.appSmooth, value: isToApply)
+        .animation(.appFastOut, value: permissionDenied)
         .task(id: isToApply) {
             guard isToApply else { return }
             let denied = await NotificationManager.isDenied()

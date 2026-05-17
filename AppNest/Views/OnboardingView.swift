@@ -62,7 +62,7 @@ struct OnboardingView: View {
                         Capsule()
                             .fill(index == currentPage ? pages[currentPage].color : Color.primary.opacity(0.15))
                             .frame(width: index == currentPage ? 20 : 8, height: 8)
-                            .animation(.spring(response: 0.3), value: currentPage)
+                            .animation(.appCrisp, value: currentPage)
                     }
                 }
                 .padding(.bottom, 36)
@@ -70,10 +70,12 @@ struct OnboardingView: View {
                 // CTA button
                 Button {
                     if currentPage < pages.count - 1 {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                        AppHaptics.shared.light()
+                        withAnimation(.appSmooth) {
                             currentPage += 1
                         }
                     } else {
+                        AppHaptics.shared.success()
                         hasCompletedOnboarding = true
                     }
                 } label: {
@@ -88,11 +90,13 @@ struct OnboardingView: View {
                                 .shadow(color: pages[currentPage].color.opacity(0.30), radius: 14, y: 5)
                         }
                 }
+                .buttonStyle(PressScaleButtonStyle())
                 .padding(.horizontal, 28)
-                .animation(.easeInOut(duration: 0.2), value: currentPage)
+                .animation(.appFastOut, value: currentPage)
 
                 if currentPage < pages.count - 1 {
                     Button("Skip") {
+                        AppHaptics.shared.light()
                         hasCompletedOnboarding = true
                     }
                     .font(.system(size: 15, weight: .medium))
@@ -104,6 +108,7 @@ struct OnboardingView: View {
                             .fill(Color.primary.opacity(0.08))
                             .overlay(Capsule().strokeBorder(Color.primary.opacity(0.10), lineWidth: 1))
                     )
+                    .buttonStyle(PressScaleButtonStyle())
                     .padding(.top, 12)
                     .padding(.bottom, 32)
                 } else {

@@ -17,9 +17,7 @@ struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == 
 
     var body: some View {
         Button {
-            #if canImport(UIKit)
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            #endif
+            AppHaptics.shared.light()
             onTap()
         } label: {
             HStack(spacing: isSelected ? 6 : 5) {
@@ -47,7 +45,7 @@ struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == 
             .shadow(color: isSelected ? color.opacity(0.21) : .clear, radius: 6, y: 2)
         }
         .buttonStyle(PressScaleButtonStyle())
-        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: isSelected)
+        .animation(.appCrisp, value: isSelected)
     }
 }
 
@@ -128,9 +126,7 @@ struct ResumePill: View {
     var body: some View {
         Button {
             guard let action else { return }
-            #if canImport(UIKit)
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            #endif
+            AppHaptics.shared.light()
             action()
         } label: {
             HStack(spacing: 6) {
@@ -156,17 +152,7 @@ struct ResumePill: View {
         }
         .buttonStyle(PressScaleButtonStyle())
         .allowsHitTesting(action != nil)
-        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: isSelected)
-    }
-}
-
-// MARK: - Shared Button Style
-
-private struct PressScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+        .animation(.appCrisp, value: isSelected)
     }
 }
 

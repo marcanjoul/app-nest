@@ -87,7 +87,7 @@ struct JobInfoSection: View {
                             .foregroundStyle(.white)
                     }
                     .opacity(hasLogo ? 0 : 1)
-                    .animation(.easeOut(duration: 0.25), value: hasLogo)
+                    .animation(.appFastOut, value: hasLogo)
 
                     // Logo — springs in from slightly smaller, settles into place
                     if let image = logoImage {
@@ -96,7 +96,7 @@ struct JobInfoSection: View {
                             .scaledToFill()
                             .transition(
                                 .asymmetric(
-                                    insertion: .scale(scale: 0.82).combined(with: .opacity),
+                                    insertion: .scale(scale: 0.95).combined(with: .opacity),
                                     removal: .opacity
                                 )
                             )
@@ -119,7 +119,7 @@ struct JobInfoSection: View {
                         .scaleEffect(isFetchingLogo ? 1 : 0.7)
                         .opacity(isFetchingLogo ? 1 : 0)
                 }
-                .animation(.easeOut(duration: 0.15), value: isFetchingLogo)
+                .animation(.appFastOut, value: isFetchingLogo)
                 .overlay(alignment: .bottomTrailing) {
                     ZStack {
                         Circle()
@@ -138,20 +138,22 @@ struct JobInfoSection: View {
                 guard let item = newValue else { return }
                 Task {
                     if let data = try? await item.loadTransferable(type: Data.self) {
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.72)) {
+                        withAnimation(.appSmooth) {
                             companyLogoImageData = data
                             isLogoAutoFetched = false
                         }
+                        AppHaptics.shared.success()
                     }
                 }
             }
             .contextMenu {
                 if hasLogo {
                     Button(role: .destructive) {
-                        withAnimation(.easeOut(duration: 0.25)) {
+                        withAnimation(.appFastOut) {
                             companyLogoImageData = nil
                             isLogoAutoFetched = false
                         }
+                        AppHaptics.shared.light()
                     } label: {
                         Label("Remove Logo", systemImage: "trash")
                     }
@@ -159,7 +161,7 @@ struct JobInfoSection: View {
             }
             .task(id: companyName) {
                 if isLogoAutoFetched {
-                    withAnimation(.easeOut(duration: 0.2)) {
+                    withAnimation(.appFastOut) {
                         companyLogoImageData = nil
                         isLogoAutoFetched = false
                     }
@@ -169,14 +171,15 @@ struct JobInfoSection: View {
                 guard trimmed.count >= 2 else { isFetchingLogo = false; return }
                 do { try await Task.sleep(for: .milliseconds(600)) } catch { return }
                 guard !Task.isCancelled else { return }
-                withAnimation(.easeOut(duration: 0.15)) { isFetchingLogo = true }
+                withAnimation(.appFastOut) { isFetchingLogo = true }
                 if let data = await LogoFetcher.fetchLogoData(for: trimmed, darkMode: colorScheme == .dark) {
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.72)) {
+                    withAnimation(.appSmooth) {
                         companyLogoImageData = data
                         isLogoAutoFetched = true
                     }
+                    AppHaptics.shared.light()
                 }
-                withAnimation(.easeOut(duration: 0.2)) { isFetchingLogo = false }
+                withAnimation(.appFastOut) { isFetchingLogo = false }
             }
 
             VStack(spacing: 6) {

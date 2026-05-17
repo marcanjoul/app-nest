@@ -82,7 +82,7 @@ struct ApplicationView: View {
                 }
                 .opacity(contentAppeared ? 1 : 0)
                 .offset(y: contentAppeared ? 0 : 20)
-                .animation(.spring(response: 0.55, dampingFraction: 0.82), value: contentAppeared)
+                .animation(.appSmooth, value: contentAppeared)
                 .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 8, trailing: 20))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
@@ -91,7 +91,7 @@ struct ApplicationView: View {
                 searchFilterRow
                     .opacity(contentAppeared ? 1 : 0)
                     .offset(y: contentAppeared ? 0 : 16)
-                    .animation(.spring(response: 0.55, dampingFraction: 0.82).delay(0.07), value: contentAppeared)
+                    .animation(.appSmooth.delay(0.07), value: contentAppeared)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 10, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -100,7 +100,7 @@ struct ApplicationView: View {
                 statsSection
                     .opacity(contentAppeared ? 1 : 0)
                     .offset(y: contentAppeared ? 0 : 12)
-                    .animation(.spring(response: 0.55, dampingFraction: 0.82).delay(0.12), value: contentAppeared)
+                    .animation(.appSmooth.delay(0.12), value: contentAppeared)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 14, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -108,13 +108,13 @@ struct ApplicationView: View {
                 // Content
                 if applications.isEmpty {
                     emptyState
-                        .transition(.opacity)
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
                         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                 } else if filteredAndSorted.isEmpty {
                     noResultsState
-                        .transition(.opacity)
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
                         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
@@ -159,7 +159,7 @@ struct ApplicationView: View {
                     .buttonStyle(FABStyle())
                     .scaleEffect(contentAppeared ? 1 : 0.75)
                     .opacity(contentAppeared ? 1 : 0)
-                    .animation(.spring(response: 0.55, dampingFraction: 0.75).delay(0.18), value: contentAppeared)
+                    .animation(.appSmooth.delay(0.18), value: contentAppeared)
                     .padding(.trailing, 20)
                     .padding(.bottom, 20)
                 }
@@ -195,12 +195,12 @@ struct ApplicationView: View {
                     .shadow(color: .black.opacity(0.14), radius: 12, y: 4)
                     .padding(.horizontal, 20)
                     .padding(.bottom, 90)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(.move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.95)))
                 }
                 .allowsHitTesting(true)
             }
         }
-        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: pendingDeleteJob != nil)
+        .animation(.appSmooth, value: pendingDeleteJob != nil)
         .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             contentAppeared = true
@@ -277,7 +277,7 @@ struct ApplicationView: View {
                                 .transition(.scale.combined(with: .opacity))
                         }
                     }
-                    .animation(.spring(response: 0.25, dampingFraction: 0.8), value: sortOption)
+                    .animation(.appCrisp, value: sortOption)
             }
         }
         .padding(.horizontal, 20)
@@ -317,7 +317,7 @@ struct ApplicationView: View {
                 }
             }
             .padding(.horizontal, 20)
-            .animation(.spring(response: 0.38, dampingFraction: 0.82), value: selectedStatuses)
+            .animation(.appCrisp, value: selectedStatuses)
         }
     }
 
@@ -371,7 +371,7 @@ struct ApplicationView: View {
                 .foregroundStyle(DarkTheme.textSecondary)
                 .multilineTextAlignment(.center)
             Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                withAnimation(.appSmooth) {
                     searchText = ""
                     selectedStatuses = []
                 }
@@ -392,7 +392,7 @@ struct ApplicationView: View {
     // MARK: - Delete with Undo
 
     private func scheduleDelete(_ job: JobApplication) {
-        withAnimation {
+        withAnimation(.appSmooth) {
             pendingDeleteJob = job
         }
         undoTask?.cancel()
@@ -400,29 +400,25 @@ struct ApplicationView: View {
             do { try await Task.sleep(for: .seconds(4)) } catch { return }
             await MainActor.run {
                 modelContext.delete(job)
-                withAnimation { pendingDeleteJob = nil }
+                withAnimation(.appSmooth) { pendingDeleteJob = nil }
             }
         }
-        #if canImport(UIKit)
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        #endif
+        AppHaptics.shared.medium()
     }
 
     private func undoDelete() {
         undoTask?.cancel()
         undoTask = nil
-        withAnimation { pendingDeleteJob = nil }
-        #if canImport(UIKit)
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        #endif
+        withAnimation(.appSmooth) { pendingDeleteJob = nil }
+        AppHaptics.shared.light()
     }
 }
 
 private struct FABStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? AppAnimations.pressScale : 1.0)
+            .animation(.appFastOut, value: configuration.isPressed)
     }
 }
 
@@ -478,10 +474,10 @@ private struct JobCardSwipeRow: View {
                     if dx > 0 {
                         let stage = stageFor(dx)
                         guard stage > 0, stage - 1 < pipeline.count else { return }
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                        withAnimation(.appSmooth) {
                             job.status = pipeline[stage - 1]
                         }
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        AppHaptics.shared.medium()
                     } else if dx < -deleteThreshold {
                         onDelete()
                     }
@@ -489,7 +485,7 @@ private struct JobCardSwipeRow: View {
         )
         .onChange(of: currentStage) { old, new in
             guard new > old, new > 0 else { return }
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            AppHaptics.shared.light()
         }
     }
 
@@ -513,7 +509,7 @@ private struct JobCardSwipeRow: View {
                         .strokeBorder(style.borderColor, lineWidth: 1))
             )
             .opacity(min(1.0, dragOffset / advanceThresholds[0]))
-            .animation(.easeOut(duration: 0.12), value: target)
+            .animation(.appFastOut, value: target)
         } else if dragOffset < -5 {
             let c = Color(red: 0.93, green: 0.38, blue: 0.44)
             HStack(spacing: 8) {

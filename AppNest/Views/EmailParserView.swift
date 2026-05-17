@@ -51,14 +51,14 @@ struct EmailParserView: View {
                         if hasResult { resultsCard.id("results") }
                     }
                     .padding()
-                    .animation(.spring(response: 0.45, dampingFraction: 0.8), value: hasResult)
+                    .animation(.appSmooth, value: hasResult)
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .onChange(of: scrollToResults) { _, newValue in
                     guard newValue else { return }
                     scrollToResults = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                        withAnimation(.appSmooth) {
                             proxy.scrollTo("results", anchor: .top)
                         }
                     }
@@ -80,7 +80,7 @@ struct EmailParserView: View {
             }
         }
         .onAppear {
-            withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.1)) {
+            withAnimation(.appSmooth.delay(0.1)) {
                 cardAppeared = true
             }
         }
@@ -110,7 +110,7 @@ struct EmailParserView: View {
 
                 if hasResult {
                     Button {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                        withAnimation(.appCrisp) {
                             isEmailExpanded.toggle()
                         }
                     } label: {
@@ -124,7 +124,7 @@ struct EmailParserView: View {
                     }
                 } else if !emailText.isEmpty {
                     Button {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                        withAnimation(.appCrisp) {
                             emailText = ""
                         }
                     } label: {
@@ -173,15 +173,15 @@ struct EmailParserView: View {
                                 )
                         )
                 }
-                .animation(.easeInOut(duration: 0.2), value: isEditorFocused)
-                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: hasResult)
+                .animation(.appFastOut, value: isEditorFocused)
+                .animation(.appCrisp, value: hasResult)
                 .padding(.top, 12)
                 .transition(.opacity.combined(with: .move(edge: .top)))
 
                 Button {
-                    withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) { isButtonPressed = true }
+                    withAnimation(.appFastOut) { isButtonPressed = true }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.5)) { isButtonPressed = false }
+                        withAnimation(.appFastOut) { isButtonPressed = false }
                     }
                     parseEmail()
                 } label: {
@@ -206,7 +206,7 @@ struct EmailParserView: View {
                             .shadow(color: isParseDisabled ? .clear : Color.accentColor.opacity(0.27), radius: 10, y: 3)
                     }
                 }
-                .scaleEffect(isButtonPressed ? 0.96 : 1.0)
+                .scaleEffect(isButtonPressed ? AppAnimations.pressScale : 1.0)
                 .disabled(isParseDisabled)
                 .padding(.top, 12)
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
@@ -282,14 +282,16 @@ struct EmailParserView: View {
                         .fill(c)
                         .shadow(color: isSaveDisabled ? .clear : c.opacity(0.27), radius: 10, y: 3)
                 }
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: saveSuccess)
+                .animation(.appSmooth, value: saveSuccess)
             }
+            .scaleEffect(saveSuccess ? 1.02 : 1.0)
+            .animation(.appBouncy, value: saveSuccess)
             .disabled(isSaveDisabled || saveSuccess)
         }
         .padding(18)
         .glassCard()
         .transition(.asymmetric(
-            insertion: .move(edge: .bottom).combined(with: .opacity),
+            insertion: .move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.95)),
             removal: .opacity
         ))
     }
@@ -297,13 +299,11 @@ struct EmailParserView: View {
     // MARK: - Actions
 
     private func parseEmail() {
-        #if canImport(UIKit)
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        #endif
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { isParsing = true }
+        AppHaptics.shared.medium()
+        withAnimation(.appSmooth) { isParsing = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             let result = parser.parse(emailText)
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
+            withAnimation(.appSmooth) {
                 editCompany     = result.companyName ?? ""
                 editPosition    = result.position    ?? ""
                 editJobType     = result.jobType
@@ -331,14 +331,12 @@ struct EmailParserView: View {
             resumeBookmark: attached?.bookmark,
             resumeID: attached?.id
         ))
-        #if canImport(UIKit)
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
-        #endif
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+        AppHaptics.shared.success()
+        withAnimation(.appSmooth) {
             saveSuccess = true
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+            withAnimation(.appSmooth) {
                 saveSuccess     = false
                 emailText       = ""
                 hasResult       = false
@@ -409,12 +407,12 @@ private struct EditableFieldRow: View {
                         )
                 }
         }
-        .animation(.easeInOut(duration: 0.18), value: isFocused)
-        .animation(.easeInOut(duration: 0.18), value: isEmpty)
+        .animation(.appFastOut, value: isFocused)
+        .animation(.appFastOut, value: isEmpty)
         .opacity(appeared ? 1 : 0)
         .offset(x: appeared ? 0 : -14)
         .onAppear {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.72).delay(Double(index) * 0.07)) {
+            withAnimation(.appSmooth.delay(Double(index) * 0.05)) {
                 appeared = true
             }
         }
@@ -450,9 +448,10 @@ private struct JobTypePickerRow: View {
                             color: t.color,
                             icon: t.iconName,
                             onTap: {
-                                withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                                withAnimation(.appCrisp) {
                                     jobType = jobType == t ? nil : t
                                 }
+                                AppHaptics.shared.light()
                             }
                         )
                     }
@@ -463,7 +462,7 @@ private struct JobTypePickerRow: View {
         .opacity(appeared ? 1 : 0)
         .offset(x: appeared ? 0 : -14)
         .onAppear {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.72).delay(Double(index) * 0.07)) {
+            withAnimation(.appSmooth.delay(Double(index) * 0.05)) {
                 appeared = true
             }
         }
@@ -499,9 +498,10 @@ private struct StatusPickerRow: View {
                             color: s.color,
                             icon: s.iconName,
                             onTap: {
-                                withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                                withAnimation(.appCrisp) {
                                     status = s
                                 }
+                                AppHaptics.shared.light()
                             }
                         )
                     }
@@ -512,7 +512,7 @@ private struct StatusPickerRow: View {
         .opacity(appeared ? 1 : 0)
         .offset(x: appeared ? 0 : -14)
         .onAppear {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.72).delay(Double(index) * 0.07)) {
+            withAnimation(.appSmooth.delay(Double(index) * 0.05)) {
                 appeared = true
             }
         }
@@ -556,7 +556,7 @@ private struct DatePickerRow: View {
         .opacity(appeared ? 1 : 0)
         .offset(x: appeared ? 0 : -14)
         .onAppear {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.72).delay(Double(index) * 0.07)) {
+            withAnimation(.appSmooth.delay(Double(index) * 0.05)) {
                 appeared = true
             }
         }

@@ -90,6 +90,7 @@ struct StatChip: View {
 
     var body: some View {
         Button {
+            AppHaptics.shared.light()
             action?()
         } label: {
             HStack(spacing: 8) {
@@ -120,8 +121,8 @@ struct StatChip: View {
                     .shadow(color: isSelected ? style.tintColor.opacity(0.28) : .clear, radius: 10, y: 3)
             )
         }
-        .buttonStyle(.plain)
-        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: isSelected)
+        .buttonStyle(PressScaleButtonStyle())
+        .animation(.appCrisp, value: isSelected)
     }
 }
 

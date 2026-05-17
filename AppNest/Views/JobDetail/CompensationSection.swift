@@ -40,9 +40,10 @@ struct CompensationSection: View {
                         color: amountAccent,
                         icon: option == .hourly ? "clock" : "banknote",
                         onTap: {
-                            withAnimation(.spring(response: 0.28, dampingFraction: 0.65)) {
+                            withAnimation(.appCrisp) {
                                 kind = (kind == option ? nil : option)
                             }
+                            AppHaptics.shared.light()
                         }
                     )
                 }
@@ -97,22 +98,23 @@ struct CompensationSection: View {
                                 color: amountAccent,
                                 icon: period == .yearly ? "calendar" : "calendar.day.timeline.left",
                                 onTap: {
-                                    withAnimation(.spring(response: 0.28, dampingFraction: 0.65)) {
+                                    withAnimation(.appCrisp) {
                                         salaryPeriod = period
                                     }
+                                    AppHaptics.shared.light()
                                 }
                             )
                         }
                         Spacer(minLength: 0)
                     }
                     .frame(maxWidth: .infinity)
-                    .transition(.opacity)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 }
             }
         }
         .padding(16)
         .glassCard()
-        .animation(.easeInOut(duration: 0.22), value: kind)
+        .animation(.appSmooth, value: kind)
     }
 
     @ViewBuilder
