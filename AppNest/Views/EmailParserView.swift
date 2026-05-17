@@ -394,8 +394,6 @@ private struct JobTypePickerRow: View {
 
     @State private var appeared = false
 
-    private let types = ApplicationType.allCases
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
@@ -410,31 +408,18 @@ private struct JobTypePickerRow: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(types, id: \.self) { t in
-                        let isSelected = jobType == t
-                        Button {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                jobType = isSelected ? nil : t
-                            }
-                        } label: {
-                            Text(t.rawValue)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(isSelected ? .white : DarkTheme.textSecondary)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 7)
-                                .background {
-                                    Capsule()
-                                        .fill(isSelected ? Color.accentColor : Color.primary.opacity(0.07))
-                                        .overlay {
-                                            Capsule()
-                                                .strokeBorder(
-                                                    isSelected ? Color.clear : Color.primary.opacity(0.12),
-                                                    lineWidth: 1
-                                                )
-                                        }
+                    ForEach(ApplicationType.allCases, id: \.self) { t in
+                        SelectablePill(
+                            option: t,
+                            isSelected: jobType == t,
+                            color: t.color,
+                            icon: t.iconName,
+                            onTap: {
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                                    jobType = jobType == t ? nil : t
                                 }
-                        }
-                        .buttonStyle(.plain)
+                            }
+                        )
                     }
                 }
                 .padding(.vertical, 2)
@@ -458,8 +443,6 @@ private struct StatusPickerRow: View {
 
     @State private var appeared = false
 
-    private let statuses: [ApplicationStatus] = [.applied, .interview, .offer, .rejected]
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
@@ -474,18 +457,18 @@ private struct StatusPickerRow: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(statuses, id: \.self) { s in
-                        let style = DarkTheme.statusStyle(for: s)
+                    ForEach(ApplicationStatus.allCases, id: \.self) { s in
                         SelectablePill(
                             option: s,
                             isSelected: status == s,
-                            color: style.tintColor,
-                            icon: style.iconName
-                        ) {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                status = s
+                            color: s.color,
+                            icon: s.iconName,
+                            onTap: {
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.85)) {
+                                    status = s
+                                }
                             }
-                        }
+                        )
                     }
                 }
                 .padding(.vertical, 2)
