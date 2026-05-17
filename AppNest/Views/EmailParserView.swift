@@ -336,14 +336,14 @@ struct EmailParserView: View {
         let attached = defaultResume
         modelContext.insert(JobApplication(
             companyName: editCompany.isEmpty  ? "Unknown Company"  : editCompany,
+            companyLogoImageData: fetchedLogoData,
             position:    editPosition.isEmpty ? "Unknown Position" : editPosition,
             jobType:     editJobType,
             status:      editStatus,
             dateApplied: editDate,
             resumeFileName: attached?.fileName,
             resumeBookmark: attached?.bookmark,
-            resumeID: attached?.id,
-            companyLogoImageData: fetchedLogoData
+            resumeID: attached?.id
         ))
         #if canImport(UIKit)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
