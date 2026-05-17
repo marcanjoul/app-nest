@@ -4,8 +4,6 @@ import PhotosUI
 import UIKit
 #endif
 
-/// Hero header for `JobDetailView` showing the company logo (or initial),
-/// position title, and company name as editable fields.
 struct JobInfoSection: View {
     @Binding var companyName: String
     @Binding var companyLogoName: String
@@ -30,12 +28,7 @@ struct JobInfoSection: View {
 
     private var accentTint: Color {
         let trimmed = companyName.trimmingCharacters(in: .whitespaces)
-        let key: String
-        if let first = trimmed.first {
-            key = String(first).uppercased()
-        } else {
-            key = "AppNest"
-        }
+        let key = trimmed.first.map { String($0).uppercased() } ?? "AppNest"
         return Self.tintPalette[abs(key.hashValue) % Self.tintPalette.count]
     }
 
@@ -48,10 +41,15 @@ struct JobInfoSection: View {
         }
         return nil
     }
+    private var hasLogo: Bool {
+        if let data = companyLogoImageData, UIImage(data: data) != nil { return true }
+        return !companyLogoName.isEmpty && UIImage(named: companyLogoName) != nil
+    }
     #else
     private var logoImage: Image? {
         companyLogoName.isEmpty ? nil : Image(companyLogoName)
     }
+    private var hasLogo: Bool { !companyLogoName.isEmpty }
     #endif
 
     private var logoInitial: String {
@@ -79,24 +77,34 @@ struct JobInfoSection: View {
     var body: some View {
         VStack(spacing: 12) {
             PhotosPicker(selection: $pickerItem, matching: .images) {
-                Group {
+                ZStack {
+                    // Fallback initial — dematerializes when logo lands
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [accentTint, accentTint.opacity(0.72)],
+                                    startPoint: .topLeading, endPoint: .bottomTrailing
+                                )
+                            )
+                        Text(logoInitial)
+                            .font(.system(size: 32, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.white)
+                    }
+                    .opacity(hasLogo ? 0 : 1)
+                    .animation(.easeOut(duration: 0.25), value: hasLogo)
+
+                    // Logo — springs in from slightly smaller, settles into place
                     if let image = logoImage {
                         image
                             .resizable()
                             .scaledToFill()
-                    } else {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [accentTint, accentTint.opacity(0.72)],
-                                        startPoint: .topLeading, endPoint: .bottomTrailing
-                                    )
+                            .transition(
+                                .asymmetric(
+                                    insertion: .scale(scale: 0.82).combined(with: .opacity),
+                                    removal: .opacity
                                 )
-                            Text(logoInitial)
-                                .font(.system(size: 32, weight: .heavy, design: .rounded))
-                                .foregroundStyle(.white)
-                        }
+                            )
                     }
                 }
                 .frame(width: 80, height: 80)
@@ -112,43 +120,49 @@ struct JobInfoSection: View {
                         )
                 )
                 .shadow(color: .black.opacity(0.20), radius: 10, y: 5)
+                // Loading veil — fades + scales in quickly, out just as fast
+                .overlay {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .opacity(isFetchingLogo ? 1 : 0)
+                    ProgressView()
+                        .tint(.white)
+                        .scaleEffect(isFetchingLogo ? 1 : 0.7)
+                        .opacity(isFetchingLogo ? 1 : 0)
+                }
+                .animation(.easeOut(duration: 0.15), value: isFetchingLogo)
                 .overlay(alignment: .bottomTrailing) {
                     ZStack {
                         Circle()
                             .fill(Color(UIColor.systemBackground))
                             .frame(width: 24, height: 24)
-                        if isFetchingLogo {
-                            ProgressView()
-                                .progressViewStyle(.circular)
-                                .scaleEffect(0.65)
-                                .frame(width: 20, height: 20)
-                                .background(Circle().fill(accentTint.opacity(0.85)))
-                        } else {
-                            Image(systemName: "camera.fill")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(.white)
-                                .frame(width: 20, height: 20)
-                                .background(Circle().fill(accentTint))
-                        }
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 20, height: 20)
+                            .background(Circle().fill(accentTint))
                     }
                     .offset(x: 2, y: 2)
-                    .animation(.easeInOut(duration: 0.2), value: isFetchingLogo)
                 }
             }
             .onChange(of: pickerItem) { _, newValue in
                 guard let item = newValue else { return }
                 Task {
                     if let data = try? await item.loadTransferable(type: Data.self) {
-                        companyLogoImageData = data
-                        isLogoAutoFetched = false
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.72)) {
+                            companyLogoImageData = data
+                            isLogoAutoFetched = false
+                        }
                     }
                 }
             }
             .contextMenu {
-                if companyLogoImageData != nil {
+                if hasLogo {
                     Button(role: .destructive) {
-                        companyLogoImageData = nil
-                        isLogoAutoFetched = false
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            companyLogoImageData = nil
+                            isLogoAutoFetched = false
+                        }
                     } label: {
                         Label("Remove Logo", systemImage: "trash")
                     }
@@ -156,20 +170,24 @@ struct JobInfoSection: View {
             }
             .task(id: companyName) {
                 if isLogoAutoFetched {
-                    companyLogoImageData = nil
-                    isLogoAutoFetched = false
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        companyLogoImageData = nil
+                        isLogoAutoFetched = false
+                    }
                 }
                 guard companyLogoImageData == nil else { return }
                 let trimmed = companyName.trimmingCharacters(in: .whitespaces)
                 guard trimmed.count >= 2 else { isFetchingLogo = false; return }
                 do { try await Task.sleep(for: .milliseconds(600)) } catch { return }
                 guard !Task.isCancelled else { return }
-                isFetchingLogo = true
+                withAnimation(.easeOut(duration: 0.15)) { isFetchingLogo = true }
                 if let data = await LogoFetcher.fetchLogoData(for: trimmed, darkMode: colorScheme == .dark) {
-                    companyLogoImageData = data
-                    isLogoAutoFetched = true
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.72)) {
+                        companyLogoImageData = data
+                        isLogoAutoFetched = true
+                    }
                 }
-                isFetchingLogo = false
+                withAnimation(.easeOut(duration: 0.2)) { isFetchingLogo = false }
             }
 
             VStack(spacing: 6) {
@@ -184,9 +202,7 @@ struct JobInfoSection: View {
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 7)
-                    .background(
-                        editableFieldBackground(isFocused: focused == .position)
-                    )
+                    .background(editableFieldBackground(isFocused: focused == .position))
 
                 TextField("COMPANY NAME *", text: $companyName)
                     .multilineTextAlignment(.center)
@@ -201,9 +217,7 @@ struct JobInfoSection: View {
                     .frame(maxWidth: 220)
                     .padding(.horizontal, companyName.isEmpty ? 10 : 12)
                     .padding(.vertical, companyName.isEmpty ? 4 : 6)
-                    .background(
-                        editableFieldBackground(isFocused: focused == .company)
-                    )
+                    .background(editableFieldBackground(isFocused: focused == .company))
             }
             .padding(.horizontal, 16)
         }
