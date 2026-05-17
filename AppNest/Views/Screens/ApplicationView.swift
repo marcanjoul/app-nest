@@ -89,9 +89,6 @@ struct ApplicationView: View {
                     Text("App Nest")
                         .font(.system(size: 40, weight: .bold))
                         .foregroundStyle(DarkTheme.textPrimary)
-                    Text("\(cycleFiltered.count) application\(cycleFiltered.count == 1 ? "" : "s")")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(DarkTheme.textSecondary)
                     cycleSelectorChip
                         .padding(.top, 6)
                 }

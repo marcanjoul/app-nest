@@ -60,6 +60,12 @@ struct EmailParser {
             #"(?:apply|applied|applying)\s+(?:to|for)\s+.+?\s+at\s+([A-Z][A-Za-z0-9&®\s\.]+?)(?:\s+on\b|\s+via\b|\.|,|\!|\n|$)"#,
             // "apply/applied/applying to/at Company"
             #"(?:apply|applied|applying)\s+(?:to|at|for)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
+            // "application to Company" — acknowledgment emails ("submit an application to Snackpass")
+            #"(?:application|applying|applied)\s+to\s+([A-Z][A-Za-z0-9&\.]+(?:\s+[A-Z][A-Za-z0-9&\.]+){0,2})(?:'s)?\b"#,
+            // "about Company and" — rejection emails ("learn more about Intuitive and the...")
+            #"about\s+([A-Z][A-Za-z0-9&\.]+)\s+and\b"#,
+            // "part of Company" — excitement/acknowledgment emails ("be a part of Okta's momentum")
+            #"(?:part\s+of|be\s+part\s+of)\s+([A-Z][A-Za-z0-9&\.]+)(?:'s)?\b"#,
             // "team/company at/of Company"
             #"(?:team|company)\s+(?:at|of)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
             // "welcome to / offer from Company"
@@ -133,15 +139,15 @@ struct EmailParser {
 
     private func extractPosition(from text: String) -> String? {
         let patterns = [
-            // "applying for the Intern, Software Engineer position at Company" — full title before "position/role at"
-            #"(?:application|applied|applying)\s+(?:for|to)\s+(?:the\s+)?(.+?)\s+(?:position|role)\s+(?:at|with|@)"#,
-            // "application/applied/applying for/to [POSITION] at Company"
-            #"(?:application|applied|applying)\s+(?:for|to)\s+(?:the\s+)?(.+?)(?:\s+(?:at|with|@)\s+|,|\.\s|\n|$)"#,
+            // "applying for the AI Engineering Intern position" — title ends at "position/role"
+            #"(?:application|applied|applying)\s+(?:for|to)\s+(?:the\s+)?(.+?)\s+(?:position|role)\b"#,
+            // "application/applied/applying for [POSITION] at Company" — requires company context
+            #"(?:application|applied|applying)\s+for\s+(?:the\s+)?(.+?)\s+(?:at|with|@)\s+"#,
             // "vacancy/opening for [the/our/a] [POSITION] role/position"
             // e.g. "filled the vacancy for our AI Engineering Intern position"
             #"(?:vacancy|opening)\s+for\s+(?:the\s+|our\s+|a\s+|an\s+)?(.+?)\s+(?:role|position)"#,
-            // "interview[ing] for [the] [POSITION]"
-            #"interview(?:ing)?\s+(?:you\s+)?for\s+(?:the\s+)?(.+?)(?:\s+(?:at|with|@)\s+|,|\.\s|\n|$)"#,
+            // "interviewing you for [the] [POSITION]" — requires "you" to avoid "interview for a new career"
+            #"interview(?:ing)?\s+you\s+for\s+(?:the\s+)?(.+?)(?:\s+(?:at|with|@)\s+|,|\.\s|\n|$)"#,
             // "role/position of [POSITION]"
             #"(?:role|position)\s+of\s+(?:the\s+)?(.+?)(?:\s+(?:at|with|@)\s+|,|\.\s|\n|$)"#,
             // "offer you [the] [POSITION] role/position"
@@ -194,6 +200,11 @@ struct EmailParser {
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                 break
             }
+        }
+
+        // Strip job requisition IDs in parentheses e.g. "(JOB212131)", "(REQ-4892)"
+        if let idRange = s.range(of: #"\s*\([A-Z]{2,}[-]?\d+\)"#, options: .regularExpression) {
+            s = String(s[..<idRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
         }
 
         return s
