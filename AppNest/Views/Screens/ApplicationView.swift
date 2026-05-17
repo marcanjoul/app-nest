@@ -33,6 +33,7 @@ struct ApplicationView: View {
     @State private var contentAppeared = false
     @State private var pendingDeleteJob: JobApplication? = nil
     @State private var undoTask: Task<Void, Never>? = nil
+    @State private var toastDragY: CGFloat = 0
 
     // Search-only filtered list — used for chip counts so they reflect search but not status filter
     private var searchFiltered: [JobApplication] {
@@ -194,7 +195,35 @@ struct ApplicationView: View {
                     )
                     .shadow(color: .black.opacity(0.14), radius: 12, y: 4)
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 90)
+                    .padding(.bottom, 110)
+                    .offset(y: max(0, toastDragY))
+                    .opacity(max(0, 1 - toastDragY / 120))
+                    .gesture(
+                        DragGesture(minimumDistance: 10)
+                            .onChanged { value in
+                                if value.translation.height > 0 {
+                                    toastDragY = value.translation.height
+                                }
+                            }
+                            .onEnded { value in
+                                if value.translation.height > 50 {
+                                    undoTask?.cancel()
+                                    undoTask = nil
+                                    if let pending = pendingDeleteJob {
+                                        modelContext.delete(pending)
+                                    }
+                                    withAnimation(.appSmooth) {
+                                        pendingDeleteJob = nil
+                                        toastDragY = 0
+                                    }
+                                    AppHaptics.shared.medium()
+                                } else {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                        toastDragY = 0
+                                    }
+                                }
+                            }
+                    )
                     .transition(.move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.95)))
                 }
                 .allowsHitTesting(true)
@@ -392,10 +421,16 @@ struct ApplicationView: View {
     // MARK: - Delete with Undo
 
     private func scheduleDelete(_ job: JobApplication) {
+        // Immediately commit any previously-pending delete so it doesn't ghost back
+        if let pending = pendingDeleteJob {
+            undoTask?.cancel()
+            undoTask = nil
+            modelContext.delete(pending)
+        }
         withAnimation(.appSmooth) {
             pendingDeleteJob = job
+            toastDragY = 0
         }
-        undoTask?.cancel()
         undoTask = Task {
             do { try await Task.sleep(for: .seconds(4)) } catch { return }
             await MainActor.run {
@@ -409,7 +444,10 @@ struct ApplicationView: View {
     private func undoDelete() {
         undoTask?.cancel()
         undoTask = nil
-        withAnimation(.appSmooth) { pendingDeleteJob = nil }
+        withAnimation(.appSmooth) {
+            pendingDeleteJob = nil
+            toastDragY = 0
+        }
         AppHaptics.shared.light()
     }
 }

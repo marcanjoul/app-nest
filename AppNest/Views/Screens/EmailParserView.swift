@@ -17,8 +17,9 @@ struct EmailParserView: View {
     @State private var hasResult     = false
     @State private var editCompany   = ""
     @State private var editPosition  = ""
-    @State private var editJobType: ApplicationType? = nil
+    @State private var editJobType: ApplicationType?   = nil
     @State private var editStatus    = ApplicationStatus.applied
+    @State private var editSeason: ApplicationSeason?  = nil
     @State private var editDate      = Date()
 
     @State private var cardAppeared    = false
@@ -183,7 +184,7 @@ struct EmailParserView: View {
 
             if isEmailExpanded {
                 if emailText.isEmpty {
-                    Text("Paste a job application email and AppNest extracts the details automatically.")
+                    Text("Paste a job application email to have its details extracted.")
                         .font(.subheadline)
                         .foregroundStyle(DarkTheme.textSecondary)
                         .padding(.top, 10)
@@ -385,6 +386,7 @@ struct EmailParserView: View {
                 editPosition    = result.position    ?? ""
                 editJobType     = result.jobType
                 editStatus      = result.status      ?? .applied
+                editSeason      = nil
                 editDate        = result.dateApplied ?? Date()
                 isParsing       = false
                 hasResult       = true
@@ -405,6 +407,7 @@ struct EmailParserView: View {
             position:    editPosition.isEmpty ? "Unknown Position" : editPosition,
             jobType:     editJobType,
             status:      editStatus,
+            season:      editSeason,
             dateApplied: editDate,
             resumeFileName: attached?.fileName,
             resumeBookmark: attached?.bookmark,
