@@ -55,15 +55,6 @@ struct ApplicationView: View {
         return result
     }
 
-    private func nextStatus(for job: JobApplication) -> ApplicationStatus? {
-        switch job.status {
-        case .toApply:   return .applied
-        case .applied:   return .interview
-        case .interview: return .offer
-        case .offer, .rejected, .none: return nil
-        }
-    }
-
     var body: some View {
         ZStack {
             // Adaptive ambient gradient background
@@ -119,33 +110,17 @@ struct ApplicationView: View {
                         .listRowSeparator(.hidden)
                 } else {
                     ForEach(filteredAndSorted) { job in
-                        ZStack {
-                            NavigationLink(destination: JobDetailView(job: job)) { EmptyView() }
-                                .opacity(0)
-                            DarkJobCardView(job: job)
-                        }
-                        .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button(role: .destructive) {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { modelContext.delete(job) }
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
-                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                            if let next = nextStatus(for: job) {
-                                Button {
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                                        job.status = next
-                                    }
+                        JobCardSwipeRow(job: job)
+                            .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { modelContext.delete(job) }
                                 } label: {
-                                    Label(next.rawValue, systemImage: "arrow.right.circle.fill")
+                                    Label("Delete", systemImage: "trash")
                                 }
-                                .tint(.indigo)
                             }
-                        }
                     }
                 }
 
@@ -366,6 +341,109 @@ private struct FABStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Progressive Swipe Row
+
+private struct JobCardSwipeRow: View {
+    let job: JobApplication
+
+    @GestureState private var dragX: CGFloat = 0
+
+    private let thresholds: [CGFloat] = [65, 130, 200]
+
+    private var pipeline: [ApplicationStatus] {
+        let all: [ApplicationStatus] = [.toApply, .applied, .interview, .offer]
+        guard let s = job.status, let idx = all.firstIndex(of: s) else { return [] }
+        return Array(all.dropFirst(idx + 1))
+    }
+
+    private func stageFor(_ offset: CGFloat) -> Int {
+        var stage = 0
+        for (i, threshold) in thresholds.enumerated() {
+            guard i < pipeline.count else { break }
+            if offset >= threshold { stage = i + 1 }
+        }
+        return stage
+    }
+
+    private var currentStage: Int { stageFor(dragX) }
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            swipeBackground
+            ZStack {
+                NavigationLink(destination: JobDetailView(job: job)) { EmptyView() }
+                    .opacity(0)
+                DarkJobCardView(job: job)
+            }
+            .offset(x: cardOffset(dragX))
+            .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.85), value: dragX)
+        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 12)
+                .updating($dragX) { value, state, _ in
+                    let dx = value.translation.width
+                    guard dx > 0, dx > abs(value.translation.height) else { return }
+                    state = dx
+                }
+                .onEnded { value in
+                    let dx = max(0, value.translation.width)
+                    let stage = stageFor(dx)
+                    guard stage > 0, stage - 1 < pipeline.count else { return }
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                        job.status = pipeline[stage - 1]
+                    }
+                    #if canImport(UIKit)
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    #endif
+                }
+        )
+        .onChange(of: currentStage) { old, new in
+            guard new > old, new > 0 else { return }
+            #if canImport(UIKit)
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            #endif
+        }
+    }
+
+    @ViewBuilder
+    private var swipeBackground: some View {
+        if !pipeline.isEmpty {
+            let displayedIdx = max(0, min(currentStage - 1, pipeline.count - 1))
+            let displayed = pipeline[displayedIdx]
+            let style = DarkTheme.statusStyle(for: displayed)
+            let revealProgress = min(1.0, dragX / thresholds[0])
+
+            HStack(spacing: 8) {
+                Image(systemName: style.iconName)
+                    .font(.system(size: 16, weight: .bold))
+                Text(displayed.rawValue)
+                    .font(.system(size: 13, weight: .semibold))
+            }
+            .foregroundStyle(style.tintColor)
+            .padding(.leading, 22)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                    .fill(style.fillColor)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                            .strokeBorder(style.borderColor, lineWidth: 1)
+                    )
+            )
+            .opacity(revealProgress)
+            .animation(.easeOut(duration: 0.12), value: displayed)
+        }
+    }
+
+    private func cardOffset(_ raw: CGFloat) -> CGFloat {
+        guard raw > 0 else { return 0 }
+        let damped = raw * 0.70
+        let limit: CGFloat = 165
+        guard damped > limit else { return damped }
+        return limit + (damped - limit) * 0.18
     }
 }
 
