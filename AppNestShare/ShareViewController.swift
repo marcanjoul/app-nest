@@ -473,6 +473,7 @@ private extension View {
 // MARK: - SwiftUI view
 
 private struct ShareView: View {
+    @Environment(\.displayScale) private var displayScale
     @State var model: ShareViewModel
     let onSave: (SharePendingImport) -> Void
     let onCancel: () -> Void
@@ -597,7 +598,7 @@ private struct ShareView: View {
         }
         guard appURL.pathExtension == "app" else { return nil }
 
-        let scale = Int(UIScreen.main.scale)
+        let scale = Int(displayScale)
         let candidates = [
             "AppIcon60@\(scale)x",
             "AppIcon60@2x",
