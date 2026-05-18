@@ -4,25 +4,36 @@ An iOS app for tracking job and internship applications, built with SwiftUI.
 
 ---
 
+## Screenshots
+
+> _Add screenshots or GIFs here_
+
+---
+
 ## Features
 
-**Track applications** — Add jobs manually with company, position, type, status, season, compensation (hourly or salary, with a currency picker), date, notes, and a resume attachment. Edit or delete anytime.
+### Tracking
+| | |
+|---|---|
+| **Applications** | Company, position, type, status, season, compensation, notes, resume attachment |
+| **Swipe to advance** | Swipe right to move a card through the pipeline; swipe left to delete with undo |
+| **Cycles** | Group applications by search period (e.g. "Summer 2026", "Full-Time 2027") |
+| **Bulk actions** | Edit Mode for mass delete or move-to-cycle |
 
-**Share Extension** — Share any job listing URL directly from Safari. App Nest parses the page title to extract the company and position automatically, auto-detects job type and season from title keywords, and lets you set all fields in the popup before saving — no need to open the app after.
+### Import
+| | |
+|---|---|
+| **Share Extension** | Share any job URL from Safari — auto-parses company, position, job type, and season |
+| **CSV Import** | Flexible mapper handles any column naming; preview and edit before committing |
+| **Email parsing** | Paste a confirmation email — on-device AI extracts company, position, and status |
 
-**Flexible CSV Import/Export** — Seamlessly migrate your data. Import jobs from any CSV with a smart, flexible mapper that detects various column headers (e.g., "Employer" vs "Company"). Review and edit parsed data in a beautiful preview sheet before finalizing. Export your entire list or specific search cycles to standard CSV.
-
-**Bulk Management** — Enter **Edit Mode** to select multiple applications. Perform mass actions like deletion or moving jobs between cycles with a single tap.
-
-**Swipe Gestures** — Swipe right on any card to advance its status through the pipeline. Swipe left to delete with a 4-second undo toast.
-
-**Job Search Cycles** — Organize your applications into distinct periods (e.g., "Summer 2026", "Full-time 2027"). Create, rename, and manage cycles directly in the app.
-
-**Parse emails with on-device AI** — Paste a job confirmation email and AppNest extracts the company name, position, status, and date automatically using Apple's NaturalLanguage framework.
-
-**Company logos** — AppNest automatically fetches company logos as you type or import. Logos are cached and saved to your database for a rich, visual experience. Supports manual image uploads too.
-
-**Search, sort, and filter** — Find applications instantly by company or position. Sort by date or company name. Filter by status with high-end glassmorphic chips.
+### Discovery
+| | |
+|---|---|
+| **Search** | Full-text across company and position, live as you type |
+| **Filter & sort** | Filter by status chips; sort by date or company name |
+| **Company logos** | Auto-fetched from Logo.dev, cached to the database, or upload your own |
+| **CSV Export** | Export your list or active cycle to a standard CSV |
 
 ---
 
