@@ -128,7 +128,7 @@ struct StatChip: View {
 
 // MARK: - Job Card
 
-/// Full glassmorphic job application card with avatar, status pill, and type tag.
+/// Full glassmorphic job application card with avatar and status pill.
 struct DarkJobCardView: View {
     let job: JobApplication
 
@@ -140,55 +140,48 @@ struct DarkJobCardView: View {
 
     private var initial: String { String(job.companyName.prefix(1)).uppercased() }
 
+    private var subtitleText: String {
+        guard let type = job.jobType else { return job.companyName }
+        return "\(job.companyName)  ·  \(type.rawValue)"
+    }
+
     var body: some View {
-        HStack(alignment: .center, spacing: 16) {
+        HStack(alignment: .center, spacing: 14) {
             avatarView
-                .frame(width: 60, height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .shadow(color: .black.opacity(0.20), radius: 4, y: 2)
+                .frame(width: 52, height: 52)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .shadow(color: .black.opacity(0.18), radius: 4, y: 2)
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(job.position)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(DarkTheme.textPrimary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-
-                Text(job.companyName)
-                    .font(.system(size: 14))
-                    .foregroundStyle(DarkTheme.textSecondary)
                     .lineLimit(1)
 
-                HStack(spacing: 6) {
-                    if let status = job.status {
-                        DarkStatusPill(status: status)
-                    }
-                    if let type = job.jobType {
-                        DarkTypeTag(text: type.rawValue, icon: type.iconName)
-                    }
+                HStack(alignment: .firstTextBaseline) {
+                    Text(subtitleText)
+                        .font(.system(size: 13))
+                        .foregroundStyle(DarkTheme.textSecondary)
+                        .lineLimit(1)
+                    Spacer(minLength: 8)
+                    Text(dateText)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(DarkTheme.textTertiary)
                 }
-                .padding(.top, 2)
+
+                if let status = job.status {
+                    DarkStatusPill(status: status)
+                        .padding(.top, 1)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-
-            VStack(alignment: .trailing, spacing: 0) {
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.quaternary)
-                Spacer()
-                Text(dateText)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-            }
         }
-        .padding(16)
+        .padding(14)
         .glassCard(cornerRadius: DarkTheme.cardRadius)
         .task(id: job.companyName) {
             guard job.companyLogoImageData == nil else { return }
             let trimmed = job.companyName.trimmingCharacters(in: .whitespaces)
             guard trimmed.count >= 2 else { return }
-            
-            // Fetch logo
             if let data = await LogoFetcher.fetchLogoData(for: trimmed) {
                 await MainActor.run {
                     withAnimation(.appSmooth) {
@@ -208,14 +201,14 @@ struct DarkJobCardView: View {
                 .scaledToFill()
         } else {
             Text(initial)
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(DarkTheme.avatarGradient(for: job.companyName))
         }
         #else
         Text(initial)
-            .font(.system(size: 20, weight: .bold))
+            .font(.system(size: 18, weight: .bold))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(DarkTheme.avatarGradient(for: job.companyName))

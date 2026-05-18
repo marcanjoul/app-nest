@@ -111,10 +111,17 @@ struct ApplicationView: View {
                             exportCSV()
                         } label: {
                             Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 17, weight: .semibold))
+                                .font(.system(size: 14, weight: .semibold))
                                 .foregroundStyle(applications.isEmpty
-                                    ? DarkTheme.textTertiary.opacity(0.4)
+                                    ? DarkTheme.textTertiary
                                     : DarkTheme.textSecondary)
+                                .frame(width: 34, height: 34)
+                                .background {
+                                    Circle()
+                                        .fill(DarkTheme.cardFill)
+                                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+                                }
+                                .opacity(applications.isEmpty ? 0.4 : 1)
                         }
                         .buttonStyle(.plain)
                         .disabled(applications.isEmpty)
