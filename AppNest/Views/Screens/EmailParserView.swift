@@ -84,6 +84,9 @@ struct EmailParserView: View {
         .toolbarBackground(Color(UIColor.systemBackground), for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Cancel") { dismiss() }
+            }
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button("Done") {
@@ -575,11 +578,11 @@ struct EmailParserView: View {
                 editCompensationAmount = nil
                 editNotes       = ""
                 editAttachedResume = nil
-                isEmailExpanded = true
                 fetchedLogoData     = nil
                 isFetchingLogo      = false
                 highlights          = []
                 isHighlightExpanded = false
+                dismiss()
             }
         }
     }

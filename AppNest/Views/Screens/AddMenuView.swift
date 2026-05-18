@@ -13,6 +13,8 @@ struct AddMenuView: View {
     @State private var isPresentingManualAdd = false
     @State private var isPresentingParsedJob = false
     @State private var isPresentingImport = false
+    @State private var isPresentingEmailParse = false
+    @State private var showLinkedInError = false
     
     private let parser = LinkParser()
     
@@ -28,7 +30,18 @@ struct AddMenuView: View {
                         // 1. Paste Link Card
                         pasteLinkCard
                         
-                        // 2. Import CSV Card
+                        // 2. Parse Email Card
+                        actionCard(
+                            title: "Parse Email",
+                            subtitle: "Extract job details from a confirmation email.",
+                            icon: "envelope.open.fill",
+                            color: Color.orange
+                        ) {
+                            AppHaptics.shared.light()
+                            isPresentingEmailParse = true
+                        }
+                        
+                        // 3. Import CSV Card
                         actionCard(
                             title: "Import CSV",
                             subtitle: "Bulk upload your job history.",
@@ -84,12 +97,13 @@ struct AddMenuView: View {
             get: { isPresentingImport },
             set: { isPresentingImport = $0; appState.isPresentingSheet = $0 }
         )) {
-            CSVImportPreviewSheet()
+            CSVImportPreviewSheet(initialRows: [])
         }
-        .alert("LinkedIn Links Not Supported", isPresented: $isShowingLinkedInAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("LinkedIn obscures job details in their URLs. Please open the actual application link or add this job manually.")
+        .sheet(isPresented: Binding(
+            get: { isPresentingEmailParse },
+            set: { isPresentingEmailParse = $0; appState.isPresentingSheet = $0 }
+        )) {
+            NavigationStack { EmailParserView() }
         }
     }
     
@@ -166,6 +180,9 @@ struct AddMenuView: View {
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                                     .strokeBorder(isTextFieldFocused ? Color.purple.opacity(0.5) : Color.primary.opacity(0.08), lineWidth: 1)
                             )
+                            .onChange(of: pasteLinkURL) { _, _ in
+                                withAnimation(.appFastOut) { showLinkedInError = false }
+                            }
                         
                         Button {
                             parseLink()
@@ -188,8 +205,37 @@ struct AddMenuView: View {
                         .animation(.appFastOut, value: pasteLinkURL.isEmpty)
                     }
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, showLinkedInError ? 12 : 20)
                     .padding(.top, 12)
+                    
+                    if showLinkedInError {
+                        HStack(alignment: .top, spacing: 10) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 14))
+                                .foregroundStyle(Color.orange)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("LinkedIn Links Not Supported")
+                                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(DarkTheme.textPrimary)
+                                Text("LinkedIn obscures job details in their URLs. Please open the actual application link or add manually.")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(DarkTheme.textSecondary)
+                                    .lineSpacing(2)
+                            }
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.orange.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .strokeBorder(Color.orange.opacity(0.2), lineWidth: 1)
+                        )
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
@@ -252,7 +298,7 @@ struct AddMenuView: View {
                 isParsing = false
                 
                 if result.isLinkedIn {
-                    isShowingLinkedInAlert = true
+                    showLinkedInError = true
                 } else {
                     parsedData = result
                     isPresentingParsedJob = true

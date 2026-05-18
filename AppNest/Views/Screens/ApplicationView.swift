@@ -209,36 +209,6 @@ struct ApplicationView: View {
             .scrollDismissesKeyboard(.interactively)
             .environment(\.editMode, .constant(isEditMode ? .active : .inactive))
 
-            // Pill FAB
-            if !isEditMode && !filteredAndSorted.isEmpty {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Button {
-                            isPresentingNewApplication = true
-                        } label: {
-                            Label("New", systemImage: "plus")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 22)
-                                .padding(.vertical, 15)
-                                .background {
-                                    Capsule()
-                                        .fill(Color.accentColor)
-                                        .shadow(color: Color.accentColor.opacity(0.30), radius: 14, y: 5)
-                                }
-                        }
-                        .buttonStyle(FABStyle())
-                        .scaleEffect(contentAppeared ? 1 : 0.75)
-                        .opacity(contentAppeared ? 1 : 0)
-                        .animation(.appSmooth.delay(0.18), value: contentAppeared)
-                        .padding(.trailing, 20)
-                        .padding(.bottom, 20)
-                    }
-                }
-            }
-
             // Bulk Actions Bar
             if isEditMode && !selectedJobIDs.isEmpty {
                 VStack {
@@ -365,22 +335,12 @@ struct ApplicationView: View {
             contentAppeared = true
         }
         .sheet(isPresented: Binding(
-            get: { isPresentingNewApplication },
-            set: { 
-                isPresentingNewApplication = $0 
-                appState.isPresentingSheet = $0
-            }
-        )) {
-            NavigationStack { JobDetailView(job: nil) }
-        }
-        .sheet(isPresented: Binding(
             get: { isShowingCyclePicker },
-            set: { 
-                isShowingCyclePicker = $0 
+            set: {
+                isShowingCyclePicker = $0
                 appState.isPresentingSheet = $0
             }
-        )) {
-            NavigationStack { CyclePickerSheet(isPresented: $isShowingCyclePicker) }
+        )) {            NavigationStack { CyclePickerSheet(isPresented: $isShowingCyclePicker) }
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
         }
@@ -700,41 +660,6 @@ struct ApplicationView: View {
                     }
                     .buttonStyle(PressScaleButtonStyle())
                     
-                    // Import button
-                    Button {
-                        isShowingImportConfirmation = true
-                        AppHaptics.shared.light()
-                    } label: {
-                        Image(systemName: "square.and.arrow.down")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(DarkTheme.textPrimary)
-                            .frame(width: 44, height: 44)
-                            .background {
-                                Circle()
-                                    .fill(.ultraThinMaterial)
-                                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-                            }
-                    }
-                    .buttonStyle(PressScaleButtonStyle())
-
-                    // Export button
-                    Button {
-                        isShowingExportConfirmation = true
-                        AppHaptics.shared.light()
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(DarkTheme.textPrimary)
-                            .frame(width: 44, height: 44)
-                            .background {
-                                Circle()
-                                    .fill(.ultraThinMaterial)
-                                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-                                    .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
-                            }
-                    }
-                    .buttonStyle(PressScaleButtonStyle())
-                    
                     // Edit button
                     Button {
                         withAnimation(.appSmooth) {
@@ -919,51 +844,18 @@ struct ApplicationView: View {
     }
     
     private var emptyStateActions: some View {
-        VStack(spacing: 12) {
-            Button {
-                isPresentingNewApplication = true
-                AppHaptics.shared.light()
-            } label: {
-                Label("Add Manually", systemImage: "square.and.pencil")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Capsule().fill(Color.accentColor))
-            }
-            .buttonStyle(PressScaleButtonStyle())
-            
-            Button {
-                AppHaptics.shared.light()
-                appState.selectedTab = 1 // Navigate to Add tab
-            } label: {
-                Label("Paste Link", systemImage: "link")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Capsule().fill(Color.purple))
-            }
-            .buttonStyle(PressScaleButtonStyle())
-
-            Button {
-                isShowingImportConfirmation = true
-                AppHaptics.shared.light()
-            } label: {
-                Label("Import CSV", systemImage: "square.and.arrow.down")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(DarkTheme.textPrimary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background {
-                        Capsule()
-                            .fill(.ultraThinMaterial)
-                            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-                    }
-            }
-            .buttonStyle(PressScaleButtonStyle())
+        Button {
+            AppHaptics.shared.light()
+            appState.selectedTab = 1 // Navigate to Add tab
+        } label: {
+            Label("Add Job", systemImage: "plus")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 22)
+                .padding(.vertical, 14)
+                .background(Capsule().fill(Color.accentColor))
         }
-        .padding(.horizontal, 40)
+        .buttonStyle(PressScaleButtonStyle())
         .padding(.top, 10)
     }
 
@@ -1047,6 +939,33 @@ private struct FABStyle: ButtonStyle {
         ctx.insert(JobApplication(
             companyName: company, position: position,
             jobType: type, status: status, season: season,
+            dateApplied: Date().addingTimeInterval(-86_400 * Double(days))
+        ))
+    }
+    return NavigationStack { ApplicationView() }
+        .environment(AppState())
+        .modelContainer(container)
+}
+Meta",      "Software Engineering Intern",  .internship, .applied,   .summer, 5),
+        ("Uber",      "iOS Engineer Intern",          .internship, .interview, .summer, 8),
+        ("JPMorgan",  "Software Engineer Intern",     .internship, .applied,   .summer, 10),
+        ("Honeywell", "Embedded Systems Intern",      .internship, .rejected,  .summer, 12),
+        ("Google",    "SWE Intern – iOS",             .internship, .offer,     .summer, 20),
+        ("Amazon",    "SDE Intern",                   .internship, .applied,   .summer, 22),
+        ("Netflix",   "Mobile Engineering Intern",    .internship, .toApply,   .summer, 24),
+    ]
+    for (company, position, type, status, season, days) in samples {
+        ctx.insert(JobApplication(
+            companyName: company, position: position,
+            jobType: type, status: status, season: season,
+            dateApplied: Date().addingTimeInterval(-86_400 * Double(days))
+        ))
+    }
+    return NavigationStack { ApplicationView() }
+        .environment(AppState())
+        .modelContainer(container)
+}
+atus: status, season: season,
             dateApplied: Date().addingTimeInterval(-86_400 * Double(days))
         ))
     }
