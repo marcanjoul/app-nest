@@ -1,0 +1,466 @@
+import SwiftUI
+import SwiftData
+
+struct CSVImportPreviewSheet: View {
+    let initialRows: [CSVImportRow]
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(AppState.self) private var appState
+    @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
+
+    @State private var editingRow: CSVImportRow?
+    @State private var localRows: [CSVImportRow] = []
+    @State private var selectedRows = Set<UUID>()
+    @State private var isAddingNewCycle = false
+    @State private var newCycleName = ""
+    @State private var isConfirmingDelete = false
+    @State private var appearedRows = Set<UUID>()
+    @State private var activeFilter: ImportPreviewFilter = .all
+
+    private var readyRows: [CSVImportRow] { localRows.filter { $0.isComplete } }
+    private var attentionRows: [CSVImportRow] { localRows.filter { !$0.isComplete } }
+
+    private var displayedRows: [CSVImportRow] {
+        switch activeFilter {
+        case .all: return localRows
+        case .ready: return readyRows
+        case .attention: return attentionRows
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack(alignment: .bottom) {
+                AmbientBackground()
+                
+                VStack(spacing: 0) {
+                    if !localRows.isEmpty {
+                        statBlock
+                            .padding(.horizontal, 20)
+                            .padding(.top, 16)
+                        
+                        filterPillRow
+                            .padding(.vertical, 16)
+                    }
+
+                    if localRows.isEmpty {
+                        VStack(spacing: 14) {
+                            Image(systemName: "doc.text.magnifyingglass")
+                                .font(.system(size: 44))
+                                .foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
+                            Text("No rows found")
+                                .font(.title3.weight(.semibold))
+                                .foregroundStyle(DarkTheme.textPrimary)
+                            Text("The file didn't contain any readable data rows.")
+                                .font(.subheadline)
+                                .foregroundStyle(DarkTheme.textSecondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 30)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if displayedRows.isEmpty {
+                        noFilterResultsView
+                    } else {
+                        ScrollView {
+                            VStack(spacing: 8) {
+                                ForEach(Array(displayedRows.enumerated()), id: \.element.id) { index, row in
+                                    if let localIndex = localRows.firstIndex(where: { $0.id == row.id }) {
+                                        previewRow(row: $localRows[localIndex], index: index)
+                                            .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 100)
+                        }
+                    }
+                }
+
+                if !localRows.isEmpty {
+                    importButton
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 16)
+                }
+            }
+            .navigationTitle("Import Preview")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color(UIColor.systemBackground), for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                
+                ToolbarItemGroup(placement: .bottomBar) {
+                    if !selectedRows.isEmpty {
+                        Button(role: .destructive) { isConfirmingDelete = true } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                        .foregroundStyle(Color.red)
+                        
+                        Spacer()
+                        
+                        Menu {
+                            Button {
+                                newCycleName = ""
+                                isAddingNewCycle = true
+                            } label: {
+                                Label("New Cycle...", systemImage: "plus")
+                            }
+                            
+                            if !cycles.isEmpty {
+                                Divider()
+                                ForEach(cycles) { cycle in
+                                    Button(cycle.name) {
+                                        moveToCycle(cycle)
+                                    }
+                                }
+                            }
+                        } label: {
+                            Label("Move to Cycle", systemImage: "folder")
+                        }
+                    }
+                }
+            }
+            .alert("New Cycle", isPresented: $isAddingNewCycle) {
+                TextField("Cycle Name", text: $newCycleName)
+                Button("Create & Move") {
+                    createNewCycleAndMove()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Enter a name for the new job search cycle.")
+            }
+            .confirmationDialog(
+                "Delete \(selectedRows.count) Row\(selectedRows.count == 1 ? "" : "s")?",
+                isPresented: $isConfirmingDelete,
+                titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive) { deleteSelected() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("The selected row\(selectedRows.count == 1 ? "" : "s") will be removed from this import preview.")
+            }
+            .onAppear {
+                if localRows.isEmpty { localRows = initialRows }
+            }
+            .sheet(item: $editingRow) { row in
+                EditImportRowView(row: row) { updated in
+                    if let index = localRows.firstIndex(where: { $0.id == updated.id }) {
+                        localRows[index] = updated
+                        checkFilterConsistency()
+                    }
+                }
+            }
+        }
+    }
+
+    private var statBlock: some View {
+        HStack(spacing: 0) {
+            VStack(spacing: 4) {
+                Text("\(readyRows.count)")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(red: 0.30, green: 0.69, blue: 0.49))
+                Text("READY")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(DarkTheme.textSecondary)
+                    .tracking(1.0)
+            }
+            .frame(maxWidth: .infinity)
+
+            Rectangle()
+                .fill(Color.primary.opacity(0.1))
+                .frame(width: 1, height: 40)
+
+            VStack(spacing: 4) {
+                Text("\(attentionRows.count)")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(red: 0.96, green: 0.65, blue: 0.14))
+                Text("NEEDS ATTENTION")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(DarkTheme.textSecondary)
+                    .tracking(1.0)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .padding(.vertical, 20)
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white.opacity(0.04))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+        }
+    }
+
+    private var filterPillRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(ImportPreviewFilter.allCases, id: \.self) { filter in
+                    let count = count(for: filter)
+                    Button {
+                        withAnimation(.appCrisp) { activeFilter = filter }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Text(filter.rawValue)
+                            Text("\(count)")
+                                .opacity(0.6)
+                        }
+                        .font(.system(size: 13, weight: activeFilter == filter ? .bold : .semibold))
+                        .foregroundStyle(activeFilter == filter ? .white : DarkTheme.textSecondary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background {
+                            Capsule()
+                                .fill(activeFilter == filter ? Color.accentColor : Color.clear)
+                                .overlay(Capsule().strokeBorder(activeFilter == filter ? Color.clear : Color.primary.opacity(0.12), lineWidth: 1))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Spacer(minLength: 20)
+
+                Button(selectedRows.count == displayedRows.count && !displayedRows.isEmpty
+                    ? "Deselect All" : "Select All") {
+                    withAnimation(.appCrisp) {
+                        if selectedRows.count == displayedRows.count {
+                            selectedRows.removeAll()
+                        } else {
+                            selectedRows = Set(displayedRows.map(\.id))
+                        }
+                    }
+                    AppHaptics.shared.light()
+                }
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+
+    private var noFilterResultsView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: activeFilter == .ready ? "checkmark.circle" : "sparkles")
+                .font(.system(size: 32))
+                .foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
+            Text(activeFilter == .ready ? "Nothing to import" : "All rows are ready")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(DarkTheme.textSecondary)
+            Button("Show All") {
+                withAnimation(.appSmooth) { activeFilter = .all }
+            }
+            .font(.system(size: 14, weight: .bold))
+            .foregroundStyle(Color.accentColor)
+        }
+        .frame(maxHeight: .infinity)
+    }
+
+    private var importButton: some View {
+        Button {
+            finalizeImport()
+        } label: {
+            Text("Import")
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(readyRows.isEmpty ? Color.gray.opacity(0.3) : Color.accentColor)
+                        .shadow(color: readyRows.isEmpty ? .clear : Color.accentColor.opacity(0.3), radius: 10, y: 4)
+                }
+        }
+        .buttonStyle(PressScaleButtonStyle())
+        .disabled(readyRows.isEmpty)
+    }
+
+    @ViewBuilder
+    private func previewRow(row: Binding<CSVImportRow>, index: Int) -> some View {
+        let r = row.wrappedValue
+        let isSelected = selectedRows.contains(r.id)
+        
+        HStack(spacing: 14) {
+            // Selection toggle
+            Button {
+                withAnimation(.appCrisp) {
+                    if isSelected { selectedRows.remove(r.id) }
+                    else { selectedRows.insert(r.id) }
+                }
+                AppHaptics.shared.light()
+            } label: {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22))
+                    .foregroundStyle(isSelected ? Color.accentColor : DarkTheme.textTertiary)
+            }
+            .buttonStyle(.plain)
+
+            // Logo Preview
+            ZStack {
+                if let data = r.logoData, let ui = UIImage(data: data) {
+                    Image(uiImage: ui)
+                        .resizable()
+                        .scaledToFit()
+                        .padding(6)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.white.opacity(0.05))
+                } else {
+                    let avatarColors = Theme.avatarColor(for: r.companyName)
+                    let initial = String(r.companyName.prefix(1)).uppercased()
+                    Circle()
+                        .fill(avatarColors.background)
+                    Text(initial.isEmpty ? "?" : initial)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(avatarColors.foreground)
+                }
+            }
+            .frame(width: 44, height: 44)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            
+            // Content
+            Button {
+                editingRow = r
+            } label: {
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(r.position.isEmpty ? "Missing Position" : r.position)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(r.position.isEmpty ? .orange : DarkTheme.textPrimary)
+                            .lineLimit(1)
+                        Text(r.companyName.isEmpty ? "Missing Company" : r.companyName)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(r.companyName.isEmpty ? .orange : DarkTheme.textSecondary)
+                            .lineLimit(1)
+                        
+                        HStack(spacing: 5) {
+                            if let status = r.status {
+                                badge(status.rawValue, color: status.color)
+                            }
+                            if let type = r.jobType {
+                                badge(type.rawValue, color: type.color)
+                            }
+                            if let cycleID = r.cycleID, let cycle = cycles.first(where: { $0.id == cycleID }) {
+                                badge(cycle.name, color: Color.accentColor)
+                            }
+                        }
+                        .padding(.top, 1)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(DarkTheme.textTertiary.opacity(0.6))
+                }
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(DarkTheme.cardFill)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(isSelected ? Color.accentColor.opacity(0.4) : Color.primary.opacity(0.08), lineWidth: isSelected ? 1.5 : 1)
+                }
+        }
+        .opacity(appearedRows.contains(r.id) ? 1 : 0)
+        .offset(y: appearedRows.contains(r.id) ? 0 : 10)
+        .onAppear {
+            let delay = Double(min(index, 8)) * 0.04
+            withAnimation(.appSmooth.delay(delay)) {
+                _ = appearedRows.insert(r.id)
+            }
+        }
+        .task(id: r.companyName) {
+            guard r.logoData == nil else { return }
+            let trimmed = r.companyName.trimmingCharacters(in: .whitespaces)
+            guard trimmed.count >= 2 else { return }
+            if let data = await LogoFetcher.fetchLogoData(for: trimmed) {
+                withAnimation(.appSmooth) {
+                    row.logoData.wrappedValue = data
+                }
+            }
+        }
+    }
+
+    private func badge(_ label: String, color: Color) -> some View {
+        Text(label)
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(color)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(Capsule().fill(color.opacity(0.12)))
+    }
+
+    private func count(for filter: ImportPreviewFilter) -> Int {
+        switch filter {
+        case .all: return localRows.count
+        case .ready: return readyRows.count
+        case .attention: return attentionRows.count
+        }
+    }
+
+    private func checkFilterConsistency() {
+        if displayedRows.isEmpty && !localRows.isEmpty {
+            withAnimation(.appSmooth) { activeFilter = .all }
+        }
+    }
+
+    private func deleteSelected() {
+        withAnimation(.appSmooth) {
+            localRows.removeAll { selectedRows.contains($0.id) }
+            selectedRows.removeAll()
+            checkFilterConsistency()
+        }
+        AppHaptics.shared.medium()
+    }
+
+    private func moveToCycle(_ cycle: JobCycle) {
+        for i in localRows.indices {
+            if selectedRows.contains(localRows[i].id) {
+                localRows[i].cycleID = cycle.id
+            }
+        }
+        selectedRows.removeAll()
+        AppHaptics.shared.success()
+    }
+
+    private func createNewCycleAndMove() {
+        let name = newCycleName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+        let cycle = JobCycle(name: name)
+        modelContext.insert(cycle)
+        moveToCycle(cycle)
+        newCycleName = ""
+    }
+
+    private func finalizeImport() {
+        let defaultCycle = cycles.first(where: { $0.id == appState.selectedCycleID })
+        
+        for row in readyRows {
+            let rowCycle = row.cycleID.flatMap { id in cycles.first(where: { $0.id == id }) }
+            let app = JobApplication(
+                companyName: row.companyName,
+                companyLogoImageData: row.logoData,
+                position: row.position,
+                jobType: row.jobType,
+                status: row.status ?? .applied,
+                season: row.season,
+                cycle: rowCycle ?? defaultCycle,
+                dateApplied: row.dateApplied,
+                jobNotes: row.notes,
+                compensationKind: row.compensationKind,
+                compensationAmount: row.compensationAmount,
+                compensationCurrency: row.compensationCurrency,
+                salaryPeriod: row.salaryPeriod
+            )
+            modelContext.insert(app)
+        }
+        
+        try? modelContext.save()
+        AppHaptics.shared.success()
+        dismiss()
+    }
+}

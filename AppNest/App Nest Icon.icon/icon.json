@@ -8,8 +8,16 @@
         {
           "blend-mode" : "normal",
           "fill" : "none",
+          "hidden" : false,
           "image-name" : "App Nest no bg.png",
-          "name" : "App Nest no bg"
+          "name" : "App Nest no bg",
+          "position" : {
+            "scale" : 1.1,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
         }
       ],
       "shadow" : {
