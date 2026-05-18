@@ -301,35 +301,34 @@ struct ProfileView: View {
 
                 PipelineSegmentedBar(segments: pipelineSegments, total: totalCount)
 
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                HStack(spacing: 6) {
                     ForEach(pipelineStatuses, id: \.self) { status in
                         let c = count(for: status)
                         let style = DarkTheme.statusStyle(for: status)
                         
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Image(systemName: style.iconName)
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundStyle(c > 0 ? style.tintColor : DarkTheme.textTertiary)
-                                Spacer()
-                                Text("\(c)")
-                                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                                    .foregroundStyle(c > 0 ? DarkTheme.textPrimary : DarkTheme.textTertiary)
-                            }
+                        VStack(alignment: .leading, spacing: 4) {
+                            Image(systemName: style.iconName)
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(c > 0 ? style.tintColor : DarkTheme.textTertiary)
+                            
+                            Text("\(c)")
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .foregroundStyle(c > 0 ? DarkTheme.textPrimary : DarkTheme.textTertiary)
                             
                             Text(pipelineLabel(for: status))
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.system(size: 8, weight: .bold))
                                 .foregroundStyle(c > 0 ? DarkTheme.textSecondary : DarkTheme.textTertiary)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.8)
                         }
-                        .padding(12)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal, 8)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background {
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
                                 .fill(c > 0 ? style.tintColor.opacity(0.06) : Color.primary.opacity(0.04))
                                 .overlay {
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
                                         .strokeBorder(c > 0 ? style.tintColor.opacity(0.12) : Color.primary.opacity(0.06), lineWidth: 1)
                                 }
                         }

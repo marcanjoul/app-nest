@@ -88,35 +88,30 @@ struct ApplicationView: View {
             List(selection: $selectedJobIDs) {
                 // Header
                 VStack(alignment: .leading, spacing: 0) {
-                    Group {
-                        if !isSearchFocused {
-                            HStack(alignment: .center) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("App Nest")
-                                        .font(.system(size: 40, weight: .bold))
-                                        .foregroundStyle(DarkTheme.textPrimary)
-                                    
-                                    if !searchText.isEmpty {
-                                        Text("\(filteredAndSorted.count) results")
-                                            .font(.system(size: 13, weight: .bold))
-                                            .foregroundStyle(Color.accentColor)
-                                            .transition(.opacity.combined(with: .move(edge: .leading)))
-                                    }
-                                }
-                                
-                                Spacer()
-                            }
-                            .padding(.top, 16)
+                    HStack(alignment: .center) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("App Nest")
+                                .font(.system(size: 40, weight: .bold))
+                                .foregroundStyle(DarkTheme.textPrimary)
                             
-                            cycleSelectorChip
-                                .padding(.top, 8)
+                            if !searchText.isEmpty {
+                                Text("\(filteredAndSorted.count) results")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundStyle(Color.accentColor)
+                                    .transition(.opacity.combined(with: .move(edge: .leading)))
+                            }
                         }
+                        
+                        Spacer()
                     }
+                    .padding(.top, 16)
+                    
+                    cycleSelectorChip
+                        .padding(.top, 8)
                 }
                 .opacity(contentAppeared ? 1 : 0)
                 .offset(y: contentAppeared ? 0 : 20)
                 .animation(.appSmooth, value: contentAppeared)
-                .animation(.appSmooth, value: isSearchFocused)
                 .animation(.appSmooth, value: searchText.isEmpty)
                 .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
                 .listRowBackground(Color.clear)
@@ -570,7 +565,7 @@ struct ApplicationView: View {
                     .foregroundStyle(isSearchFocused ? Color.accentColor : DarkTheme.textSecondary)
                     .font(.system(size: 15, weight: .medium))
 
-                TextField(isSearchFocused ? "Search company, position, or type..." : "Search applications...", text: $searchText)
+                TextField(isSearchFocused ? "Search company, position..." : "Search...", text: $searchText)
                     .foregroundStyle(DarkTheme.textPrimary)
                     .tint(.accentColor)
                     .focused($isSearchFocused)
@@ -597,6 +592,7 @@ struct ApplicationView: View {
             .background(.ultraThinMaterial)
             .clipShape(Capsule())
             .overlay(Capsule().strokeBorder(isSearchFocused ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08), lineWidth: 1))
+            .animation(.appCrisp, value: isSearchFocused)
 
             if !applications.isEmpty && !isSearchFocused {
                 HStack(spacing: 8) {
@@ -697,9 +693,13 @@ struct ApplicationView: View {
                     }
                     .buttonStyle(PressScaleButtonStyle())
                 }
-                .transition(.move(edge: .trailing).combined(with: .opacity))
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity).animation(.appBouncy.delay(0.15)),
+                    removal: .move(edge: .trailing).combined(with: .opacity).animation(.appCrisp)
+                ))
             }
         }
+        .animation(.appSmooth, value: isSearchFocused)
     }
 
     private var statsSection: some View {
