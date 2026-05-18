@@ -660,11 +660,20 @@ struct CSVImportPreviewSheet: View {
                         VStack(spacing: 0) {
                             // Header
                             let incompleteRows = localRows.filter { !$0.isComplete }
+                            let readyCount = localRows.count - incompleteRows.count
                             HStack(spacing: 8) {
-                                let count = localRows.count
-                                Text("\(count) \(count == 1 ? "row" : "rows") found")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundStyle(DarkTheme.textSecondary)
+                                Group {
+                                    if incompleteRows.isEmpty {
+                                        Text("All \(localRows.count) ready")
+                                            .foregroundStyle(Color.accentColor)
+                                    } else {
+                                        Text("\(readyCount) ready  ·  ")
+                                            .foregroundStyle(DarkTheme.textSecondary)
+                                        + Text("\(incompleteRows.count) incomplete")
+                                            .foregroundStyle(Color.orange)
+                                    }
+                                }
+                                .font(.system(size: 13, weight: .medium))
                                 Spacer()
                                 if !incompleteRows.isEmpty {
                                     Button("Select incomplete (\(incompleteRows.count))") {
@@ -752,17 +761,26 @@ struct CSVImportPreviewSheet: View {
                         Spacer()
 
                         Menu {
-                            Button { isAddingNewCycle = true } label: {
-                                Label("New Cycle...", systemImage: "plus")
+                            Section("Status") {
+                                ForEach(ApplicationStatus.allCases, id: \.self) { s in
+                                    Button(s.rawValue) { batchSetStatus(s) }
+                                }
                             }
-                            if !cycles.isEmpty {
-                                Divider()
+                            Section("Type") {
+                                ForEach(ApplicationType.allCases, id: \.self) { t in
+                                    Button(t.rawValue) { batchSetType(t) }
+                                }
+                            }
+                            Section("Cycle") {
+                                Button { isAddingNewCycle = true } label: {
+                                    Label("New Cycle...", systemImage: "plus")
+                                }
                                 ForEach(cycles) { cycle in
                                     Button(cycle.name) { moveToCycle(cycle) }
                                 }
                             }
                         } label: {
-                            Label("Move to Cycle", systemImage: "folder")
+                            Label("Apply to \(selectedRows.count)", systemImage: "wand.and.stars")
                         }
                     }
                 }
@@ -900,12 +918,26 @@ struct CSVImportPreviewSheet: View {
         }
         .animation(.appCrisp, value: isSelected)
         .animation(.appCrisp, value: r.isComplete)
+        .contextMenu {
+            Button { editingRow = r } label: {
+                Label("Edit", systemImage: "pencil")
+            }
+            Button(role: .destructive) {
+                withAnimation(.appSmooth) {
+                    localRows.removeAll { $0.id == r.id }
+                    selectedRows.remove(r.id)
+                }
+                AppHaptics.shared.medium()
+            } label: {
+                Label("Delete Row", systemImage: "trash")
+            }
+        }
         .opacity(appearedRows.contains(r.id) ? 1 : 0)
         .offset(y: appearedRows.contains(r.id) ? 0 : 10)
         .onAppear {
             let delay = Double(min(index, 8)) * 0.045
             withAnimation(.appSmooth.delay(delay)) {
-                appearedRows.insert(r.id)
+                _ = appearedRows.insert(r.id)
             }
         }
         .task(id: r.companyName) {
@@ -943,6 +975,22 @@ struct CSVImportPreviewSheet: View {
     private func moveToCycle(_ cycle: JobCycle) {
         for i in localRows.indices where selectedRows.contains(localRows[i].id) {
             localRows[i].cycleID = cycle.id
+        }
+        selectedRows.removeAll()
+        AppHaptics.shared.success()
+    }
+
+    private func batchSetStatus(_ status: ApplicationStatus) {
+        for i in localRows.indices where selectedRows.contains(localRows[i].id) {
+            localRows[i].status = status
+        }
+        selectedRows.removeAll()
+        AppHaptics.shared.success()
+    }
+
+    private func batchSetType(_ type: ApplicationType) {
+        for i in localRows.indices where selectedRows.contains(localRows[i].id) {
+            localRows[i].jobType = type
         }
         selectedRows.removeAll()
         AppHaptics.shared.success()
