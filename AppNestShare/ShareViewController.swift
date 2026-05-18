@@ -215,14 +215,24 @@ class ShareViewController: UIViewController {
                 " | Lever",         " - Lever",
                 " | Greenhouse",    " - Greenhouse",
                 " | Workday",       " - Workday",
+                " | Adzuna",        " - Adzuna",
+                " | ZipRecruiter",  " - ZipRecruiter",
+                " | Monster",       " - Monster",
+                " | CareerBuilder", " - CareerBuilder",
+                " | Dice",          " - Dice",
+                " | Built In",      " - Built In",
+                " | SimplyHired",   " - SimplyHired",
                 " Jobs",            " - Jobs",
             ]
             var cleaned = raw
             for n in noise { cleaned = cleaned.replacingOccurrences(of: n, with: "", options: .caseInsensitive) }
             cleaned = cleaned.trimmingCharacters(in: .whitespaces)
 
-            if cleaned.lowercased().hasPrefix("apply for ") {
-                cleaned = String(cleaned.dropFirst("apply for ".count)).trimmingCharacters(in: .whitespaces)
+            for prefix in ["job application for ", "apply for ", "application for "] {
+                if cleaned.lowercased().hasPrefix(prefix) {
+                    cleaned = String(cleaned.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces)
+                    break
+                }
             }
             if let r = cleaned.range(of: " is hiring ", options: .caseInsensitive) {
                 company  = String(cleaned[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
@@ -240,6 +250,8 @@ class ShareViewController: UIViewController {
             } else if let r = cleaned.range(of: " | ") {
                 company  = String(cleaned[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
                 position = String(cleaned[r.upperBound...]).trimmingCharacters(in: .whitespaces)
+            } else if !cleaned.isEmpty {
+                position = cleaned
             }
         }
 
@@ -349,14 +361,23 @@ private final class ShareViewModel {
         let ogSiteName   = extractMetaContent(from: html, property: "og:site_name").map(htmlDecode)
         let htmlTitle    = extractHTMLTitle(from: html).map(htmlDecode)
 
-        // Try title sources in reliability order
+        // Prefer candidates that yield both fields; fall back to position-only results
+        var partial: SharePendingImport? = nil
         for candidate in [ogTitle, twitterTitle, htmlTitle].compactMap({ $0 }) {
             let parsed = ShareViewController.parseJobInfo(title: candidate, url: url)
-            if !parsed.companyName.isEmpty || !parsed.position.isEmpty {
-                companyName = parsed.companyName.isEmpty ? (ogSiteName ?? "") : parsed.companyName
+            if !parsed.companyName.isEmpty && !parsed.position.isEmpty {
+                companyName = parsed.companyName
                 position    = parsed.position
                 return
             }
+            if partial == nil, !parsed.companyName.isEmpty || !parsed.position.isEmpty {
+                partial = parsed
+            }
+        }
+        if let p = partial {
+            companyName = p.companyName.isEmpty ? (ogSiteName ?? "") : p.companyName
+            position    = p.position
+            return
         }
 
         // Last resort: use og:site_name as company if at least the page loaded
