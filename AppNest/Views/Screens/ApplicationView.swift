@@ -97,54 +97,84 @@ struct ApplicationView: View {
 
             List(selection: $selectedJobIDs) {
                 // Header
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .center) {
                         Text("App Nest")
                             .font(.system(size: 40, weight: .bold))
                             .foregroundStyle(DarkTheme.textPrimary)
-                        cycleSelectorChip
-                            .padding(.top, 6)
-                    }
-                    Spacer()
-                    HStack(spacing: 10) {
-                        Button {
-                            exportCSV()
-                        } label: {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(applications.isEmpty
-                                    ? DarkTheme.textTertiary
-                                    : DarkTheme.textSecondary)
-                                .frame(width: 34, height: 34)
-                                .background {
-                                    Circle()
-                                        .fill(DarkTheme.cardFill)
-                                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+                        
+                        Spacer()
+                        
+                        HStack(spacing: 8) {
+                            if !applications.isEmpty {
+                                Button {
+                                    isImportingCSV = true
+                                    AppHaptics.shared.light()
+                                } label: {
+                                    Image(systemName: "square.and.arrow.down")
+                                        .font(.system(size: 15, weight: .bold))
+                                        .foregroundStyle(DarkTheme.textPrimary)
+                                        .frame(width: 44, height: 44)
+                                        .background {
+                                            Circle()
+                                                .fill(.ultraThinMaterial)
+                                                .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                                        }
                                 }
-                                .opacity(applications.isEmpty ? 0.4 : 1)
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(applications.isEmpty)
-                        .animation(.appCrisp, value: applications.isEmpty)
-                        .padding(.top, 12)
+                                .buttonStyle(PressScaleButtonStyle())
+                                .transition(.scale(scale: 0.9).combined(with: .opacity))
 
-                        if !applications.isEmpty {
-                            Button(isEditMode ? "Done" : "Edit") {
-                                withAnimation(.appSmooth) {
-                                    isEditMode.toggle()
-                                    if !isEditMode { selectedJobIDs.removeAll() }
+                                Button {
+                                    exportCSV()
+                                    AppHaptics.shared.light()
+                                } label: {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.system(size: 15, weight: .bold))
+                                        .foregroundStyle(DarkTheme.textPrimary)
+                                        .frame(width: 44, height: 44)
+                                        .background {
+                                            Circle()
+                                                .fill(.ultraThinMaterial)
+                                                .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                                        }
                                 }
+                                .buttonStyle(PressScaleButtonStyle())
+                                .transition(.scale(scale: 0.9).combined(with: .opacity))
+                                
+                                Button(isEditMode ? "Done" : "Edit") {
+                                    withAnimation(.appSmooth) {
+                                        isEditMode.toggle()
+                                        if !isEditMode { selectedJobIDs.removeAll() }
+                                    }
+                                }
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundStyle(isEditMode ? Color.white : Color.accentColor)
+                                .padding(.horizontal, 16)
+                                .frame(height: 44)
+                                .background {
+                                    if isEditMode {
+                                        Capsule()
+                                            .fill(Color.accentColor)
+                                            .shadow(color: Color.accentColor.opacity(0.3), radius: 8, y: 3)
+                                    } else {
+                                        Capsule()
+                                            .fill(.ultraThinMaterial)
+                                            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                                    }
+                                }
+                                .buttonStyle(PressScaleButtonStyle())
                             }
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Color.accentColor)
-                            .padding(.top, 12)
                         }
                     }
+                    .padding(.top, 16)
+                    
+                    cycleSelectorChip
+                        .padding(.top, 8)
                 }
                 .opacity(contentAppeared ? 1 : 0)
                 .offset(y: contentAppeared ? 0 : 20)
                 .animation(.appSmooth, value: contentAppeared)
-                .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 8, trailing: 20))
+                .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 .selectionDisabled() // Header should not be selectable
@@ -154,7 +184,7 @@ struct ApplicationView: View {
                     .opacity(contentAppeared ? 1 : 0)
                     .offset(y: contentAppeared ? 0 : 16)
                     .animation(.appSmooth.delay(0.07), value: contentAppeared)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 10, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 10, leading: 0, bottom: 10, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .selectionDisabled()
@@ -193,22 +223,36 @@ struct ApplicationView: View {
                         .selectionDisabled()
                 } else {
                     if isEditMode {
-                        HStack {
+                        HStack(spacing: 8) {
+                            Text("\(selectedJobIDs.count) selected")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(DarkTheme.textPrimary)
+                            
                             Spacer()
+                            
                             Button(selectedJobIDs.count == filteredAndSorted.count ? "Deselect All" : "Select All") {
-                                if selectedJobIDs.count == filteredAndSorted.count {
-                                    selectedJobIDs.removeAll()
-                                } else {
-                                    selectedJobIDs = Set(filteredAndSorted.map(\.id))
+                                withAnimation(.appCrisp) {
+                                    if selectedJobIDs.count == filteredAndSorted.count {
+                                        selectedJobIDs.removeAll()
+                                    } else {
+                                        selectedJobIDs = Set(filteredAndSorted.map(\.id))
+                                    }
                                 }
                             }
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(Color.accentColor)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background {
+                                Capsule()
+                                    .fill(Color.accentColor.opacity(0.12))
+                            }
                         }
-                        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 4, trailing: 24))
+                        .listRowInsets(EdgeInsets(top: 4, leading: 24, bottom: 10, trailing: 24))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .selectionDisabled()
+                        .transition(.move(edge: .top).combined(with: .opacity))
                     }
 
                     ForEach(filteredAndSorted) { job in
