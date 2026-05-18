@@ -659,23 +659,35 @@ struct CSVImportPreviewSheet: View {
                     ScrollView {
                         VStack(spacing: 0) {
                             // Header
-                            HStack {
+                            let incompleteRows = localRows.filter { !$0.isComplete }
+                            HStack(spacing: 8) {
                                 let count = localRows.count
                                 Text("\(count) \(count == 1 ? "row" : "rows") found")
                                     .font(.system(size: 13, weight: .medium))
                                     .foregroundStyle(DarkTheme.textSecondary)
                                 Spacer()
-                                Button(selectedRows.count == localRows.count ? "Deselect All" : "Select All") {
-                                    withAnimation(.appCrisp) {
-                                        if selectedRows.count == localRows.count {
-                                            selectedRows.removeAll()
-                                        } else {
-                                            selectedRows = Set(localRows.map(\.id))
+                                if !incompleteRows.isEmpty {
+                                    Button("Select incomplete (\(incompleteRows.count))") {
+                                        withAnimation(.appCrisp) {
+                                            selectedRows = Set(incompleteRows.map(\.id))
+                                        }
+                                        AppHaptics.shared.light()
+                                    }
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(Color.orange)
+                                } else {
+                                    Button(selectedRows.count == localRows.count ? "Deselect All" : "Select All") {
+                                        withAnimation(.appCrisp) {
+                                            if selectedRows.count == localRows.count {
+                                                selectedRows.removeAll()
+                                            } else {
+                                                selectedRows = Set(localRows.map(\.id))
+                                            }
                                         }
                                     }
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(Color.accentColor)
                                 }
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(Color.accentColor)
                             }
                             .padding(.horizontal, 4)
                             .padding(.bottom, 10)
@@ -692,11 +704,22 @@ struct CSVImportPreviewSheet: View {
                                 HStack(spacing: 6) {
                                     Image(systemName: "exclamationmark.triangle.fill")
                                         .font(.system(size: 11))
-                                    Text("Some rows are missing required fields. Tap a row to edit.")
+                                    Text("Highlighted rows are missing required fields — tap to fill them in before importing.")
                                         .font(.system(size: 12, weight: .medium))
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
-                                .foregroundStyle(Color.orange)
+                                .foregroundStyle(Color.orange.opacity(0.85))
                                 .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 10)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .fill(Color.orange.opacity(0.08))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                                .strokeBorder(Color.orange.opacity(0.18), lineWidth: 1)
+                                        )
+                                )
                                 .padding(.horizontal, 4)
                                 .padding(.top, 10)
                             }
@@ -827,7 +850,9 @@ struct CSVImportPreviewSheet: View {
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(r.position.isEmpty ? .orange : DarkTheme.textSecondary)
                             .lineLimit(1)
+                        let hasBadge = r.status != nil || r.jobType != nil || r.cycleID != nil
                         HStack(spacing: 5) {
+                            previewBadge(r.dateApplied.formatted(.dateTime.month(.abbreviated).day()), color: DarkTheme.textSecondary)
                             if let status = r.status {
                                 previewBadge(status.rawValue, color: status.color)
                             }
@@ -837,6 +862,9 @@ struct CSVImportPreviewSheet: View {
                             if let cycleID = r.cycleID,
                                let cycle = cycles.first(where: { $0.id == cycleID }) {
                                 previewBadge(cycle.name, color: Color.accentColor)
+                            }
+                            if !hasBadge {
+                                previewBadge("No metadata", color: DarkTheme.textTertiary)
                             }
                         }
                     }
@@ -860,13 +888,18 @@ struct CSVImportPreviewSheet: View {
                 .fill(DarkTheme.cardFill)
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(!r.isComplete ? Color.orange.opacity(0.055) : Color.clear)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .strokeBorder(
-                            isSelected ? Color.accentColor.opacity(0.4) : DarkTheme.cardBorder,
-                            lineWidth: isSelected ? 1.5 : 1
+                            isSelected ? Color.accentColor.opacity(0.4) : (!r.isComplete ? Color.orange.opacity(0.22) : DarkTheme.cardBorder),
+                            lineWidth: isSelected ? 1.5 : (!r.isComplete ? 1.2 : 1)
                         )
                 )
         }
         .animation(.appCrisp, value: isSelected)
+        .animation(.appCrisp, value: r.isComplete)
         .opacity(appearedRows.contains(r.id) ? 1 : 0)
         .offset(y: appearedRows.contains(r.id) ? 0 : 10)
         .onAppear {
