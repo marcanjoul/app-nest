@@ -125,6 +125,9 @@ class JobApplication {
     /// Date the application was submitted.
     var dateApplied: Date
     
+    /// URL of the original job posting.
+    var jobURL: String?
+
     /// Optional notes or details added by the user.
     var jobNotes: String?
 
@@ -185,6 +188,7 @@ class JobApplication {
         season: ApplicationSeason? = nil,
         cycle: JobCycle? = nil,
         dateApplied: Date = Date(),
+        jobURL: String? = nil,
         jobNotes: String? = nil,
         resumeFileName: String? = nil,
         resumeBookmark: Data? = nil,
@@ -204,6 +208,7 @@ class JobApplication {
         self.season = season
         self.cycle = cycle
         self.dateApplied = dateApplied
+        self.jobURL = jobURL
         self.jobNotes = jobNotes
         self.resumeFileName = resumeFileName
         self.resumeBookmark = resumeBookmark

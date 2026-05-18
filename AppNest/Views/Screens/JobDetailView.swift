@@ -25,6 +25,7 @@ struct JobDetailView: View {
     @State private var status:            ApplicationStatus?
     @State private var season:            ApplicationSeason?
     @State private var dateApplied:       Date
+    @State private var jobURL:            String
     @State private var jobNotes:          String
     @State private var resumeFileName:    String?
     @State private var resumeID:          UUID?
@@ -73,7 +74,7 @@ struct JobDetailView: View {
         status == .interview || status == .offer
     }
 
-    init(job: JobApplication?, prefillCompany: String = "", prefillPosition: String = "") {
+    init(job: JobApplication?, prefillCompany: String = "", prefillPosition: String = "", prefillURL: String = "") {
         self.job = job
         _companyName            = State(initialValue: job?.companyName ?? prefillCompany)
         _companyLogoImageData   = State(initialValue: job?.companyLogoImageData)
@@ -82,6 +83,7 @@ struct JobDetailView: View {
         _status                 = State(initialValue: job?.status ?? .applied)
         _season                 = State(initialValue: job?.season)
         _dateApplied            = State(initialValue: job?.dateApplied ?? Date())
+        _jobURL                 = State(initialValue: job?.jobURL ?? prefillURL)
         _jobNotes               = State(initialValue: job?.jobNotes ?? "")
         _resumeFileName         = State(initialValue: job?.resumeFileName)
         _resumeID               = State(initialValue: job?.resumeID)
@@ -199,6 +201,7 @@ struct JobDetailView: View {
                             status: status,
                             reminderEnabled: $reminderEnabled
                         )
+                        JobLinkSection(jobURL: $jobURL)
                         CompensationSection(
                             kind: $compensationKind,
                             amount: $compensationAmount,
@@ -393,6 +396,7 @@ struct JobDetailView: View {
             job.status              = status
             job.season              = season
             job.dateApplied         = dateApplied
+            job.jobURL              = jobURL.trimmingCharacters(in: .whitespaces).isEmpty ? nil : jobURL.trimmingCharacters(in: .whitespaces)
             job.jobNotes            = jobNotes
             job.resumeFileName      = resumeFileName
             job.resumeBookmark      = _pendingResumeBookmark ?? job.resumeBookmark
@@ -417,6 +421,7 @@ struct JobDetailView: View {
                 season: season,
                 cycle: selectedCycle,
                 dateApplied: dateApplied,
+                jobURL: jobURL.trimmingCharacters(in: .whitespaces).isEmpty ? nil : jobURL.trimmingCharacters(in: .whitespaces),
                 jobNotes: jobNotes,
                 resumeFileName: resumeFileName,
                 resumeBookmark: _pendingResumeBookmark,
@@ -825,6 +830,61 @@ struct DateAppliedSection: View {
                 if denied { reminderEnabled = false }
             }
         }
+    }
+}
+
+// MARK: - Notes Section
+
+// MARK: - Job Link Section
+
+struct JobLinkSection: View {
+    @Binding var jobURL: String
+    @Environment(\.openURL) private var openURL
+
+    private var resolvedURL: URL? {
+        let trimmed = jobURL.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return nil }
+        let str = trimmed.hasPrefix("http") ? trimmed : "https://\(trimmed)"
+        return URL(string: str)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionLabel(icon: "link", title: "Job Link")
+
+            HStack(spacing: 10) {
+                TextField("Paste job posting URL…", text: $jobURL)
+                    .font(.subheadline)
+                    .keyboardType(.URL)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.never)
+                    .foregroundStyle(resolvedURL != nil ? .primary : .primary)
+
+                if resolvedURL != nil {
+                    Button {
+                        if let url = resolvedURL { openURL(url) }
+                    } label: {
+                        Image(systemName: "arrow.up.right.circle.fill")
+                            .font(.system(size: 22))
+                            .foregroundStyle(Color.accentColor)
+                    }
+                    .buttonStyle(.plain)
+                    .transition(.scale(scale: 0.7).combined(with: .opacity))
+                }
+            }
+            .padding(12)
+            .background {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.primary.opacity(0.05))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                    )
+            }
+            .animation(.appCrisp, value: resolvedURL != nil)
+        }
+        .padding(16)
+        .glassCard()
     }
 }
 
