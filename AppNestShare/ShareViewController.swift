@@ -8,7 +8,68 @@ private let appGroupID       = "group.com.example.mark.appnest"
 private let pendingImportKey = "pendingJobImport"
 private let logoPublicKey    = "pk_PaR2J13cQXyRshj6wOxhVw"
 private let logoSecretKey    = "sk_SFlbaAHcRcWM_u3MDsFnPw"
-private let shareBlue        = Color(red: 0.35, green: 0.65, blue: 0.96)
+private let shareAccent      = Color(red: 0.35, green: 0.65, blue: 0.96)
+
+// MARK: - Local enum mirrors (raw values match main app enums for Codable compat)
+
+private enum ShareJobType: String, CaseIterable {
+    case fullTime   = "Full Time"
+    case partTime   = "Part Time"
+    case contract   = "Contract"
+    case internship = "Internship"
+    case coop       = "Co-op"
+    case temporary  = "Temporary"
+
+    var color: Color {
+        switch self {
+        case .fullTime:   return Color(red: 0.35, green: 0.65, blue: 0.96)
+        case .partTime:   return Color(red: 0.96, green: 0.73, blue: 0.28)
+        case .internship: return Color(red: 0.93, green: 0.38, blue: 0.44)
+        case .contract:   return Color(red: 0.62, green: 0.52, blue: 0.96)
+        case .coop:       return Color(red: 0.30, green: 0.80, blue: 0.45)
+        case .temporary:  return Color(red: 0.96, green: 0.52, blue: 0.62)
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .fullTime:   return "briefcase.fill"
+        case .partTime:   return "clock.fill"
+        case .internship: return "graduationcap.fill"
+        case .contract:   return "doc.text.fill"
+        case .coop:       return "building.2.fill"
+        case .temporary:  return "timer"
+        }
+    }
+}
+
+private enum ShareJobStatus: String, CaseIterable {
+    case toApply   = "To Apply"
+    case applied   = "Applied"
+    case interview = "Interview"
+    case offer     = "Offer"
+    case rejected  = "Rejected"
+
+    var color: Color {
+        switch self {
+        case .toApply:   return Color(red: 0.58, green: 0.62, blue: 0.82)
+        case .applied:   return Color(red: 0.35, green: 0.65, blue: 0.96)
+        case .interview: return Color(red: 0.96, green: 0.73, blue: 0.28)
+        case .offer:     return Color(red: 0.30, green: 0.80, blue: 0.45)
+        case .rejected:  return Color(red: 0.93, green: 0.38, blue: 0.44)
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .toApply:   return "plus.circle.fill"
+        case .applied:   return "paperplane.fill"
+        case .interview: return "person.2.fill"
+        case .offer:     return "checkmark.seal.fill"
+        case .rejected:  return "xmark.circle.fill"
+        }
+    }
+}
 
 // MARK: - Pending import model (mirrors AppNest/Models/PendingJobImport.swift)
 
@@ -16,6 +77,8 @@ struct SharePendingImport: Codable {
     var companyName: String
     var position: String
     var sourceURL: String?
+    var jobType: String?   // ShareJobType.rawValue — decoded as ApplicationType in main app
+    var status: String?    // ShareJobStatus.rawValue — decoded as ApplicationStatus in main app
 }
 
 // MARK: - View controller
@@ -99,9 +162,8 @@ class ShareViewController: UIViewController {
         }
     }
 
-    // MARK: - URL-based parsing (no network, works immediately)
+    // MARK: - URL-based parsing (LinkedIn slug: /jobs/view/position-at-company-numericid/)
 
-    // LinkedIn job URLs embed the slug: /jobs/view/position-at-company-numericid/
     private static func parseFromURL(_ url: URL) -> (company: String, position: String)? {
         let host = url.host?.lowercased() ?? ""
         guard host.contains("linkedin.com") else { return nil }
@@ -113,16 +175,10 @@ class ShareViewController: UIViewController {
         else { return nil }
 
         let rawSlug = segments[3]
-
-        // Strip trailing hyphen+digits (the LinkedIn job ID, e.g. "-4234567890")
         let slug = rawSlug.replacingOccurrences(of: "-\\d+$", with: "", options: .regularExpression)
-
-        // If nothing was stripped and the whole segment is numeric, it's an ID-only URL — bail
         guard !slug.isEmpty, !(slug == rawSlug && rawSlug.allSatisfy(\.isNumber)) else { return nil }
 
-        // "senior-ios-engineer-at-apple-inc" → "senior ios engineer at apple inc"
         let text = slug.components(separatedBy: "-").filter { !$0.isEmpty }.joined(separator: " ")
-
         guard let atRange = text.range(of: " at ", options: .caseInsensitive) else { return nil }
         let pos  = String(text[..<atRange.lowerBound]).capitalized
         let comp = String(text[atRange.upperBound...]).capitalized
@@ -133,7 +189,6 @@ class ShareViewController: UIViewController {
     // MARK: - Title-based parsing
 
     static func parseJobInfo(title: String?, url: URL?) -> SharePendingImport {
-        // URL slug parsing first — no network, more reliable for SPAs like LinkedIn
         if let url, let parsed = parseFromURL(url) {
             return SharePendingImport(companyName: parsed.company, position: parsed.position, sourceURL: url.absoluteString)
         }
@@ -180,11 +235,7 @@ class ShareViewController: UIViewController {
             }
         }
 
-        return SharePendingImport(
-            companyName: company,
-            position: position,
-            sourceURL: url?.absoluteString
-        )
+        return SharePendingImport(companyName: company, position: position, sourceURL: url?.absoluteString)
     }
 
     // MARK: - Save
@@ -199,8 +250,6 @@ class ShareViewController: UIViewController {
 
 // MARK: - HTML helpers
 
-// Extracts content="…" from the <meta> tag that contains `property`.
-// Handles both attribute orders and ignores unrelated tags.
 private func extractMetaContent(from html: String, property: String) -> String? {
     var searchStart = html.startIndex
     while searchStart < html.endIndex {
@@ -240,9 +289,13 @@ private final class ShareViewModel {
     var companyName: String
     var position: String
     let sourceURL: URL?
+    var jobType: ShareJobType?   = nil
+    var status: ShareJobStatus?  = nil
 
     var logoData: Data?
-    var isFetchingTitle = false
+    var isLogoAutoFetched = false
+    var isFetchingTitle   = false
+    var isFetchingLogo    = false
 
     init(initial: SharePendingImport, rawURL: URL?) {
         companyName = initial.companyName
@@ -270,7 +323,6 @@ private final class ShareViewModel {
               let html = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1)
         else { return }
 
-        // og:title is server-rendered by most job boards (LinkedIn, Glassdoor, etc.)
         if let raw = extractMetaContent(from: html, property: "og:title") {
             let decoded = htmlDecode(raw)
             let parsed  = ShareViewController.parseJobInfo(title: decoded, url: url)
@@ -281,7 +333,6 @@ private final class ShareViewModel {
             }
         }
 
-        // Fall back to <title> for simpler sites
         if let tagStart  = html.range(of: "<title", options: .caseInsensitive),
            let tagEnd    = html[tagStart.lowerBound...].range(of: ">"),
            let closeTag  = html[tagEnd.upperBound...].range(of: "</title>", options: .caseInsensitive) {
@@ -312,10 +363,38 @@ private final class ShareViewModel {
         else { return }
 
         logoData = imgData
+        isLogoAutoFetched = true
     }
 }
 
 private struct LogoResult: Decodable { let domain: String }
+
+// MARK: - Glass card (inline for share extension)
+
+private extension View {
+    func shareGlassCard() -> some View {
+        background {
+            ZStack {
+                RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.ultraThinMaterial)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color(UIColor { trait in
+                        trait.userInterfaceStyle == .dark
+                            ? UIColor(red: 0.11, green: 0.11, blue: 0.12, alpha: 0.85)
+                            : UIColor.secondarySystemGroupedBackground
+                    }))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .strokeBorder(Color(UIColor { trait in
+                        trait.userInterfaceStyle == .dark
+                            ? UIColor.white.withAlphaComponent(0.08)
+                            : UIColor.black.withAlphaComponent(0.04)
+                    }), lineWidth: 1)
+            }
+        }
+        .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+    }
+}
 
 // MARK: - SwiftUI view
 
@@ -331,10 +410,9 @@ private struct ShareView: View {
 
     var body: some View {
         ZStack {
-            // Matches AmbientBackground in the main app — dark base + subtle accent glow
             Color(uiColor: .systemBackground).ignoresSafeArea()
             RadialGradient(
-                colors: [shareBlue.opacity(0.09), .clear],
+                colors: [shareAccent.opacity(0.09), .clear],
                 center: UnitPoint(x: 1.2, y: -0.1),
                 startRadius: 0,
                 endRadius: 340
@@ -347,15 +425,16 @@ private struct ShareView: View {
                 Divider().opacity(0.10)
                 ScrollView {
                     VStack(spacing: 16) {
-                        avatarRow
-                        fields
+                        infoSection
+                        typePicker
+                        statusPicker
                         if let url = model.sourceURL {
-                            urlChip(url.host ?? url.absoluteString)
+                            urlSection(url)
                         }
                     }
-                    .padding(20)
+                    .padding()
                 }
-                addButton
+                saveButton
                     .padding(.horizontal, 20)
                     .padding(.bottom, 28)
                     .padding(.top, 8)
@@ -363,12 +442,24 @@ private struct ShareView: View {
         }
         .preferredColorScheme(.dark)
         .task(id: model.companyName) {
-            guard !model.companyName.isEmpty else { return }
-            await model.fetchLogo(for: model.companyName)
+            if model.isLogoAutoFetched {
+                withAnimation(.easeOut(duration: 0.2)) {
+                    model.logoData = nil
+                    model.isLogoAutoFetched = false
+                }
+            }
+            guard model.logoData == nil else { return }
+            let trimmed = model.companyName.trimmingCharacters(in: .whitespaces)
+            guard trimmed.count >= 2 else { return }
+            do { try await Task.sleep(for: .milliseconds(600)) } catch { return }
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.2)) { model.isFetchingLogo = true }
+            await model.fetchLogo(for: trimmed)
+            withAnimation(.easeOut(duration: 0.2)) { model.isFetchingLogo = false }
         }
     }
 
-    // MARK: - Subviews
+    // MARK: - Handle & Header
 
     private var handle: some View {
         Capsule()
@@ -380,138 +471,259 @@ private struct ShareView: View {
 
     private var header: some View {
         HStack {
-            Button("Cancel", action: onCancel)
-                .font(.system(size: 16))
-                .foregroundStyle(.secondary)
+            Button(action: onCancel) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .frame(width: 40, height: 40)
+                    .background {
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                            .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                    }
+            }
             Spacer()
-            HStack(spacing: 5) {
-                Image(systemName: "bird.fill")
-                    .font(.system(size: 12, weight: .semibold))
+            HStack(spacing: 7) {
+                appIconView
+                    .frame(width: 24, height: 24)
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                 Text("App Nest")
                     .font(.system(size: 16, weight: .semibold))
             }
             .foregroundStyle(.primary)
             Spacer()
-            Text("Cancel").opacity(0).font(.system(size: 16)) // balance
+            Color.clear.frame(width: 40, height: 40)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
     }
 
-    private var avatarRow: some View {
-        HStack(spacing: 14) {
-            avatar
-                .frame(width: 56, height: 56)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(model.companyName.isEmpty ? "Company" : model.companyName)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(model.companyName.isEmpty ? .tertiary : .primary)
-                Text(model.position.isEmpty ? "Position" : model.position)
-                    .font(.system(size: 14))
-                    .foregroundStyle(model.position.isEmpty ? .tertiary : .secondary)
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            if model.isFetchingTitle {
-                ProgressView()
-                    .scaleEffect(0.8)
-                    .tint(.secondary)
-            }
-        }
-        .padding(14)
-        .background {
-            ZStack {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(.ultraThinMaterial)
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color(uiColor: .tertiarySystemFill))
-            }
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.09), lineWidth: 0.8)
-        }
-        .shadow(color: .black.opacity(0.10), radius: 10, y: 3)
-        .animation(.easeOut(duration: 0.2), value: model.companyName)
-        .animation(.easeOut(duration: 0.2), value: model.position)
-    }
-
     @ViewBuilder
-    private var avatar: some View {
-        if let data = model.logoData, let ui = UIImage(data: data) {
-            Image(uiImage: ui)
+    private var appIconView: some View {
+        if let icon = loadContainerAppIcon() {
+            Image(uiImage: icon)
                 .resizable()
                 .scaledToFill()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.white.opacity(0.04))
         } else {
-            let initial = model.companyName.prefix(1).uppercased()
-            Text(initial.isEmpty ? "?" : initial)
-                .font(.system(size: 22, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(avatarGradient(for: model.companyName))
+            // Mint-green fallback matching the app icon background color
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(Color(red: 0.73, green: 0.97, blue: 0.91))
         }
     }
 
-    private var fields: some View {
+    private func loadContainerAppIcon() -> UIImage? {
+        var url = Bundle.main.bundleURL
+        for _ in 0..<4 {
+            url = url.deletingLastPathComponent()
+            if url.pathExtension == "app", let bundle = Bundle(url: url) {
+                return UIImage(named: "App Nest Icon", in: bundle, compatibleWith: nil)
+                    ?? UIImage(named: "AppIcon", in: bundle, compatibleWith: nil)
+            }
+        }
+        return nil
+    }
+
+    // MARK: - Info Section (JobInfoSection style)
+
+    private var infoSection: some View {
         VStack(spacing: 12) {
-            field("Company", text: Binding(
-                get: { model.companyName },
-                set: { model.companyName = $0 }
-            ), placeholder: "e.g. Google")
+            ZStack {
+                Circle()
+                    .fill(avatarGradient(for: model.companyName))
+                    .opacity(model.logoData != nil ? 0 : 1)
 
-            field("Position", text: Binding(
-                get: { model.position },
-                set: { model.position = $0 }
-            ), placeholder: "e.g. Software Engineer")
-        }
-    }
+                Text(model.companyName.prefix(1).uppercased().isEmpty ? "?" : String(model.companyName.prefix(1).uppercased()))
+                    .font(.system(size: 40, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+                    .opacity(model.logoData != nil ? 0 : 1)
 
-    private func field(_ label: String, text: Binding<String>, placeholder: String) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text(label)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .kerning(0.5)
-                .textCase(.uppercase)
-            TextField(placeholder, text: text)
-                .font(.system(size: 16))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.09), lineWidth: 0.7)
-                )
-        }
-    }
+                if let data = model.logoData, let ui = UIImage(data: data) {
+                    Image(uiImage: ui)
+                        .resizable()
+                        .scaledToFill()
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.95).combined(with: .opacity),
+                            removal: .opacity
+                        ))
+                }
 
-    private func urlChip(_ host: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: "link")
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.tertiary)
-            Text(host)
-                .font(.system(size: 12))
-                .foregroundStyle(.tertiary)
+                if model.isFetchingLogo {
+                    Circle().fill(.ultraThinMaterial)
+                    ProgressView().tint(.white)
+                }
+            }
+            .frame(width: 100, height: 100)
+            .clipShape(Circle())
+            .overlay(Circle().strokeBorder(Color.white.opacity(0.25), lineWidth: 1))
+            .shadow(color: .black.opacity(0.20), radius: 10, y: 5)
+            .animation(.easeOut(duration: 0.2), value: model.logoData != nil)
+            .animation(.easeOut(duration: 0.2), value: model.isFetchingLogo)
+            .overlay(alignment: .bottomTrailing) {
+                if model.isFetchingTitle {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                        .tint(.secondary)
+                        .frame(width: 20, height: 20)
+                        .background(Circle().fill(Color(uiColor: .systemBackground)))
+                        .offset(x: 2, y: 2)
+                }
+            }
+
+            VStack(spacing: 6) {
+                TextField("Position Title *", text: Binding(
+                    get: { model.position },
+                    set: { model.position = $0 }
+                ))
+                .multilineTextAlignment(.center)
                 .lineLimit(1)
+                .minimumScaleFactor(0.45)
+                .font(.system(size: 22, weight: .bold, design: .rounded))
+                .foregroundStyle(.primary)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.primary.opacity(0.06))
+                        .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                )
+
+                TextField("COMPANY NAME *", text: Binding(
+                    get: { model.companyName },
+                    set: { model.companyName = $0 }
+                ))
+                .multilineTextAlignment(.center)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .tracking(1.4)
+                .foregroundStyle(.primary.opacity(0.6))
+                .textInputAutocapitalization(.words)
+                .frame(maxWidth: 220)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.primary.opacity(0.06))
+                        .overlay(Capsule(style: .continuous).strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                )
+            }
+            .padding(.horizontal, 16)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 7)
-        .background(Color.white.opacity(0.05), in: Capsule())
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
     }
 
-    private var addButton: some View {
+    // MARK: - Type Picker
+
+    private var typePicker: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionLabel(icon: "list.bullet", title: "Job Type")
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(orderedTypes, id: \.self) { option in
+                        sharePill(
+                            title: option.rawValue,
+                            icon: option.icon,
+                            color: option.color,
+                            isSelected: model.jobType == option
+                        ) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                model.jobType = (model.jobType == option ? nil : option)
+                            }
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 2)
+            }
+        }
+        .padding(16)
+        .shareGlassCard()
+    }
+
+    private var orderedTypes: [ShareJobType] {
+        guard let sel = model.jobType else { return ShareJobType.allCases }
+        return [sel] + ShareJobType.allCases.filter { $0 != sel }
+    }
+
+    // MARK: - Status Picker
+
+    private var statusPicker: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionLabel(icon: "rectangle.and.hand.point.up.left.fill", title: "Status")
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(orderedStatuses, id: \.self) { option in
+                        sharePill(
+                            title: option.rawValue,
+                            icon: option.icon,
+                            color: option.color,
+                            isSelected: model.status == option
+                        ) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                model.status = (model.status == option ? nil : option)
+                            }
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 2)
+            }
+        }
+        .padding(16)
+        .shareGlassCard()
+    }
+
+    private var orderedStatuses: [ShareJobStatus] {
+        guard let sel = model.status else { return ShareJobStatus.allCases }
+        return [sel] + ShareJobStatus.allCases.filter { $0 != sel }
+    }
+
+    // MARK: - URL Section
+
+    private func urlSection(_ url: URL) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionLabel(icon: "link", title: "Job Link")
+
+            HStack(spacing: 8) {
+                Image(systemName: "link")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.tertiary)
+                Text(url.absoluteString)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.primary.opacity(0.05))
+                    .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+            )
+        }
+        .padding(16)
+        .shareGlassCard()
+    }
+
+    // MARK: - Save Button
+
+    private var saveButton: some View {
         Button {
             onSave(SharePendingImport(
                 companyName: model.companyName,
                 position: model.position,
-                sourceURL: model.sourceURL?.absoluteString
+                sourceURL: model.sourceURL?.absoluteString,
+                jobType: model.jobType?.rawValue,
+                status: model.status?.rawValue
             ))
         } label: {
             Text("Add to App Nest")
@@ -521,16 +733,60 @@ private struct ShareView: View {
                 .padding(.vertical, 15)
                 .background {
                     Capsule()
-                        // Dimmed blue when empty — clearly the same action, just unavailable
-                        .fill(shareBlue.opacity(canSave ? 1.0 : 0.28))
-                        .shadow(color: canSave ? shareBlue.opacity(0.32) : .clear, radius: 14, y: 5)
+                        .fill(shareAccent.opacity(canSave ? 1.0 : 0.28))
+                        .shadow(color: canSave ? shareAccent.opacity(0.32) : .clear, radius: 14, y: 5)
                 }
         }
         .disabled(!canSave)
         .animation(.easeOut(duration: 0.18), value: canSave)
     }
 
-    // Deterministic gradient matching DarkTheme.avatarColors exactly
+    // MARK: - Shared pill & label helpers
+
+    private func sectionLabel(icon: String, title: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .kerning(0.5)
+        }
+    }
+
+    private func sharePill(
+        title: String,
+        icon: String,
+        color: Color,
+        isSelected: Bool,
+        onTap: @escaping () -> Void
+    ) -> some View {
+        Button(action: onTap) {
+            HStack(spacing: isSelected ? 6 : 5) {
+                Image(systemName: icon)
+                    .font(.system(size: isSelected ? 13 : 12, weight: .bold))
+                    .foregroundStyle(isSelected ? .white : color)
+                Text(title)
+                    .font(.system(size: isSelected ? 14 : 13, weight: isSelected ? .bold : .semibold))
+                    .foregroundStyle(isSelected ? .white : color.opacity(0.88))
+            }
+            .padding(.horizontal, isSelected ? 14 : 12)
+            .padding(.vertical, isSelected ? 9 : 8)
+            .background(
+                Capsule()
+                    .fill(isSelected ? color : color.opacity(0.12))
+                    .overlay(Capsule().strokeBorder(
+                        isSelected ? Color.clear : color.opacity(0.28),
+                        lineWidth: isSelected ? 0 : 0.8
+                    ))
+            )
+            .shadow(color: isSelected ? color.opacity(0.21) : .clear, radius: 6, y: 2)
+        }
+        .buttonStyle(.plain)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+    }
+
     private func avatarGradient(for name: String) -> LinearGradient {
         let colors: [Color] = [
             Color(red: 0.36, green: 0.66, blue: 0.96),
@@ -542,10 +798,6 @@ private struct ShareView: View {
         ]
         let hash  = name.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
         let color = colors[abs(hash) % colors.count]
-        return LinearGradient(
-            colors: [color.opacity(0.85), color],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+        return LinearGradient(colors: [color.opacity(0.85), color], startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 }

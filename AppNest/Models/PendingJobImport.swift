@@ -5,6 +5,8 @@ struct PendingJobImport: Codable, Equatable {
     var companyName: String
     var position: String
     var sourceURL: String?
+    var jobType: ApplicationType?
+    var status: ApplicationStatus?
 
     static let groupID = "group.com.example.mark.appnest"
     static let defaultsKey = "pendingJobImport"
