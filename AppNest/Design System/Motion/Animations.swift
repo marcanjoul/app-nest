@@ -18,9 +18,9 @@ extension Animation {
         .spring(response: 0.38, dampingFraction: 0.55)
     }
     
-    /// Bubbly, liquidy spring for dramatic expansions.
+    /// Bubbly, liquidy spring for dramatic expansions. Slightly more damped for control.
     static var appBubbly: Animation {
-        .spring(response: 0.42, dampingFraction: 0.48)
+        .spring(response: 0.40, dampingFraction: 0.52)
     }
     
     /// Gentle, fluid ease for slower decorative moves.

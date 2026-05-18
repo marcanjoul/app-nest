@@ -379,7 +379,7 @@ struct EmailParserView: View {
                         kind: $editCompensationKind,
                         amount: compensationAmountBinding,
                         currency: compensationCurrencyBinding,
-                        salaryPeriod: editSalaryPeriod ?? .yearly
+                        salaryPeriod: salaryPeriodBinding
                     )
                     
                     resumeSection
@@ -451,6 +451,13 @@ struct EmailParserView: View {
         Binding(
             get: { editCompensationCurrency ?? .usd },
             set: { editCompensationCurrency = $0 }
+        )
+    }
+
+    private var salaryPeriodBinding: Binding<SalaryPeriod> {
+        Binding(
+            get: { editSalaryPeriod ?? .yearly },
+            set: { editSalaryPeriod = $0 }
         )
     }
 

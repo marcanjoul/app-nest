@@ -9,6 +9,8 @@ import UIKit
 struct ProfileView: View {
     private static let displayNameStorageKey = "profile.displayName"
     private static let avatarStorageKey      = "profile.avatarDataBase64"
+    private static let weeklyGoalStorageKey  = "profile.weeklyGoal"
+    private static let hapticsEnabledKey     = "settings.hapticsEnabled"
 
     @Environment(\.modelContext) private var modelContext
     @Environment(AppState.self) private var appState
@@ -18,12 +20,15 @@ struct ProfileView: View {
 
     @AppStorage(Self.displayNameStorageKey) private var profileDisplayName: String = ""
     @AppStorage(Self.avatarStorageKey)      private var profileAvatarDataBase64: String = ""
+    @AppStorage(Self.weeklyGoalStorageKey)   private var weeklyGoal: Int = 5
+    @AppStorage(Self.hapticsEnabledKey)      private var hapticsEnabled: Bool = true
 
     @State private var avatarSelection: PhotosPickerItem?
     @State private var isShowingDocumentPicker = false
     @State private var resumePendingDeletion: ResumeDocument?
     @State private var isShowingResumeManager  = false
     @State private var isShowingCyclePicker    = false
+    @State private var isShowingResetConfirmation = false
 
     @FocusState private var isNameFocused: Bool
 
@@ -33,6 +38,15 @@ struct ProfileView: View {
         guard let id = appState.selectedCycleID else { return applications }
         return applications.filter { $0.cycle?.id == id }
     }
+
+    private var weeklyApplications: [JobApplication] {
+        let calendar = Calendar.current
+        let now = Date()
+        guard let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) else { return [] }
+        return applications.filter { $0.dateApplied >= startOfWeek }
+    }
+
+    private var weeklyCount: Int { weeklyApplications.count }
 
     private var orderedResumes: [ResumeDocument] {
         guard let def = resumes.first(where: \.isDefault) else { return resumes }
@@ -94,6 +108,8 @@ struct ProfileView: View {
                     VStack(spacing: 14) {
                         pipelineSection
                         resumeSection
+                        activityHeatmapSection
+                        settingsSection
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 20)
@@ -135,6 +151,12 @@ struct ProfileView: View {
                 Text("")
             }
         }
+        .alert("Reset All Data?", isPresented: $isShowingResetConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Reset Everything", role: .destructive) { resetAllData() }
+        } message: {
+            Text("This will permanently delete all applications, resumes, and search cycles. This action cannot be undone.")
+        }
         .sheet(isPresented: $isShowingResumeManager) {
             ResumeManagerSheet(
                 resumes: orderedResumes,
@@ -158,65 +180,86 @@ struct ProfileView: View {
     // MARK: - Identity header
 
     private var identitySection: some View {
-        VStack(spacing: 14) {
-            PhotosPicker(selection: $avatarSelection, matching: .images) {
-                avatarView
-                    .frame(width: 88, height: 88)
-                    .clipShape(Circle())
-                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.10), lineWidth: 1.5))
-                    .shadow(color: .black.opacity(0.14), radius: 10, y: 4)
-                    .overlay(alignment: .bottomTrailing) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.accentColor)
-                                .frame(width: 26, height: 26)
-                            Image(systemName: "camera.fill")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundStyle(.white)
+        HStack(spacing: 24) {
+            // Left: Avatar + Edit
+            VStack(spacing: 12) {
+                PhotosPicker(selection: $avatarSelection, matching: .images) {
+                    avatarView
+                        .frame(width: 88, height: 88)
+                        .clipShape(Circle())
+                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.10), lineWidth: 1.5))
+                        .shadow(color: .black.opacity(0.14), radius: 10, y: 4)
+                        .overlay(alignment: .bottomTrailing) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.accentColor)
+                                    .frame(width: 26, height: 26)
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundStyle(.white)
+                            }
+                            .shadow(color: Color.accentColor.opacity(0.28), radius: 4, y: 2)
+                            .offset(x: 2, y: 2)
                         }
-                        .shadow(color: Color.accentColor.opacity(0.28), radius: 4, y: 2)
-                        .offset(x: 2, y: 2)
-                    }
-            }
-            .buttonStyle(.plain)
-            .contextMenu {
-                if profileAvatarData != nil {
-                    Button(role: .destructive) {
-                        profileAvatarDataBase64 = ""
-                    } label: {
-                        Label("Remove Photo", systemImage: "trash")
-                    }
                 }
+                .buttonStyle(.plain)
             }
 
-            VStack(spacing: 8) {
-                TextField(
-                    "",
-                    text: $profileDisplayName,
-                    prompt: Text("Your Name").foregroundColor(DarkTheme.textSecondary)
-                )
-                .font(.system(size: 26, weight: .bold))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(DarkTheme.textPrimary)
-                .tint(.accentColor)
-                .textInputAutocapitalization(.words)
-                .autocorrectionDisabled()
-                .focused($isNameFocused)
-                .frame(maxWidth: 260)
+            // Right: Name, Cycle, Weekly Progress
+            VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 4) {
+                    TextField(
+                        "",
+                        text: $profileDisplayName,
+                        prompt: Text("Your Name").foregroundColor(DarkTheme.textSecondary)
+                    )
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(DarkTheme.textPrimary)
+                    .tint(.accentColor)
+                    .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled()
+                    .focused($isNameFocused)
 
-                if !cycles.isEmpty {
-                    profileCycleChip
+                    if !cycles.isEmpty {
+                        profileCycleChip
+                    }
                 }
 
-                Text("\(totalCount) application\(totalCount == 1 ? "" : "s")")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(DarkTheme.textTertiary)
+                // Weekly Goal Progress Ring Area
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .stroke(Color.primary.opacity(0.06), lineWidth: 6)
+                        Circle()
+                            .trim(from: 0, to: min(CGFloat(weeklyCount) / CGFloat(max(1, weeklyGoal)), 1.0))
+                            .stroke(DarkTheme.progressGradient, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                    }
+                    .frame(width: 44, height: 44)
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("\(weeklyCount) of \(weeklyGoal)")
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundStyle(DarkTheme.textPrimary)
+                        Text("WEEKLY GOAL")
+                            .font(.system(size: 9, weight: .black))
+                            .foregroundStyle(DarkTheme.textSecondary)
+                            .tracking(0.5)
+                    }
+
+                    Spacer()
+
+                    Stepper("", value: $weeklyGoal, in: 1...50)
+                        .labelsHidden()
+                        .scaleEffect(0.8)
+                        .padding(.trailing, -10)
+                }
+                .padding(.trailing, 4)
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 36)
+        .padding(.top, 40)
         .padding(.bottom, 28)
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 24)
     }
 
     @ViewBuilder
@@ -359,16 +402,14 @@ struct ProfileView: View {
     private var resumeSection: some View {
         VStack(spacing: 14) {
             HStack {
-                Label("Resumes", systemImage: "doc.richtext")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                SectionLabel(icon: "doc.richtext.fill", title: "Resumes")
                 Spacer()
             }
 
             if resumes.isEmpty {
                 HStack {
                     Spacer()
-                    ResumePill(title: "Attach Resume", style: .add, isLarge: true) {
+                    ResumePill(title: "Upload Resume", style: .add, isLarge: true) {
                         isShowingDocumentPicker = true
                     }
                     Spacer()
@@ -397,9 +438,9 @@ struct ProfileView: View {
                             } label: {
                                 Image(systemName: "trash")
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(Color.red)
+                                    .foregroundStyle(Color(red: 0.93, green: 0.33, blue: 0.40))
                                     .frame(width: 34, height: 34)
-                                    .background(Circle().fill(Color.red.opacity(0.10)))
+                                    .background(Circle().fill(Color(red: 0.93, green: 0.33, blue: 0.40).opacity(0.10)))
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("Delete resume")
@@ -429,6 +470,48 @@ struct ProfileView: View {
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.top, 4)
                 }
+            }
+        }
+        .padding(18)
+        .glassCard()
+    }
+
+    // MARK: - Activity Heatmap
+
+    private var activityHeatmapSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SectionLabel(icon: "calendar.badge.clock", title: "Activity")
+            
+            ActivityHeatmapView(applications: applications)
+        }
+        .padding(18)
+        .glassCard()
+    }
+
+    // MARK: - Settings
+
+    private var settingsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SectionLabel(icon: "gearshape.fill", title: "Settings")
+            
+            VStack(spacing: 0) {
+                Toggle(isOn: $hapticsEnabled) {
+                    Label("Haptic Feedback", systemImage: "waveform")
+                        .font(.system(size: 15, weight: .medium))
+                }
+                .padding(.vertical, 12)
+                
+                Divider().opacity(0.4)
+                
+                Button(role: .destructive) {
+                    isShowingResetConfirmation = true
+                } label: {
+                    Label("Reset All Data", systemImage: "trash.fill")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color(red: 0.93, green: 0.33, blue: 0.40))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 12)
             }
         }
         .padding(18)
@@ -477,12 +560,83 @@ struct ProfileView: View {
         }
     }
 
+    private func resetAllData() {
+        for app in applications { modelContext.delete(app) }
+        for res in resumes { modelContext.delete(res) }
+        for cyc in cycles { modelContext.delete(cyc) }
+        try? modelContext.save()
+        AppHaptics.shared.warning()
+    }
+
     private func updateProfileAvatar(from item: PhotosPickerItem) async {
         if let data = try? await item.loadTransferable(type: Data.self) {
             profileAvatarDataBase64 = data.base64EncodedString()
         }
     }
 
+}
+
+// MARK: - Activity Heatmap Subview
+
+private struct ActivityHeatmapView: View {
+    let applications: [JobApplication]
+    
+    private var dayStats: [Date: Int] {
+        let calendar = Calendar.current
+        var counts: [Date: Int] = [:]
+        for app in applications {
+            let day = calendar.startOfDay(for: app.dateApplied)
+            counts[day, default: 0] += 1
+        }
+        return counts
+    }
+    
+    private var last90Days: [Date] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        return (0..<90).reversed().compactMap { dayOffset in
+            calendar.date(byAdding: .day, value: -dayOffset, to: today)
+        }
+    }
+    
+    var body: some View {
+        let columns = Array(repeating: GridItem(.fixed(10), spacing: 4), count: 7)
+        
+        VStack(alignment: .leading, spacing: 8) {
+            LazyVGrid(columns: columns, spacing: 4) {
+                ForEach(last90Days, id: \.self) { date in
+                    let count = dayStats[date, default: 0]
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(heatmapColor(for: count))
+                        .frame(width: 10, height: 10)
+                }
+            }
+            
+            HStack {
+                Text("Last 90 days")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(DarkTheme.textTertiary)
+                Spacer()
+                HStack(spacing: 4) {
+                    Text("Less").font(.system(size: 8))
+                    Rectangle().fill(heatmapColor(for: 0)).frame(width: 8, height: 8).cornerRadius(1)
+                    Rectangle().fill(heatmapColor(for: 1)).frame(width: 8, height: 8).cornerRadius(1)
+                    Rectangle().fill(heatmapColor(for: 2)).frame(width: 8, height: 8).cornerRadius(1)
+                    Rectangle().fill(heatmapColor(for: 3)).frame(width: 8, height: 8).cornerRadius(1)
+                    Text("More").font(.system(size: 8))
+                }
+                .foregroundStyle(DarkTheme.textTertiary)
+            }
+        }
+    }
+    
+    private func heatmapColor(for count: Int) -> Color {
+        if count == 0 { return Color.primary.opacity(0.04) }
+        if count == 1 { return Color.accentColor.opacity(0.25) }
+        if count == 2 { return Color.accentColor.opacity(0.5) }
+        if count == 3 { return Color.accentColor.opacity(0.75) }
+        return Color.accentColor
+    }
 }
 
 // MARK: - Pipeline Segmented Bar
@@ -561,7 +715,7 @@ private struct ResumeManagerSheet: View {
                         Image(systemName: "plus")
                             .font(.system(size: 14, weight: .bold))
                     }
-                    .accessibilityLabel("Attach resume")
+                    .accessibilityLabel("Upload resume")
                 }
             }
         }
@@ -588,9 +742,9 @@ private struct ResumeManagerSheet: View {
             Button(role: .destructive) { onRequestDelete(resume) } label: {
                 Image(systemName: "trash")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.red)
+                    .foregroundStyle(Color(red: 0.93, green: 0.33, blue: 0.40))
                     .frame(width: 34, height: 34)
-                    .background(Circle().fill(Color.red.opacity(0.10)))
+                    .background(Circle().fill(Color(red: 0.93, green: 0.33, blue: 0.40).opacity(0.10)))
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Delete resume")

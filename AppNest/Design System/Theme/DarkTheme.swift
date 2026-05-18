@@ -105,6 +105,14 @@ enum DarkTheme {
         )
     }
 
+    // MARK: - Progress Gradients
+
+    static let progressGradient = LinearGradient(
+        colors: [Color(red: 0.30, green: 0.80, blue: 0.45).opacity(0.8), Color(red: 0.30, green: 0.80, blue: 0.45)],
+        startPoint: .top,
+        endPoint: .bottom
+    )
+
     // MARK: - Section Labels
 
     static let sectionLabelSize:    CGFloat = 11
