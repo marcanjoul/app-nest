@@ -629,6 +629,20 @@ struct ShareSheet: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
+// MARK: - Import filter
+
+private enum ImportFilter: CaseIterable, Equatable {
+    case all, ready, needsAttention
+
+    func displayLabel(total: Int, ready: Int, incomplete: Int) -> String {
+        switch self {
+        case .all:            return "All  \(total)"
+        case .ready:          return "Ready  \(ready)"
+        case .needsAttention: return "Needs Attention  \(incomplete)"
+        }
+    }
+}
+
 // MARK: - CSV Import UI
 
 struct CSVImportPreviewSheet: View {
@@ -647,10 +661,17 @@ struct CSVImportPreviewSheet: View {
     @State private var newCycleName = ""
     @State private var isConfirmingDelete = false
     @State private var appearedRows = Set<UUID>()
-    @State private var filterIncomplete = false
+    @State private var activeFilter: ImportFilter = .all
+
+    private var readyCount: Int      { localRows.filter { $0.isComplete }.count }
+    private var incompleteCount: Int { localRows.count - readyCount }
 
     private var displayedRows: [CSVImportRow] {
-        filterIncomplete ? localRows.filter { !$0.isComplete } : localRows
+        switch activeFilter {
+        case .all:            return localRows
+        case .ready:          return localRows.filter { $0.isComplete }
+        case .needsAttention: return localRows.filter { !$0.isComplete }
+        }
     }
 
     var body: some View {
@@ -676,106 +697,28 @@ struct CSVImportPreviewSheet: View {
                 } else {
                     ScrollView {
                         VStack(spacing: 0) {
-                            // Header
-                            let incompleteRows = localRows.filter { !$0.isComplete }
-                            let readyCount = localRows.count - incompleteRows.count
-                            HStack(spacing: 8) {
-                                Group {
-                                    if incompleteRows.isEmpty {
-                                        Text("All \(localRows.count) ready")
-                                            .foregroundStyle(Color.accentColor)
-                                    } else {
-                                        let readyText = Text("\(readyCount) ready  ·  ")
-                                            .foregroundStyle(DarkTheme.textSecondary)
-                                        let incompleteText = Text("\(incompleteRows.count) incomplete")
-                                            .foregroundStyle(Color.orange)
-                                        Text("\(readyText)\(incompleteText)")
-                                    }
-                                }
-                                .font(.system(size: 13, weight: .medium))
-                                Spacer()
-                                Button(selectedRows.count == displayedRows.count ? "Deselect All" : "Select All") {
-                                    withAnimation(.appCrisp) {
-                                        if selectedRows.count == displayedRows.count {
-                                            selectedRows.removeAll()
-                                        } else {
-                                            selectedRows = Set(displayedRows.map(\.id))
+                            statBlock
+                                .padding(.bottom, 12)
+                            filterPillRow
+
+                            if displayedRows.isEmpty {
+                                filteredEmptyState
+                            } else {
+                                VStack(spacing: 8) {
+                                    ForEach(Array(displayedRows.enumerated()), id: \.element.id) { displayIndex, row in
+                                        if let localIndex = localRows.firstIndex(where: { $0.id == row.id }) {
+                                            previewRow(row: $localRows[localIndex], index: displayIndex)
+                                                .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
                                         }
                                     }
                                 }
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(Color.accentColor)
-                            }
-                            .padding(.horizontal, 4)
-                            .padding(.bottom, incompleteRows.isEmpty ? 10 : 6)
-
-                            // Filter pill
-                            if !incompleteRows.isEmpty {
-                                HStack(spacing: 8) {
-                                    Button {
-                                        withAnimation(.appCrisp) { filterIncomplete.toggle() }
-                                        AppHaptics.shared.light()
-                                    } label: {
-                                        HStack(spacing: 5) {
-                                            Image(systemName: filterIncomplete ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                                                .font(.system(size: 12, weight: .semibold))
-                                            Text(filterIncomplete ? "Needs editing  ×" : "Needs editing")
-                                                .font(.system(size: 12, weight: .semibold))
-                                        }
-                                        .foregroundStyle(filterIncomplete ? .white : Color.orange)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 6)
-                                        .background(
-                                            Capsule()
-                                                .fill(filterIncomplete ? Color.orange : Color.orange.opacity(0.10))
-                                                .overlay(Capsule().strokeBorder(filterIncomplete ? Color.clear : Color.orange.opacity(0.28), lineWidth: 1))
-                                        )
-                                    }
-                                    .buttonStyle(.plain)
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 4)
-                                .padding(.bottom, 10)
-                            }
-
-                            VStack(spacing: 8) {
-                                ForEach(Array(displayedRows.enumerated()), id: \.element.id) { displayIndex, row in
-                                    if let localIndex = localRows.firstIndex(where: { $0.id == row.id }) {
-                                        previewRow(row: $localRows[localIndex], index: displayIndex)
-                                            .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
-                                    }
-                                }
-                            }
-                            .animation(.appSmooth, value: localRows.count)
-                            .animation(.appSmooth, value: filterIncomplete)
-
-                            let incompleteCount = localRows.filter { !$0.isComplete }.count
-                            if incompleteCount > 0 {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .font(.system(size: 11))
-                                    Text("\(incompleteCount) highlighted \(incompleteCount == 1 ? "row is" : "rows are") missing required fields and will be skipped. Tap them to fill in, or delete them.")
-                                        .font(.system(size: 12, weight: .medium))
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                                .foregroundStyle(Color.orange.opacity(0.85))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 10)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .fill(Color.orange.opacity(0.08))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                                .strokeBorder(Color.orange.opacity(0.18), lineWidth: 1)
-                                        )
-                                )
-                                .padding(.horizontal, 4)
-                                .padding(.top, 10)
+                                .animation(.appSmooth, value: localRows.count)
+                                .animation(.appSmooth, value: activeFilter)
                             }
                         }
                         .padding(.horizontal, 16)
-                        .padding(.vertical, 16)
+                        .padding(.top, 16)
+                        .padding(.bottom, 16)
                     }
                 }
             }
@@ -786,15 +729,6 @@ struct CSVImportPreviewSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    let completeCount = localRows.filter { $0.isComplete }.count
-                    let hasIncomplete = completeCount < localRows.count
-                    Button(hasIncomplete ? "Import \(completeCount) of \(localRows.count)" : "Import \(localRows.count)") {
-                        finalizeImport()
-                    }
-                    .font(.system(size: 14, weight: .semibold))
-                    .disabled(completeCount == 0)
                 }
                 ToolbarItemGroup(placement: .bottomBar) {
                     if !selectedRows.isEmpty {
@@ -857,6 +791,160 @@ struct CSVImportPreviewSheet: View {
                     }
                 }
             }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            importButton
+        }
+    }
+
+    // MARK: - Stat Block
+
+    private var statBlock: some View {
+        HStack(spacing: 0) {
+            VStack(spacing: 4) {
+                Text("\(readyCount)")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color(red: 0.30, green: 0.69, blue: 0.49))
+                    .contentTransition(.numericText())
+                Text("READY")
+                    .font(.system(size: 10, weight: .semibold))
+                    .kerning(0.5)
+                    .foregroundStyle(DarkTheme.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
+
+            Rectangle()
+                .fill(Color.primary.opacity(0.10))
+                .frame(width: 1, height: 50)
+
+            VStack(spacing: 4) {
+                Text("\(incompleteCount)")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .foregroundStyle(incompleteCount > 0
+                        ? Color(red: 0.96, green: 0.65, blue: 0.14)
+                        : DarkTheme.textTertiary)
+                    .contentTransition(.numericText())
+                Text("NEEDS ATTENTION")
+                    .font(.system(size: 10, weight: .semibold))
+                    .kerning(0.5)
+                    .foregroundStyle(DarkTheme.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .padding(.vertical, 16)
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(DarkTheme.cardFill)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(DarkTheme.cardBorder, lineWidth: 1)
+                )
+        }
+        .animation(.appSmooth, value: readyCount)
+        .animation(.appSmooth, value: incompleteCount)
+    }
+
+    // MARK: - Filter Pill Row
+
+    private var filterPillRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                filterPill(.all)
+                filterPill(.ready)
+                filterPill(.needsAttention)
+
+                Spacer(minLength: 16)
+
+                Button(selectedRows.count == displayedRows.count && !displayedRows.isEmpty
+                    ? "Deselect All" : "Select All") {
+                    withAnimation(.appCrisp) {
+                        if selectedRows.count == displayedRows.count {
+                            selectedRows.removeAll()
+                        } else {
+                            selectedRows = Set(displayedRows.map(\.id))
+                        }
+                    }
+                }
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 2)
+        }
+        .padding(.bottom, 10)
+    }
+
+    @ViewBuilder
+    private func filterPill(_ filter: ImportFilter) -> some View {
+        let isSelected = activeFilter == filter
+        Button {
+            withAnimation(.appCrisp) { activeFilter = filter }
+            AppHaptics.shared.light()
+        } label: {
+            Text(filter.displayLabel(total: localRows.count, ready: readyCount, incomplete: incompleteCount))
+                .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
+                .foregroundStyle(isSelected ? .white : DarkTheme.textSecondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background {
+                    Capsule()
+                        .fill(isSelected ? Color.accentColor : Color.clear)
+                        .overlay(Capsule().strokeBorder(
+                            isSelected ? Color.clear : Color.primary.opacity(0.15),
+                            lineWidth: 1
+                        ))
+                }
+        }
+        .buttonStyle(.plain)
+        .animation(.appCrisp, value: isSelected)
+    }
+
+    // MARK: - Filtered Empty State
+
+    private var filteredEmptyState: some View {
+        VStack(spacing: 14) {
+            Image(systemName: activeFilter == .ready ? "checkmark.circle" : "sparkles")
+                .font(.system(size: 36))
+                .foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
+            Text(activeFilter == .ready ? "Nothing to import" : "All rows are ready")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(DarkTheme.textPrimary)
+            Text(activeFilter == .ready
+                ? "Fix the highlighted rows to make them importable."
+                : "No rows need attention.")
+                .font(.subheadline)
+                .foregroundStyle(DarkTheme.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 30)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 60)
+    }
+
+    // MARK: - Import Button
+
+    private var importButton: some View {
+        VStack(spacing: 0) {
+            Divider().opacity(0.4)
+            Button {
+                finalizeImport()
+            } label: {
+                Text("Import")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 15)
+                    .background {
+                        Capsule()
+                            .fill(readyCount > 0 ? Color.accentColor : Color.primary.opacity(0.18))
+                            .shadow(color: readyCount > 0 ? Color.accentColor.opacity(0.27) : .clear, radius: 10, y: 3)
+                    }
+            }
+            .buttonStyle(PressScaleButtonStyle())
+            .disabled(readyCount == 0)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(Color(UIColor.systemBackground))
         }
     }
 
@@ -973,6 +1061,9 @@ struct CSVImportPreviewSheet: View {
                     localRows.removeAll { $0.id == r.id }
                     selectedRows.remove(r.id)
                 }
+                if displayedRows.isEmpty && !localRows.isEmpty {
+                    withAnimation(.appCrisp) { activeFilter = .all }
+                }
                 AppHaptics.shared.medium()
             } label: {
                 Label("Delete Row", systemImage: "trash")
@@ -1014,6 +1105,9 @@ struct CSVImportPreviewSheet: View {
         withAnimation(.appSmooth) {
             localRows.removeAll { selectedRows.contains($0.id) }
             selectedRows.removeAll()
+        }
+        if displayedRows.isEmpty && !localRows.isEmpty {
+            withAnimation(.appCrisp) { activeFilter = .all }
         }
         AppHaptics.shared.light()
     }
