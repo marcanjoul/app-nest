@@ -882,48 +882,17 @@ struct ApplicationView: View {
                 Text("No applications yet")
                     .font(.title3.weight(.bold))
                     .foregroundStyle(DarkTheme.textPrimary)
-                Text("Track your first job manually or import from a CSV file.")
+                Text("Track your first job manually, paste a link, or import from a CSV.")
                     .font(.subheadline)
                     .foregroundStyle(DarkTheme.textSecondary)
                     .multilineTextAlignment(.center)
             }
             .padding(.horizontal, 40)
 
-            HStack(spacing: 12) {
-                Button {
-                    isPresentingNewApplication = true
-                    AppHaptics.shared.light()
-                } label: {
-                    Label("Add Job", systemImage: "plus")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background(Capsule().fill(Color.accentColor))
-                }
-                .buttonStyle(PressScaleButtonStyle())
-
-                Button {
-                    isShowingImportConfirmation = true
-                    AppHaptics.shared.light()
-                } label: {
-                    Label("Import CSV", systemImage: "square.and.arrow.down")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(DarkTheme.textPrimary)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background {
-                            Capsule()
-                                .fill(.ultraThinMaterial)
-                                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-                        }
-                }
-                .buttonStyle(PressScaleButtonStyle())
-            }
-            .padding(.top, 10)
+            emptyStateActions
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 80)
+        .padding(.vertical, 60)
     }
 
     private var emptyCycleState: some View {
@@ -943,41 +912,59 @@ struct ApplicationView: View {
             }
             .padding(.horizontal, 40)
 
-            HStack(spacing: 12) {
-                Button {
-                    isPresentingNewApplication = true
-                    AppHaptics.shared.light()
-                } label: {
-                    Label("Add to Cycle", systemImage: "plus")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background(Capsule().fill(Color.accentColor))
-                }
-                .buttonStyle(PressScaleButtonStyle())
-
-                Button {
-                    isShowingImportConfirmation = true
-                    AppHaptics.shared.light()
-                } label: {
-                    Label("Import CSV", systemImage: "square.and.arrow.down")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(DarkTheme.textPrimary)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background {
-                            Capsule()
-                                .fill(.ultraThinMaterial)
-                                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-                        }
-                }
-                .buttonStyle(PressScaleButtonStyle())
-            }
-            .padding(.top, 10)
+            emptyStateActions
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 80)
+        .padding(.vertical, 60)
+    }
+    
+    private var emptyStateActions: some View {
+        VStack(spacing: 12) {
+            Button {
+                isPresentingNewApplication = true
+                AppHaptics.shared.light()
+            } label: {
+                Label("Add Manually", systemImage: "square.and.pencil")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Capsule().fill(Color.accentColor))
+            }
+            .buttonStyle(PressScaleButtonStyle())
+            
+            Button {
+                AppHaptics.shared.light()
+                appState.selectedTab = 1 // Navigate to Add tab
+            } label: {
+                Label("Paste Link", systemImage: "link")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Capsule().fill(Color.purple))
+            }
+            .buttonStyle(PressScaleButtonStyle())
+
+            Button {
+                isShowingImportConfirmation = true
+                AppHaptics.shared.light()
+            } label: {
+                Label("Import CSV", systemImage: "square.and.arrow.down")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(DarkTheme.textPrimary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background {
+                        Capsule()
+                            .fill(.ultraThinMaterial)
+                            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                    }
+            }
+            .buttonStyle(PressScaleButtonStyle())
+        }
+        .padding(.horizontal, 40)
+        .padding(.top, 10)
     }
 
     private var noResultsState: some View {

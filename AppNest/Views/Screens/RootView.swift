@@ -5,7 +5,9 @@ struct RootView: View {
     @Environment(AppState.self) private var appState
     
     var body: some View {
-        TabView {
+        @Bindable var bindableAppState = appState
+        
+        TabView(selection: $bindableAppState.selectedTab) {
             NavigationStack {
                 ApplicationView()
             }
@@ -14,15 +16,17 @@ struct RootView: View {
             .tabItem {
                 Label("Applications", systemImage: "briefcase.fill")
             }
+            .tag(0)
 
             NavigationStack {
-                EmailParserView()
+                AddMenuView()
             }
             .toolbarBackground(Color(UIColor.systemBackground), for: .tabBar)
             .toolbarBackground(.visible, for: .tabBar)
             .tabItem {
-                Label("Email", systemImage: "envelope.open.fill")
+                Label("Add Job", systemImage: "plus.circle.fill")
             }
+            .tag(1)
 
             NavigationStack {
                 ProfileView()
@@ -32,6 +36,7 @@ struct RootView: View {
             .tabItem {
                 Label("Profile", systemImage: "person.crop.circle.fill")
             }
+            .tag(2)
         }
         .tint(.accentColor)
         .scaleEffect(appState.isPresentingSheet ? 0.95 : 1.0)
