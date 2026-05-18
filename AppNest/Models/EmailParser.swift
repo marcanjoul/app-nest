@@ -75,6 +75,8 @@ struct EmailParser {
             #"(?:team|company)\s+(?:at|of)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
             // "welcome to / offer from Company"
             #"(?:welcome to|offer from)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
+            // "career/opportunity at Company" — catches "interest in a career at Norstella"
+            #"(?:career|opportunity)\s+at\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
             // "interest in Company" — but NOT "interest in joining" (handled by pattern above)
             #"(?:interest in|interested in)\s+(?!joining\b|applying\b|working\b)([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
         ]
@@ -159,7 +161,7 @@ struct EmailParser {
     private func extractPosition(from text: String) -> String? {
         let patterns = [
             // "application/applied for Data Science Intern." — title ends sentence with no trailing keyword
-            #"(?:application|applied|applying)\s+for\s+(?:the\s+)?(.+?)(?:\s+(?:position|role)\b|\s+(?:at|with|@)\s+|[.,\n]|$)"#,
+            #"(?:application|applied|applying)\s+for\s+(?:the\s+)?(.+?)(?:\s+(?:position|role)\b|\s+(?:at|@)\s+|\s+with\s+(?=[A-Z])|\s+and\s+(?=(?:we|i|they|the|our|a|an|you)\b)|[.,\n]|$)"#,
             // "apply/application/applied/applying for the AI Engineering Intern position" — title ends at "position/role"
             #"(?:\bapply\b|application|applied|applying)\s+(?:for|to)\s+(?:the\s+)?(.+?)\s+(?:position|role)\b"#,
             // "application/applied/applying for [POSITION] at Company" — requires company context
