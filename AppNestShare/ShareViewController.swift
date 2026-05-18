@@ -90,6 +90,7 @@ class ShareViewController: UIViewController {
         extractJobInfo { [weak self] pending, rawURL in
             guard let self else { return }
             let model = ShareViewModel(initial: pending, rawURL: rawURL)
+            let scheme: ColorScheme = self.traitCollection.userInterfaceStyle == .dark ? .dark : .light
             let rootView = ShareView(
                 model: model,
                 onSave: { [weak self] saved in self?.saveAndDismiss(saved) },
@@ -97,6 +98,7 @@ class ShareViewController: UIViewController {
                     self?.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
                 }
             )
+            .preferredColorScheme(scheme)
             let host = UIHostingController(rootView: rootView)
             host.view.backgroundColor = .clear
             addChild(host)
