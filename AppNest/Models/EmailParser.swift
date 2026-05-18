@@ -160,8 +160,8 @@ struct EmailParser {
 
     private func extractPosition(from text: String) -> String? {
         let patterns = [
-            // "application/applied for Data Science Intern." — title ends sentence with no trailing keyword
-            #"(?:application|applied|applying)\s+for\s+(?:the\s+)?(.+?)(?:\s+(?:position|role)\b|\s+(?:at|@)\s+|\s+with\s+(?=[A-Z])|\s+and\s+(?=(?:we|i|they|the|our|a|an|you)\b)|[.,\n]|$)"#,
+            // "application/applied for/to Data Science Intern." — title ends sentence with no trailing keyword
+            #"(?:application|applied|applying)\s+(?:for|to)\s+(?:the\s+)?(.+?)(?:\s+(?:position|role)\b|\s+(?:at|@)\s+|\s+with\s+(?=[A-Z])|\s+and\s+(?=(?:we|i|they|the|our|a|an|you)\b)|[.,\n]|$)"#,
             // "apply/application/applied/applying for the AI Engineering Intern position" — title ends at "position/role"
             #"(?:\bapply\b|application|applied|applying)\s+(?:for|to)\s+(?:the\s+)?(.+?)\s+(?:position|role)\b"#,
             // "application/applied/applying for [POSITION] at Company" — requires company context
@@ -374,12 +374,16 @@ struct EmailParser {
         let matches = detector.matches(in: text, options: [], range: nsRange)
 
         let now = Date()
-        let twoYearsAgo   = Calendar.current.date(byAdding: .year, value: -2, to: now)!
-        let twoYearsAhead = Calendar.current.date(byAdding: .year, value:  2, to: now)!
+        let twoYearsAgo = Calendar.current.date(byAdding: .year, value: -2, to: now)!
 
         for match in matches {
-            guard let date = match.date,
-                  date >= twoYearsAgo && date <= twoYearsAhead else { continue }
+            guard var date = match.date else { continue }
+            // NSDataDetector resolves a bare month+day to the next future occurrence.
+            // Application dates are always past events, so roll back one year if needed.
+            if date > now {
+                date = Calendar.current.date(byAdding: .year, value: -1, to: date) ?? date
+            }
+            guard date >= twoYearsAgo && date <= now else { continue }
             let dateText = Range(match.range, in: text).map { String(text[$0]) }
             return (date, dateText)
         }
