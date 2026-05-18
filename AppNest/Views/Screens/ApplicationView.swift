@@ -187,7 +187,7 @@ struct ApplicationView: View {
                     .opacity(contentAppeared ? 1 : 0)
                     .offset(y: contentAppeared ? 0 : 16)
                     .animation(.appSmooth.delay(0.07), value: contentAppeared)
-                    .listRowInsets(EdgeInsets(top: 10, leading: 0, bottom: 10, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .selectionDisabled()
@@ -197,7 +197,7 @@ struct ApplicationView: View {
                     .opacity(contentAppeared ? 1 : 0)
                     .offset(y: contentAppeared ? 0 : 12)
                     .animation(.appSmooth.delay(0.12), value: contentAppeared)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 14, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 14, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .selectionDisabled()
@@ -622,7 +622,7 @@ struct ApplicationView: View {
     // MARK: - Search + Filter Row
 
     private var searchFilterRow: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             // Glass search bar
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
@@ -652,40 +652,105 @@ struct ApplicationView: View {
             .clipShape(Capsule())
             .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
 
-            // Sort button
-            Menu {
-                ForEach(SortOption.allCases, id: \.self) { option in
-                    Button { 
-                        sortOption = option
-                        AppHaptics.shared.light()
+            if !applications.isEmpty {
+                HStack(spacing: 8) {
+                    // Sort button
+                    Menu {
+                        ForEach(SortOption.allCases, id: \.self) { option in
+                            Button { 
+                                sortOption = option
+                                AppHaptics.shared.light()
+                            } label: {
+                                HStack {
+                                    Text(option.rawValue)
+                                    if sortOption == option { Image(systemName: "checkmark") }
+                                }
+                            }
+                        }
                     } label: {
-                        HStack {
-                            Text(option.rawValue)
-                            if sortOption == option { Image(systemName: "checkmark") }
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: "line.3.horizontal.decrease.circle")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(sortOption == .dateNewest ? DarkTheme.textPrimary : Color.accentColor)
+                                .frame(width: 44, height: 44)
+                                .background(.ultraThinMaterial)
+                                .clipShape(Circle())
+                                .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+                            
+                            if sortOption != .dateNewest {
+                                Circle()
+                                    .fill(Color.accentColor)
+                                    .frame(width: 8, height: 8)
+                                    .offset(x: -4, y: 4)
+                                    .transition(.scale.combined(with: .opacity))
+                            }
                         }
                     }
-                }
-            } label: {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(sortOption == .dateNewest ? DarkTheme.textPrimary : Color.accentColor)
-                        .frame(width: 44, height: 44)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Circle())
-                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+                    .buttonStyle(PressScaleButtonStyle())
                     
-                    if sortOption != .dateNewest {
-                        Circle()
-                            .fill(Color.accentColor)
-                            .frame(width: 8, height: 8)
-                            .offset(x: -4, y: 4)
-                            .transition(.scale.combined(with: .opacity))
+                    // Import button
+                    Button {
+                        isImportingCSV = true
+                        AppHaptics.shared.light()
+                    } label: {
+                        Image(systemName: "square.and.arrow.down")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(DarkTheme.textPrimary)
+                            .frame(width: 44, height: 44)
+                            .background {
+                                Circle()
+                                    .fill(.ultraThinMaterial)
+                                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                            }
                     }
+                    .buttonStyle(PressScaleButtonStyle())
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+
+                    // Export button
+                    Button {
+                        exportCSV()
+                        AppHaptics.shared.light()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(DarkTheme.textPrimary)
+                            .frame(width: 44, height: 44)
+                            .background {
+                                Circle()
+                                    .fill(.ultraThinMaterial)
+                                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                            }
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+                    
+                    // Edit button
+                    Button {
+                        withAnimation(.appSmooth) {
+                            isEditMode.toggle()
+                            if !isEditMode { selectedJobIDs.removeAll() }
+                        }
+                        AppHaptics.shared.light()
+                    } label: {
+                        Image(systemName: isEditMode ? "checkmark" : "pencil")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(isEditMode ? Color.white : Color.accentColor)
+                            .frame(width: isEditMode ? 60 : 44, height: 44)
+                            .background {
+                                if isEditMode {
+                                    Capsule()
+                                        .fill(Color.accentColor)
+                                        .shadow(color: Color.accentColor.opacity(0.3), radius: 8, y: 3)
+                                } else {
+                                    Circle()
+                                        .fill(.ultraThinMaterial)
+                                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                                }
+                            }
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
                 }
             }
-            .buttonStyle(PressScaleButtonStyle())
-            .animation(.appCrisp, value: sortOption)
         }
     }
 
@@ -720,7 +785,6 @@ struct ApplicationView: View {
                     }
                 }
             }
-            .padding(.horizontal, 20)
             .animation(.appCrisp, value: selectedStatuses)
         }
     }

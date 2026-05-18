@@ -336,8 +336,7 @@ struct CSVImportPreviewSheet: View {
                 if let data = r.logoData, let ui = UIImage(data: data) {
                     Image(uiImage: ui)
                         .resizable()
-                        .scaledToFit()
-                        .padding(6)
+                        .scaledToFill()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(Color.white.opacity(0.05))
                 } else {

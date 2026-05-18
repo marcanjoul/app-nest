@@ -247,8 +247,7 @@ struct DarkJobCardView: View {
         if let data = job.companyLogoImageData, let ui = UIImage(data: data) {
             Image(uiImage: ui)
                 .resizable()
-                .scaledToFit()
-                .padding(6) // Internal padding to keep logo off the edges
+                .scaledToFill()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.white.opacity(0.05))
         } else {
