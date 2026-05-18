@@ -6,7 +6,7 @@ struct OnboardingView: View {
 
     private let pages: [(icon: String, title: String, subtitle: String, color: Color)] = [
         ("briefcase.fill",       "Track Every Application",  "Keep all your job applications organized in one place.",  Color(red: 0.35, green: 0.65, blue: 0.96)),
-        ("envelope.open.fill",   "Paste & Parse",            "Paste a job application email to have its details extracted.", Color(red: 0.96, green: 0.73, blue: 0.28)),
+        ("envelope.open.fill",   "Paste & Parse",            "Paste a job application email to extract its details.", Color(red: 0.96, green: 0.73, blue: 0.28)),
         ("chart.bar.fill",       "Stay On Top",              "Stats, filters, and exports to master your job search.", Color(red: 0.30, green: 0.80, blue: 0.45)),
     ]
 

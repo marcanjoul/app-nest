@@ -194,7 +194,7 @@ struct EmailParserView: View {
 
             if isEmailExpanded {
                 if emailText.isEmpty {
-                    Text("Paste a job application email to have its details extracted.")
+                    Text("Paste a job application email to extract its details.")
                         .font(.subheadline)
                         .foregroundStyle(DarkTheme.textSecondary)
                         .padding(.top, 10)
