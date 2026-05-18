@@ -13,6 +13,8 @@ struct CycleListView: View {
     @State private var isAddingCycle = false
     @State private var newCycleName  = ""
     @State private var cycleToDelete: JobCycle?
+    @State private var cycleToRename: JobCycle?
+    @State private var renameText    = ""
 
     var body: some View {
         ZStack {
@@ -21,22 +23,42 @@ struct CycleListView: View {
             if cycles.isEmpty {
                 emptyState
             } else {
-                ScrollView {
-                    VStack(spacing: 8) {
-                        ForEach(cycles) { cycle in
-                            CycleRow(
-                                cycle: cycle,
-                                isActive: appState.selectedCycleID == cycle.id,
-                                onSelect: { selectCycle(cycle) },
-                                onDelete: { cycleToDelete = cycle }
-                            )
+                List {
+                    ForEach(cycles) { cycle in
+                        CycleRow(
+                            cycle: cycle,
+                            isActive: appState.selectedCycleID == cycle.id,
+                            onSelect: { selectCycle(cycle) }
+                        )
+                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                cycleToDelete = cycle
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            Button {
+                                cycleToRename = cycle
+                                renameText = cycle.name
+                            } label: {
+                                Label("Rename", systemImage: "pencil")
+                            }
+                            .tint(Color.accentColor)
                         }
                     }
-                    .padding()
+
+                    Color.clear
+                        .frame(height: 20)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
         }
-        .navigationTitle("All Cycles")
+        .navigationTitle("Job Cycles")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Color(UIColor.systemBackground), for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
@@ -60,6 +82,17 @@ struct CycleListView: View {
         } message: {
             Text("Name this job search cycle.")
         }
+        .alert("Rename Cycle", isPresented: Binding(
+            get: { cycleToRename != nil },
+            set: { if !$0 { cycleToRename = nil } }
+        )) {
+            TextField("Cycle name", text: $renameText)
+                .autocorrectionDisabled()
+            Button("Save") { renameCycle() }
+            Button("Cancel", role: .cancel) { cycleToRename = nil }
+        } message: {
+            Text("Enter a new name for \"\(cycleToRename?.name ?? "")\".")
+        }
         .confirmationDialog(
             "Delete \"\(cycleToDelete?.name ?? "")\"?",
             isPresented: Binding(get: { cycleToDelete != nil }, set: { if !$0 { cycleToDelete = nil } }),
@@ -71,11 +104,11 @@ struct CycleListView: View {
             }
             Button("Cancel", role: .cancel) { cycleToDelete = nil }
         } message: {
-            Text("Any applications in this cycle will be moved to \"All Applications\".")
+            Text("Applications in this cycle will be moved to \"All Applications\".")
         }
     }
 
-    // MARK: - Empty state
+    // MARK: - Empty State
 
     private var emptyState: some View {
         VStack(spacing: 14) {
@@ -127,6 +160,15 @@ struct CycleListView: View {
         dismissSheet?()
     }
 
+    private func renameCycle() {
+        let trimmed = renameText.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty, let cycle = cycleToRename else { return }
+        cycle.name = trimmed
+        try? modelContext.save()
+        AppHaptics.shared.success()
+        cycleToRename = nil
+    }
+
     private func deleteCycle(_ cycle: JobCycle) {
         if appState.selectedCycleID == cycle.id {
             appState.selectedCycleID = nil
@@ -142,58 +184,42 @@ struct CycleRow: View {
     let cycle: JobCycle
     let isActive: Bool
     let onSelect: () -> Void
-    let onDelete: () -> Void
 
     var body: some View {
-        HStack(spacing: 14) {
-            Button(action: onSelect) {
-                HStack(spacing: 14) {
-                    ZStack {
-                        Circle()
-                            .fill(isActive ? Color.accentColor : Color.primary.opacity(0.08))
-                            .frame(width: 34, height: 34)
-                        Image(systemName: isActive ? "checkmark" : "tray.fill")
-                            .font(.system(size: isActive ? 12 : 11, weight: .bold))
-                            .foregroundStyle(isActive ? .white : DarkTheme.textSecondary)
-                    }
-                    .animation(.appCrisp, value: isActive)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(cycle.name)
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(DarkTheme.textPrimary)
-                        Text("\(cycle.applications.count) app\(cycle.applications.count == 1 ? "" : "s")")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(DarkTheme.textSecondary)
-                    }
-
-                    Spacer()
+        Button(action: onSelect) {
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(cycle.name)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(isActive ? Color.accentColor : DarkTheme.textPrimary)
+                        .animation(.appCrisp, value: isActive)
+                    Text("\(cycle.applications.count) application\(cycle.applications.count == 1 ? "" : "s")")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(DarkTheme.textSecondary)
                 }
+                Spacer()
+                Image(systemName: "checkmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(Color.accentColor)
+                    .opacity(isActive ? 1 : 0)
+                    .scaleEffect(isActive ? 1 : 0.5)
+                    .animation(.appCrisp, value: isActive)
             }
-            .buttonStyle(.plain)
-
-            Button(role: .destructive, action: onDelete) {
-                Image(systemName: "trash")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.red)
-                    .frame(width: 30, height: 30)
-                    .background(Circle().fill(Color.red.opacity(0.10)))
+            .padding(.horizontal, 18)
+            .padding(.vertical, 15)
+            .background {
+                RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                    .fill(DarkTheme.cardFill)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                            .strokeBorder(
+                                isActive ? Color.accentColor.opacity(0.45) : DarkTheme.cardBorder,
+                                lineWidth: isActive ? 1.5 : 1
+                            )
+                    )
             }
-            .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(DarkTheme.cardFill)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(
-                            isActive ? Color.accentColor.opacity(0.45) : DarkTheme.cardBorder,
-                            lineWidth: isActive ? 1.5 : 1
-                        )
-                )
-        }
+        .buttonStyle(PressScaleButtonStyle())
         .animation(.appCrisp, value: isActive)
     }
 }
