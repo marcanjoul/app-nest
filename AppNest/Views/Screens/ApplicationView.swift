@@ -43,6 +43,7 @@ struct ApplicationView: View {
     @State private var csvFileURL: URL? = nil
     @State private var isShowingShareSheet = false
     @State private var importErrorMessage: String?
+    @State private var isShowingCSVGuide = false
 
     // Cycle-filtered base (before search/status)
     private var cycleFiltered: [JobApplication] {
@@ -437,6 +438,9 @@ struct ApplicationView: View {
         .sheet(isPresented: $isShowingShareSheet) {
             if let url = csvFileURL { ShareSheet(activityItems: [url]) }
         }
+        .sheet(isPresented: $isShowingCSVGuide) {
+            CSVFormatGuideSheet()
+        }
         .alert("Import CSV", isPresented: $isShowingImportConfirmation) {
             Button("Select File") { isImportingCSV = true }
             Button("Cancel", role: .cancel) {}
@@ -512,6 +516,7 @@ struct ApplicationView: View {
         let _ = url.startAccessingSecurityScopedResource()
         defer { url.stopAccessingSecurityScopedResource() }
         do {
+            isShowingCSVGuide = true // Pop up guide on import
             let raw = try String(contentsOf: url, encoding: .utf8)
             let rows = CSVImporter.parse(raw)
             guard !rows.isEmpty else {
@@ -526,6 +531,7 @@ struct ApplicationView: View {
     }
 
     private func exportCSV() {
+        isShowingCSVGuide = true // Pop up guide on export
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let exportable = cycleFiltered.sorted { $0.dateApplied > $1.dateApplied }
@@ -646,7 +652,6 @@ struct ApplicationView: View {
             .clipShape(Capsule())
             .overlay(Capsule().strokeBorder(isSearchFocused ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08), lineWidth: 1))
             .frame(maxWidth: .infinity)
-            .clipped()
             .animation(.appBubbly, value: isSearchFocused)
 
             if !applications.isEmpty && !isSearchFocused {
@@ -701,7 +706,6 @@ struct ApplicationView: View {
                             }
                     }
                     .buttonStyle(PressScaleButtonStyle())
-                    .transition(.scale(scale: 0.9).combined(with: .opacity))
 
                     // Export button
                     Button {
@@ -720,7 +724,23 @@ struct ApplicationView: View {
                             }
                     }
                     .buttonStyle(PressScaleButtonStyle())
-                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+
+                    // Guide button
+                    Button {
+                        isShowingCSVGuide = true
+                        AppHaptics.shared.light()
+                    } label: {
+                        Image(systemName: "questionmark.circle")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(Color.accentColor)
+                            .frame(width: 44, height: 44)
+                            .background {
+                                Circle()
+                                    .fill(Color.accentColor.opacity(0.1))
+                                    .overlay(Circle().strokeBorder(Color.accentColor.opacity(0.2), lineWidth: 1))
+                            }
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
                     
                     // Edit button
                     Button {
@@ -749,11 +769,12 @@ struct ApplicationView: View {
                     .buttonStyle(PressScaleButtonStyle())
                 }
                 .transition(.asymmetric(
-                    insertion: .move(edge: .trailing).combined(with: .opacity).animation(.appBouncy.delay(0.15)),
-                    removal: .move(edge: .trailing).combined(with: .opacity).animation(.appCrisp)
+                    insertion: .move(edge: .trailing).combined(with: .scale(scale: 0.8)).combined(with: .opacity).animation(.appBubbly.delay(0.15)),
+                    removal: .move(edge: .trailing).combined(with: .scale(scale: 0.9)).combined(with: .opacity).animation(.appCrisp)
                 ))
             }
         }
+        .clipped()
         .animation(.appSmooth, value: isSearchFocused)
     }
 
@@ -1118,35 +1139,35 @@ private struct JobCardSwipeRow: View {
             let idx = max(0, min(currentStage - 1, pipeline.count - 1))
             let target = pipeline[idx]
             let style = DarkTheme.statusStyle(for: target)
-            HStack(spacing: 8) {
-                Image(systemName: style.iconName).font(.system(size: 16, weight: .bold))
-                Text(target.rawValue).font(.system(size: 13, weight: .semibold))
+            HStack(spacing: 10) {
+                Image(systemName: style.iconName).font(.system(size: 18, weight: .bold))
+                Text(target.rawValue).font(.system(size: 14, weight: .bold))
             }
             .foregroundStyle(style.tintColor)
-            .padding(.leading, 22)
+            .padding(.leading, 24)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
                     .fill(style.fillColor)
                     .overlay(RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
-                        .strokeBorder(style.borderColor, lineWidth: 1))
+                        .strokeBorder(style.borderColor, lineWidth: 1.5))
             )
             .opacity(min(1.0, dragOffset / advanceThresholds[0]))
-            .animation(.appFastOut, value: target)
+            .animation(.appSmooth, value: target)
         } else if dragOffset < -5 {
-            let c = Color(red: 0.93, green: 0.38, blue: 0.44)
-            HStack(spacing: 8) {
-                Image(systemName: "trash.fill").font(.system(size: 16, weight: .bold))
-                Text("Delete").font(.system(size: 13, weight: .semibold))
+            let c = Color(red: 0.93, green: 0.33, blue: 0.40) // Softened red
+            HStack(spacing: 10) {
+                Image(systemName: "trash.fill").font(.system(size: 18, weight: .bold))
+                Text("Delete").font(.system(size: 14, weight: .bold))
             }
             .foregroundStyle(c)
-            .padding(.trailing, 22)
+            .padding(.trailing, 24)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
             .background(
                 RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
                     .fill(c.opacity(0.12))
                     .overlay(RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
-                        .strokeBorder(c.opacity(0.28), lineWidth: 1))
+                        .strokeBorder(c.opacity(0.18), lineWidth: 1.5))
             )
             .opacity(min(1.0, abs(dragOffset) / deleteThreshold))
         }

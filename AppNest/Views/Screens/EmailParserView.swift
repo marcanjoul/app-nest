@@ -464,6 +464,10 @@ struct EmailParserView: View {
     // MARK: - Actions
 
     private func parseEmail() {
+        #if canImport(UIKit)
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        #endif
+        
         AppHaptics.shared.medium()
         withAnimation(.appSmooth) { isParsing = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -816,28 +820,35 @@ private struct DatePickerRow: View {
     @State private var appeared = false
 
     var body: some View {
-        HStack {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 6) {
                 Image(systemName: "calendar")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(DarkTheme.textSecondary)
                     .frame(width: 14)
-                Text("Date Applied")
-                    .font(.caption)
+                Text("DATE APPLIED")
+                    .font(.system(size: 11, weight: .bold))
+                    .tracking(DarkTheme.sectionLabelSpacing)
                     .foregroundStyle(DarkTheme.textSecondary)
             }
-            Spacer()
-            DatePicker("", selection: $date, displayedComponents: .date)
-                .labelsHidden()
-                .tint(Color.accentColor)
+
+            HStack {
+                Spacer()
+                DatePicker("", selection: $date, displayedComponents: .date)
+                    .labelsHidden()
+                    .datePickerStyle(.compact)
+                    .controlSize(.large)
+                    .tint(Color.accentColor)
+                Spacer()
+            }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.vertical, 12)
         .background {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color.primary.opacity(0.04))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .strokeBorder(Color.primary.opacity(0.07), lineWidth: 1)
                 }
         }
