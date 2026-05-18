@@ -8,6 +8,7 @@ private let appGroupID       = "group.com.example.mark.appnest"
 private let pendingImportKey = "pendingJobImport"
 private let logoPublicKey    = "pk_PaR2J13cQXyRshj6wOxhVw"
 private let logoSecretKey    = "sk_SFlbaAHcRcWM_u3MDsFnPw"
+private let shareBlue        = Color(red: 0.35, green: 0.65, blue: 0.96)
 
 // MARK: - Pending import model (mirrors AppNest/Models/PendingJobImport.swift)
 
@@ -98,9 +99,45 @@ class ShareViewController: UIViewController {
         }
     }
 
-    // MARK: - Parsing
+    // MARK: - URL-based parsing (no network, works immediately)
+
+    // LinkedIn job URLs embed the slug: /jobs/view/position-at-company-numericid/
+    private static func parseFromURL(_ url: URL) -> (company: String, position: String)? {
+        let host = url.host?.lowercased() ?? ""
+        guard host.contains("linkedin.com") else { return nil }
+
+        let segments = url.pathComponents
+        guard segments.count >= 4,
+              segments[1] == "jobs",
+              segments[2] == "view"
+        else { return nil }
+
+        let rawSlug = segments[3]
+
+        // Strip trailing hyphen+digits (the LinkedIn job ID, e.g. "-4234567890")
+        let slug = rawSlug.replacingOccurrences(of: "-\\d+$", with: "", options: .regularExpression)
+
+        // If nothing was stripped and the whole segment is numeric, it's an ID-only URL — bail
+        guard !slug.isEmpty, !(slug == rawSlug && rawSlug.allSatisfy(\.isNumber)) else { return nil }
+
+        // "senior-ios-engineer-at-apple-inc" → "senior ios engineer at apple inc"
+        let text = slug.components(separatedBy: "-").filter { !$0.isEmpty }.joined(separator: " ")
+
+        guard let atRange = text.range(of: " at ", options: .caseInsensitive) else { return nil }
+        let pos  = String(text[..<atRange.lowerBound]).capitalized
+        let comp = String(text[atRange.upperBound...]).capitalized
+        guard !pos.isEmpty, !comp.isEmpty else { return nil }
+        return (company: comp, position: pos)
+    }
+
+    // MARK: - Title-based parsing
 
     static func parseJobInfo(title: String?, url: URL?) -> SharePendingImport {
+        // URL slug parsing first — no network, more reliable for SPAs like LinkedIn
+        if let url, let parsed = parseFromURL(url) {
+            return SharePendingImport(companyName: parsed.company, position: parsed.position, sourceURL: url.absoluteString)
+        }
+
         var company = ""
         var position = ""
 
@@ -121,11 +158,9 @@ class ShareViewController: UIViewController {
             for n in noise { cleaned = cleaned.replacingOccurrences(of: n, with: "", options: .caseInsensitive) }
             cleaned = cleaned.trimmingCharacters(in: .whitespaces)
 
-            // "Apply for Position at Company"
             if cleaned.lowercased().hasPrefix("apply for ") {
                 cleaned = String(cleaned.dropFirst("apply for ".count)).trimmingCharacters(in: .whitespaces)
             }
-            // "Company is hiring a Position" / "Company is hiring Position"
             if let r = cleaned.range(of: " is hiring ", options: .caseInsensitive) {
                 company  = String(cleaned[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
                 var pos  = String(cleaned[r.upperBound...]).trimmingCharacters(in: .whitespaces)
@@ -133,19 +168,13 @@ class ShareViewController: UIViewController {
                     pos = pos.components(separatedBy: " ").dropFirst().joined(separator: " ")
                 }
                 position = pos
-            }
-            // "Position at Company"
-            else if let r = cleaned.range(of: " at ", options: .caseInsensitive) {
+            } else if let r = cleaned.range(of: " at ", options: .caseInsensitive) {
                 position = String(cleaned[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
                 company  = String(cleaned[r.upperBound...]).trimmingCharacters(in: .whitespaces)
-            }
-            // "Company - Position" / "Company – Position"
-            else if let r = cleaned.range(of: " - ") ?? cleaned.range(of: " – ") {
+            } else if let r = cleaned.range(of: " - ") ?? cleaned.range(of: " – ") {
                 company  = String(cleaned[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
                 position = String(cleaned[r.upperBound...]).trimmingCharacters(in: .whitespaces)
-            }
-            // "Company | Position"
-            else if let r = cleaned.range(of: " | ") {
+            } else if let r = cleaned.range(of: " | ") {
                 company  = String(cleaned[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
                 position = String(cleaned[r.upperBound...]).trimmingCharacters(in: .whitespaces)
             }
@@ -168,6 +197,42 @@ class ShareViewController: UIViewController {
     }
 }
 
+// MARK: - HTML helpers
+
+// Extracts content="…" from the <meta> tag that contains `property`.
+// Handles both attribute orders and ignores unrelated tags.
+private func extractMetaContent(from html: String, property: String) -> String? {
+    var searchStart = html.startIndex
+    while searchStart < html.endIndex {
+        guard let metaStart = html.range(of: "<meta", options: .caseInsensitive, range: searchStart..<html.endIndex) else { break }
+        guard let tagClose  = html.range(of: ">", range: metaStart.upperBound..<html.endIndex) else { break }
+        let tag = String(html[metaStart.lowerBound..<tagClose.upperBound])
+        if tag.range(of: property, options: .caseInsensitive) != nil {
+            for (open, close) in [("content=\"", "\""), ("content='", "'")] {
+                if let cs = tag.range(of: open, options: .caseInsensitive) {
+                    let rest = tag[cs.upperBound...]
+                    if let ce = rest.firstIndex(of: close.first!) {
+                        let value = String(rest[..<ce])
+                        if !value.isEmpty { return value }
+                    }
+                }
+            }
+        }
+        searchStart = tagClose.upperBound
+    }
+    return nil
+}
+
+private func htmlDecode(_ str: String) -> String {
+    str.replacingOccurrences(of: "&#39;",  with: "'")
+       .replacingOccurrences(of: "&#x27;", with: "'")
+       .replacingOccurrences(of: "&amp;",  with: "&")
+       .replacingOccurrences(of: "&quot;", with: "\"")
+       .replacingOccurrences(of: "&lt;",   with: "<")
+       .replacingOccurrences(of: "&gt;",   with: ">")
+       .replacingOccurrences(of: "&nbsp;", with: " ")
+}
+
 // MARK: - View model
 
 @Observable
@@ -184,7 +249,6 @@ private final class ShareViewModel {
         position    = initial.position
         sourceURL   = rawURL
 
-        // If parsing gave empty results and we have a URL, fetch the page title
         if companyName.isEmpty && position.isEmpty, rawURL != nil {
             isFetchingTitle = true
             Task { await fetchPageTitle(from: rawURL) }
@@ -196,27 +260,34 @@ private final class ShareViewModel {
         defer { isFetchingTitle = false }
         guard let url else { return }
 
-        var request = URLRequest(url: url, timeoutInterval: 6)
-        request.setValue("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15", forHTTPHeaderField: "User-Agent")
+        var request = URLRequest(url: url, timeoutInterval: 8)
+        request.setValue(
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+            forHTTPHeaderField: "User-Agent"
+        )
 
         guard let (data, _) = try? await URLSession.shared.data(for: request),
               let html = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1)
         else { return }
 
-        // Extract <title>…</title>
-        if let start = html.range(of: "<title", options: .caseInsensitive),
-           let tagEnd = html[start.lowerBound...].range(of: ">"),
-           let titleEnd = html[tagEnd.upperBound...].range(of: "</title>", options: .caseInsensitive) {
-            let raw = String(html[tagEnd.upperBound..<titleEnd.lowerBound])
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            let decoded = raw
-                .replacingOccurrences(of: "&#39;", with: "'")
-                .replacingOccurrences(of: "&amp;", with: "&")
-                .replacingOccurrences(of: "&quot;", with: "\"")
-                .replacingOccurrences(of: "&lt;", with: "<")
-                .replacingOccurrences(of: "&gt;", with: ">")
+        // og:title is server-rendered by most job boards (LinkedIn, Glassdoor, etc.)
+        if let raw = extractMetaContent(from: html, property: "og:title") {
+            let decoded = htmlDecode(raw)
+            let parsed  = ShareViewController.parseJobInfo(title: decoded, url: url)
+            if !parsed.companyName.isEmpty || !parsed.position.isEmpty {
+                companyName = parsed.companyName
+                position    = parsed.position
+                return
+            }
+        }
 
-            let parsed = ShareViewController.parseJobInfo(title: decoded, url: url)
+        // Fall back to <title> for simpler sites
+        if let tagStart  = html.range(of: "<title", options: .caseInsensitive),
+           let tagEnd    = html[tagStart.lowerBound...].range(of: ">"),
+           let closeTag  = html[tagEnd.upperBound...].range(of: "</title>", options: .caseInsensitive) {
+            let raw      = String(html[tagEnd.upperBound..<closeTag.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+            let decoded  = htmlDecode(raw)
+            let parsed   = ShareViewController.parseJobInfo(title: decoded, url: url)
             if !parsed.companyName.isEmpty || !parsed.position.isEmpty {
                 companyName = parsed.companyName
                 position    = parsed.position
@@ -233,9 +304,9 @@ private final class ShareViewModel {
         req.setValue("Bearer \(logoSecretKey)", forHTTPHeaderField: "Authorization")
 
         guard let (sData, _) = try? await URLSession.shared.data(for: req),
-              let results = try? JSONDecoder().decode([LogoResult].self, from: sData),
-              let domain = results.first?.domain, !domain.isEmpty,
-              let imgURL = URL(string: "https://img.logo.dev/\(domain)?token=\(logoPublicKey)&size=128"),
+              let results    = try? JSONDecoder().decode([LogoResult].self, from: sData),
+              let domain     = results.first?.domain, !domain.isEmpty,
+              let imgURL     = URL(string: "https://img.logo.dev/\(domain)?token=\(logoPublicKey)&size=128"),
               let (imgData, _) = try? await URLSession.shared.data(from: imgURL),
               !imgData.isEmpty
         else { return }
@@ -260,12 +331,20 @@ private struct ShareView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 0.08, green: 0.08, blue: 0.10).ignoresSafeArea()
+            // Matches AmbientBackground in the main app — dark base + subtle accent glow
+            Color(uiColor: .systemBackground).ignoresSafeArea()
+            RadialGradient(
+                colors: [shareBlue.opacity(0.09), .clear],
+                center: UnitPoint(x: 1.2, y: -0.1),
+                startRadius: 0,
+                endRadius: 340
+            )
+            .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 handle
                 header
-                Divider().opacity(0.12)
+                Divider().opacity(0.10)
                 ScrollView {
                     VStack(spacing: 16) {
                         avatarRow
@@ -279,7 +358,7 @@ private struct ShareView: View {
                 addButton
                     .padding(.horizontal, 20)
                     .padding(.bottom, 28)
-                    .padding(.top, 6)
+                    .padding(.top, 8)
             }
         }
         .preferredColorScheme(.dark)
@@ -293,10 +372,10 @@ private struct ShareView: View {
 
     private var handle: some View {
         Capsule()
-            .fill(Color.white.opacity(0.18))
-            .frame(width: 36, height: 4)
+            .fill(Color.white.opacity(0.15))
+            .frame(width: 32, height: 4)
             .padding(.top, 10)
-            .padding(.bottom, 4)
+            .padding(.bottom, 6)
     }
 
     private var header: some View {
@@ -343,11 +422,19 @@ private struct ShareView: View {
             }
         }
         .padding(14)
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
+        .background {
+            ZStack {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(uiColor: .tertiarySystemFill))
+            }
+        }
+        .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.08), lineWidth: 0.8)
-        )
+                .strokeBorder(Color.white.opacity(0.09), lineWidth: 0.8)
+        }
+        .shadow(color: .black.opacity(0.10), radius: 10, y: 3)
         .animation(.easeOut(duration: 0.2), value: model.companyName)
         .animation(.easeOut(duration: 0.2), value: model.position)
     }
@@ -389,15 +476,15 @@ private struct ShareView: View {
             Text(label)
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)
-                .kerning(0.4)
+                .kerning(0.5)
                 .textCase(.uppercase)
             TextField(placeholder, text: text)
                 .font(.system(size: 16))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
-                .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+                .background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .strokeBorder(Color.white.opacity(0.09), lineWidth: 0.7)
                 )
         }
@@ -415,7 +502,7 @@ private struct ShareView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
-        .background(Color.white.opacity(0.04), in: Capsule())
+        .background(Color.white.opacity(0.05), in: Capsule())
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -429,29 +516,36 @@ private struct ShareView: View {
         } label: {
             Text("Add to App Nest")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(canSave ? .white : Color.white.opacity(0.3))
+                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 15)
-                .background(
+                .background {
                     Capsule()
-                        .fill(canSave ? Color.accentColor : Color.white.opacity(0.08))
-                        .shadow(color: canSave ? Color.accentColor.opacity(0.35) : .clear, radius: 12, y: 4)
-                )
+                        // Dimmed blue when empty — clearly the same action, just unavailable
+                        .fill(shareBlue.opacity(canSave ? 1.0 : 0.28))
+                        .shadow(color: canSave ? shareBlue.opacity(0.32) : .clear, radius: 14, y: 5)
+                }
         }
         .disabled(!canSave)
-        .animation(.easeOut(duration: 0.16), value: canSave)
+        .animation(.easeOut(duration: 0.18), value: canSave)
     }
 
-    // Deterministic gradient matching the main app's avatarGradient
+    // Deterministic gradient matching DarkTheme.avatarColors exactly
     private func avatarGradient(for name: String) -> LinearGradient {
-        let palettes: [(Color, Color)] = [
-            (Color(red: 0.33, green: 0.47, blue: 0.98), Color(red: 0.20, green: 0.60, blue: 0.86)),
-            (Color(red: 0.82, green: 0.35, blue: 0.62), Color(red: 0.56, green: 0.20, blue: 0.75)),
-            (Color(red: 0.25, green: 0.72, blue: 0.55), Color(red: 0.18, green: 0.52, blue: 0.75)),
-            (Color(red: 0.95, green: 0.55, blue: 0.22), Color(red: 0.90, green: 0.30, blue: 0.30)),
-            (Color(red: 0.45, green: 0.65, blue: 0.95), Color(red: 0.30, green: 0.45, blue: 0.80)),
+        let colors: [Color] = [
+            Color(red: 0.36, green: 0.66, blue: 0.96),
+            Color(red: 0.96, green: 0.73, blue: 0.28),
+            Color(red: 0.30, green: 0.80, blue: 0.45),
+            Color(red: 0.93, green: 0.38, blue: 0.44),
+            Color(red: 0.62, green: 0.52, blue: 0.96),
+            Color(red: 0.96, green: 0.52, blue: 0.62),
         ]
-        let idx = abs(name.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }) % palettes.count
-        return LinearGradient(colors: [palettes[idx].0, palettes[idx].1], startPoint: .topLeading, endPoint: .bottomTrailing)
+        let hash  = name.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
+        let color = colors[abs(hash) % colors.count]
+        return LinearGradient(
+            colors: [color.opacity(0.85), color],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 }
