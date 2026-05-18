@@ -22,23 +22,39 @@ struct CyclePickerSheet: View {
         ZStack {
             AmbientBackground()
 
-            ScrollView {
-                VStack(spacing: 8) {
+            List {
+                // Section 1: Default View
+                Section {
                     allApplicationsRow
+                }
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
 
-                    if !cycles.isEmpty {
-                        divider
+                // Section 2: Custom Cycles
+                if !cycles.isEmpty {
+                    Section {
                         ForEach(cycles) { cycle in
                             cycleRow(cycle)
                         }
                     }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                }
 
-                    divider
+                // Section 3: Add New
+                Section {
                     newCycleRow
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
         }
         .navigationTitle("Job Cycle")
         .navigationBarTitleDisplayMode(.inline)
@@ -83,37 +99,43 @@ struct CyclePickerSheet: View {
 
     private var allApplicationsRow: some View {
         let isActive = appState.selectedCycleID == nil
-        return pickerRow(
-            icon: isActive ? "checkmark" : "tray.2.fill",
-            iconColor: isActive ? Color.accentColor : DarkTheme.textSecondary,
-            circleFill: isActive ? Color.accentColor : Color.primary.opacity(0.08),
-            title: "All Applications",
-            subtitle: "\(totalCount) app\(totalCount == 1 ? "" : "s")",
-            isActive: isActive,
-            chevron: false
-        ) {
+        return Button {
             appState.selectedCycleID = nil
             AppHaptics.shared.light()
             isPresented = false
+        } label: {
+            pickerRowContent(
+                icon: isActive ? "checkmark" : "tray.2.fill",
+                iconColor: isActive ? Color.accentColor : DarkTheme.textSecondary,
+                circleFill: isActive ? Color.accentColor : Color.primary.opacity(0.08),
+                title: "All Applications",
+                subtitle: "\(totalCount) app\(totalCount == 1 ? "" : "s")",
+                isActive: isActive
+            )
         }
+        .buttonStyle(.plain)
+        .padding(.vertical, 4)
     }
 
     private func cycleRow(_ cycle: JobCycle) -> some View {
         let isActive = appState.selectedCycleID == cycle.id
-        return pickerRow(
-            icon: isActive ? "checkmark" : "tray.fill",
-            iconColor: isActive ? Color.accentColor : DarkTheme.textSecondary,
-            circleFill: isActive ? Color.accentColor : Color.primary.opacity(0.08),
-            title: cycle.name,
-            subtitle: "\(cycle.applications.count) app\(cycle.applications.count == 1 ? "" : "s")",
-            isActive: isActive,
-            chevron: false
-        ) {
+        return Button {
             appState.selectedCycleID = cycle.id
             AppHaptics.shared.light()
             isPresented = false
+        } label: {
+            pickerRowContent(
+                icon: isActive ? "checkmark" : "tray.fill",
+                iconColor: isActive ? Color.accentColor : DarkTheme.textSecondary,
+                circleFill: isActive ? Color.accentColor : Color.primary.opacity(0.08),
+                title: cycle.name,
+                subtitle: "\(cycle.applications.count) app\(cycle.applications.count == 1 ? "" : "s")",
+                isActive: isActive
+            )
         }
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+        .buttonStyle(.plain)
+        .padding(.vertical, 4)
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button(role: .destructive) {
                 cycleToEdit = cycle
                 isConfirmingDelete = true
@@ -121,7 +143,7 @@ struct CyclePickerSheet: View {
                 Label("Delete", systemImage: "trash")
             }
         }
-        .swipeActions(edge: .leading) {
+        .swipeActions(edge: .leading, allowsFullSwipe: false) {
             Button {
                 cycleToEdit = cycle
                 newCycleName = cycle.name
@@ -134,59 +156,34 @@ struct CyclePickerSheet: View {
     }
 
     private var newCycleRow: some View {
-        pickerRow(
-            icon: "plus",
-            iconColor: Color.accentColor,
-            circleFill: Color.accentColor.opacity(0.12),
-            title: "New Cycle",
-            subtitle: nil,
-            titleColor: Color.accentColor,
-            isActive: false,
-            chevron: false
-        ) {
+        Button {
             newCycleName = ""
             isAddingCycle = true
+        } label: {
+            pickerRowContent(
+                icon: "plus",
+                iconColor: Color.accentColor,
+                circleFill: Color.accentColor.opacity(0.12),
+                title: "New Cycle",
+                subtitle: nil,
+                titleColor: Color.accentColor,
+                isActive: false
+            )
         }
+        .buttonStyle(.plain)
+        .padding(.vertical, 4)
     }
 
-    // MARK: - Row builder
+    // MARK: - Row Content Builder
 
-    @ViewBuilder
-    private func pickerRow(
+    private func pickerRowContent(
         icon: String,
         iconColor: Color,
         circleFill: Color,
         title: String,
         subtitle: String?,
         titleColor: Color = DarkTheme.textPrimary,
-        isActive: Bool,
-        chevron: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            rowContent(
-                icon: icon,
-                iconColor: iconColor,
-                circleFill: circleFill,
-                title: title,
-                subtitle: subtitle,
-                titleColor: titleColor,
-                isActive: isActive,
-                chevron: chevron
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func rowContent(
-        icon: String,
-        iconColor: Color,
-        circleFill: Color,
-        title: String,
-        subtitle: String?,
-        titleColor: Color,
-        isActive: Bool,
-        chevron: Bool
+        isActive: Bool
     ) -> some View {
         HStack(spacing: 14) {
             ZStack {
@@ -210,12 +207,6 @@ struct CyclePickerSheet: View {
             }
 
             Spacer()
-
-            if chevron {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textTertiary)
-            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -230,11 +221,6 @@ struct CyclePickerSheet: View {
                         )
                 )
         }
-        .animation(.appCrisp, value: isActive)
-    }
-
-    private var divider: some View {
-        Divider().opacity(0.3).padding(.horizontal, 4)
     }
 
     // MARK: - Helpers

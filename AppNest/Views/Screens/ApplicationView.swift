@@ -38,6 +38,7 @@ struct ApplicationView: View {
     @State private var csvImportPreview: [CSVImportRow]? = nil
     @State private var isShowingImportPreview = false
     @State private var isImportingCSV = false
+    @State private var isShowingCSVGuide = false
     @State private var csvFileURL: URL? = nil
     @State private var isShowingShareSheet = false
     @State private var importErrorMessage: String?
@@ -443,6 +444,9 @@ struct ApplicationView: View {
         .sheet(isPresented: $isShowingShareSheet) {
             if let url = csvFileURL { ShareSheet(activityItems: [url]) }
         }
+        .sheet(isPresented: $isShowingCSVGuide) {
+            CSVFormatGuideSheet()
+        }
         .alert("Import Failed", isPresented: Binding(
             get: { importErrorMessage != nil },
             set: { if !$0 { importErrorMessage = nil } }
@@ -592,7 +596,7 @@ struct ApplicationView: View {
             .background(.ultraThinMaterial)
             .clipShape(Capsule())
             .overlay(Capsule().strokeBorder(isSearchFocused ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08), lineWidth: 1))
-            .animation(.appCrisp, value: isSearchFocused)
+            .animation(.appBubbly, value: isSearchFocused)
 
             if !applications.isEmpty && !isSearchFocused {
                 HStack(spacing: 8) {
@@ -662,6 +666,24 @@ struct ApplicationView: View {
                                     .fill(.ultraThinMaterial)
                                     .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
                                     .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+                            }
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+
+                    // Guide button
+                    Button {
+                        isShowingCSVGuide = true
+                        AppHaptics.shared.light()
+                    } label: {
+                        Image(systemName: "questionmark.circle")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(Color.accentColor)
+                            .frame(width: 44, height: 44)
+                            .background {
+                                Circle()
+                                    .fill(Color.accentColor.opacity(0.1))
+                                    .overlay(Circle().strokeBorder(Color.accentColor.opacity(0.2), lineWidth: 1))
                             }
                     }
                     .buttonStyle(PressScaleButtonStyle())
@@ -852,6 +874,17 @@ struct ApplicationView: View {
                 .buttonStyle(PressScaleButtonStyle())
             }
             .padding(.top, 10)
+            
+            Button {
+                isShowingCSVGuide = true
+                AppHaptics.shared.light()
+            } label: {
+                Label("CSV Format Guide", systemImage: "questionmark.circle")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 80)
@@ -906,6 +939,17 @@ struct ApplicationView: View {
                 .buttonStyle(PressScaleButtonStyle())
             }
             .padding(.top, 10)
+            
+            Button {
+                isShowingCSVGuide = true
+                AppHaptics.shared.light()
+            } label: {
+                Label("CSV Format Guide", systemImage: "questionmark.circle")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 80)

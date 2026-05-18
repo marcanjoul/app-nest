@@ -49,6 +49,10 @@ struct ResumeSection: View {
                 Button(action: onViewAll) {
                     Label("Select Another", systemImage: "tray.full")
                 }
+                Divider()
+                Button(role: .destructive, action: onClear) {
+                    Label("Remove from Job", systemImage: "trash")
+                }
             } preview: {
                 ResumePreview(bookmark: attached.bookmark, fileName: attached.fileName)
                     .onTapGesture { openFullscreen(attached) }
@@ -62,13 +66,15 @@ struct ResumeSection: View {
             )
         } else if attachedResumeWasDeleted {
             ResumePill(title: "File Deleted", style: .deleted, isLarge: true)
-        } else if let fallback = resumes.first(where: \.isDefault) ?? resumes.first {
+        } else {
+            // New premium Add state matching ProfileView
             ResumePill(
-                title: fallback.fileName,
-                style: .resume,
-                isDefault: fallback.isDefault,
+                title: "Attach Resume",
+                style: .add,
+                isSelected: true,
+                showsGlow: false,
                 isLarge: true,
-                action: { onSelectResume(fallback) }
+                action: onPick
             )
         }
     }
@@ -88,29 +94,15 @@ struct ResumeSection: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionLabel(icon: "doc.richtext", title: "Resume")
 
-            if isShowingUploadOnly {
+            VStack(spacing: 14) {
                 HStack {
                     Spacer()
-                    ResumePill(
-                        title: "Upload Resume",
-                        style: .add,
-                        isSelected: true,
-                        showsGlow: false,
-                        isLarge: true,
-                        action: onPick
-                    )
+                    primaryPill
                     Spacer()
                 }
-                .padding(.vertical, 8)
-            } else {
-                VStack(spacing: 14) {
-                    HStack {
-                        Spacer()
-                        primaryPill
-                        Spacer()
-                    }
-                    .padding(.vertical, 4)
+                .padding(.vertical, 4)
 
+                if !isShowingUploadOnly {
                     if resumes.count > 1 {
                         Button(action: onViewAll) {
                             Label("Select Another", systemImage: "tray.full")
