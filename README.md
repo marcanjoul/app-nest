@@ -1,138 +1,61 @@
 # App Nest
 
-A personal iOS job application tracker built with SwiftUI and SwiftData. Designed for students and early-career professionals who want a calm, fast, private record of where their job search stands — without spreadsheet chaos or bloated job-board UIs.
-
-> Built and maintained by [Mark Anjoul](https://github.com/marcanjoul).
-
----
-
-## What It Does
-
-You share a job listing from your browser, App Nest parses the company and title automatically, you pick a status and job type in the popup, and it's saved. When you land an interview, swipe right on the card to advance the status. When you get rejected, swipe left to delete. That's the core loop.
-
-Beyond that: CSV import/export, on-device email parsing, company logos, compensation tracking, job search cycles, and a full detail view with notes and resume attachment.
+An iOS app for tracking job and internship applications, built with SwiftUI.
 
 ---
 
 ## Features
 
-### Share Extension
-Share any job listing URL directly from Safari. App Nest parses the page title to extract the company name and position automatically. The popup lets you set job type, status, season, and notes before saving — no need to re-open the app after.
+**Track applications** — Add jobs manually with company, position, type, status, season, compensation (hourly or salary, with a currency picker), date, notes, and a resume attachment. Edit or delete anytime.
 
-- Handles LinkedIn, Greenhouse, Lever, Indeed, Adzuna, Workday, Handshake, ZipRecruiter, and more
-- Auto-detects job type from the title (e.g. "Summer Internship" → Internship + Summer)
-- Falls back to HTML fetch for open job boards; gracefully degrades to manual entry for auth-walled sites
+**Share Extension** — Share any job listing URL directly from Safari. App Nest parses the page title to extract the company and position automatically, auto-detects job type and season from title keywords, and lets you set all fields in the popup before saving — no need to open the app after.
 
-### Application Tracking
-Each job stores:
-- Company name + logo
-- Position title
-- Job type (Full Time, Part Time, Contract, Internship, Co-op, Temporary)
-- Status (To Apply → Applied → Interview → Offer / Rejected)
-- Season (Winter, Spring, Summer, Fall)
-- Date applied
-- Job URL
-- Notes, company research, and interview notes (separate fields)
-- Compensation (hourly or salary, with currency picker and period)
-- Resume attachment (file reference, not a copy)
+**Flexible CSV Import/Export** — Seamlessly migrate your data. Import jobs from any CSV with a smart, flexible mapper that detects various column headers (e.g., "Employer" vs "Company"). Review and edit parsed data in a beautiful preview sheet before finalizing. Export your entire list or specific search cycles to standard CSV.
 
-### Swipe Gestures
-- **Swipe right** on any card to advance to the next status in the pipeline (To Apply → Applied → Interview → Offer). Multi-stage: swipe further to jump ahead.
-- **Swipe left** to delete with a 4-second undo toast.
+**Bulk Management** — Enter **Edit Mode** to select multiple applications. Perform mass actions like deletion or moving jobs between cycles with a single tap.
 
-### Job Search Cycles
-Organize applications into named periods ("Summer 2025", "Full-Time 2026"). Filter your entire list to a single cycle with one tap. Cycles are optional — all applications are visible in the default "All Applications" view.
+**Swipe Gestures** — Swipe right on any card to advance its status through the pipeline. Swipe left to delete with a 4-second undo toast.
 
-### CSV Import / Export
-- Import from any CSV: a flexible mapper auto-detects column headers (e.g. "Employer" and "Company" both work). Preview and edit all rows in a full-screen sheet before committing.
-- Export your current list or cycle to a standard CSV for backup or migration.
+**Job Search Cycles** — Organize your applications into distinct periods (e.g., "Summer 2026", "Full-time 2027"). Create, rename, and manage cycles directly in the app.
 
-### Email Parsing
-Paste a job confirmation email and App Nest extracts the company name, position, and status using Apple's on-device NaturalLanguage framework. No data leaves the device.
+**Parse emails with on-device AI** — Paste a job confirmation email and AppNest extracts the company name, position, status, and date automatically using Apple's NaturalLanguage framework.
 
-### Company Logos
-Logos are fetched automatically from [Logo.dev](https://logo.dev) as you type or import. Fetched images are stored in SwiftData and persist across sessions. Custom logos can be uploaded from your photo library.
+**Company logos** — AppNest automatically fetches company logos as you type or import. Logos are cached and saved to your database for a rich, visual experience. Supports manual image uploads too.
 
-### Search, Sort, Filter
-- Full-text search across company and position
-- Sort by date (newest/oldest) or company name (A–Z / Z–A)
-- Filter by status using animated chip pills — tap to select, tap again to clear
-- Counts on each chip update live as you search
-
-### Bulk Actions
-Enter Edit Mode to select multiple applications, then delete or move them to a cycle in one action.
+**Search, sort, and filter** — Find applications instantly by company or position. Sort by date or company name. Filter by status with high-end glassmorphic chips.
 
 ---
 
 ## Tech Stack
 
-| Layer | Choice | Why |
-|---|---|---|
-| UI | SwiftUI | Declarative, fast iteration, tight SwiftData integration |
-| Persistence | SwiftData (SQLite) | First-party, reactive, zero boilerplate for `@Query` |
-| NLP | Apple NaturalLanguage (`NLTagger`) | On-device, private, no API key required |
-| Logo API | Logo.dev | Clean REST API, reliable domain-to-logo lookup |
-| Architecture | `@Query`-driven MVVM | Views observe the DB directly; no intermediate ViewModel layer needed |
-| Design | Custom dark theme, Emil-motion principles | Glassmorphism cards, spring animations, haptic feedback |
-
-**iOS target:** iOS 17+  
-**Language:** Swift 5.9  
-**Xcode:** 16+
+| Layer | Technology |
+|---|---|
+| UI | SwiftUI |
+| Persistence | SwiftData (SQLite) |
+| NLP / Parsing | Apple NaturalLanguage (NLTagger) + Regex + NSDataDetector |
+| Logo Lookup | Logo.dev API |
+| Architecture | Modern SwiftData MVVM (Direct @Query) |
+| Design System | Custom Dark Theme + Emil-motion principles |
 
 ---
 
 ## Architecture
 
-```
-app-nest/
-├── AppNest/
-│   ├── Core/
-│   │   ├── AppNestApp.swift        # @main entry point, scene lifecycle, share import handling
-│   │   ├── AppState.swift          # Global observable state (selected cycle, pending import)
-│   │   └── APIKeys.swift           # Logo.dev credentials (git-ignored)
-│   ├── Models/
-│   │   ├── JobApplication.swift    # SwiftData @Model — main entity
-│   │   ├── JobCycle.swift          # SwiftData @Model — grouping entity
-│   │   ├── PendingJobImport.swift  # Codable DTO: share extension → main app via App Group
-│   │   ├── LogoFetcher.swift       # Logo.dev search + image download
-│   │   ├── EmailParser.swift       # NaturalLanguage-based email extraction
-│   │   └── CSVImporter.swift       # Flexible CSV parser with header normalization
-│   ├── Views/
-│   │   ├── Screens/
-│   │   │   ├── ApplicationView.swift   # Main job list — search, filter, swipe, bulk actions
-│   │   │   ├── JobDetailView.swift     # Full editing form for a single application
-│   │   │   ├── ProfileView.swift       # Resume management and app settings
-│   │   │   └── Import/                 # CSV preview, row editor, import support
-│   │   └── Components/
-│   │       ├── Cards/                  # DarkJobCardView, swipe row
-│   │       ├── JobDetail/              # Modular form sections (info, compensation, notes…)
-│   │       └── Pills/                  # Status chips, selectable pills, type badges
-│   └── Design/
-│       ├── Theme/DarkTheme.swift       # Color tokens, card styles, status colors
-│       ├── Motion/Animations.swift     # Named spring presets
-│       └── Haptics/Haptics.swift       # Centralized haptic feedback
-└── AppNestShare/
-    └── ShareViewController.swift   # Self-contained share extension (UIKit host + SwiftUI popup)
-```
-
-### Data Flow — Share Extension Import
+AppNest uses **SwiftData** as its persistence layer. Views query the database directly using `@Query`, eliminating the need for boilerplate ViewModel classes. Data updates are reactive and instantaneous across all views.
 
 ```
-Safari (user taps Share)
-  └─▶ ShareViewController
-        ├─ Parses URL + page title from NSExtensionItem
-        ├─ Fetches og:title / HTML title via URLSession (fallback)
-        ├─ Runs parseJobInfo() → extracts company + position
-        ├─ Detects job type and season from title keywords
-        └─ User fills in popup → saves SharePendingImport
-             └─▶ UserDefaults (App Group)
-                  └─▶ AppNestApp (scenePhase .active)
-                        └─▶ ApplicationView.onChange → inserts JobApplication into SwiftData
+AppNest/
+├── Core/                 # Entry point, AppState, and API Config
+├── Design System/        # Theme (Glassmorphism), Motion, and Haptics
+├── Models/               # SwiftData @Models (JobApplication, JobCycle, Resume)
+├── Views/
+│   ├── Screens/          # Main application screens (Application, Profile, etc.)
+│   └── Components/       # Atomic UI elements (Pills, Cards, Modular Form Sections)
+└── Assets.xcassets       # Static assets, branding, and color tokens
+
+AppNestShare/
+└── ShareViewController.swift  # Self-contained share extension (UIKit host + SwiftUI popup)
 ```
-
-### Why No ViewModel Classes?
-
-SwiftData's `@Query` macro makes view-models redundant for read-heavy flows. Views subscribe directly to the persistent store and re-render when data changes. The only shared state (current cycle, pending import) lives in `AppState`, an `@Observable` class injected via `.environment`.
 
 ---
 
@@ -140,39 +63,21 @@ SwiftData's `@Query` macro makes view-models redundant for read-heavy flows. Vie
 
 ### Requirements
 
-- Xcode 16+ on macOS
-- iOS 17+ simulator or device
-- A free [Logo.dev](https://logo.dev) account for logo fetching (optional — the app works without it, logos just won't auto-load)
+- macOS with Xcode 16+ installed (iOS 17.0+ SDK)
+- A [Logo.dev](https://logo.dev) account for automatic company logo fetching (free tier works)
 
 ### Setup
 
-```bash
-git clone https://github.com/marcanjoul/app-nest.git
-cd app-nest
-```
-
-1. Copy the API keys template:
-   ```bash
-   cp AppNest/Core/APIKeys.example.swift AppNest/Core/APIKeys.swift
+1. Clone the repo
+2. Create `AppNest/Core/APIKeys.swift` from the example file:
+   ```swift
+   enum APIKeys {
+       static let logoDevPublicKey  = "pk_YOUR_PUBLISHABLE_KEY_HERE"
+       static let logoDevSecretKey  = "sk_YOUR_SECRET_KEY_HERE"
+   }
    ```
-2. Fill in your Logo.dev keys in `APIKeys.swift`
-3. Open `AppNest.xcodeproj` in Xcode
-4. Select a simulator (iOS 17+) and hit Run
-
-The share extension (`AppNestShare` target) is bundled with the main app. It uses an App Group (`group.com.example.mark.appnest`) to pass data — update this identifier in both targets' entitlements if you change the bundle ID.
-
----
-
-## Design Philosophy
-
-App Nest is designed around one principle: **the app should reduce stress, not add it.** Every interaction is optimized for speed and clarity.
-
-- Cards show exactly what matters at a glance — company, title, status badge, date
-- Status advancement is a gesture, not a form
-- The share extension imports a job in under five seconds
-- Nothing is hidden behind a menu that could reasonably be a swipe
-
-The visual language is intentionally dark and calm — glassmorphic cards, muted status colors, spring-based animations that feel physical rather than decorative.
+   Logo.dev uses two separate keys — both are in your Logo.dev dashboard. `APIKeys.swift` is gitignored and should never be committed.
+3. Open `AppNest.xcodeproj` and run on an iOS 17+ simulator
 
 ---
 
