@@ -301,38 +301,51 @@ struct ProfileView: View {
 
                 PipelineSegmentedBar(segments: pipelineSegments, total: totalCount)
 
-                HStack(spacing: 6) {
-                    ForEach(pipelineStatuses, id: \.self) { status in
+                HStack(spacing: 0) {
+                    ForEach(pipelineStatuses.indices, id: \.self) { i in
+                        let status = pipelineStatuses[i]
                         let c = count(for: status)
                         let style = DarkTheme.statusStyle(for: status)
                         
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(spacing: 4) {
                             Image(systemName: style.iconName)
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(c > 0 ? style.tintColor : DarkTheme.textTertiary)
+                                .font(.system(size: 10, weight: .black))
+                                .foregroundStyle(c > 0 ? style.tintColor : DarkTheme.textTertiary.opacity(0.6))
                             
                             Text("\(c)")
-                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .font(.system(size: 20, weight: .bold, design: .rounded))
                                 .foregroundStyle(c > 0 ? DarkTheme.textPrimary : DarkTheme.textTertiary)
+                                .contentTransition(.numericText())
                             
                             Text(pipelineLabel(for: status))
-                                .font(.system(size: 8, weight: .bold))
-                                .foregroundStyle(c > 0 ? DarkTheme.textSecondary : DarkTheme.textTertiary)
+                                .font(.system(size: 8, weight: .black))
+                                .foregroundStyle(c > 0 ? DarkTheme.textSecondary : DarkTheme.textTertiary.opacity(0.8))
+                                .textCase(.uppercase)
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.8)
+                                .minimumScaleFactor(0.7)
                         }
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 8)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
                         .background {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(c > 0 ? style.tintColor.opacity(0.06) : Color.primary.opacity(0.04))
-                                .overlay {
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .strokeBorder(c > 0 ? style.tintColor.opacity(0.12) : Color.primary.opacity(0.06), lineWidth: 1)
-                                }
+                            if c > 0 {
+                                style.tintColor.opacity(0.04)
+                            }
+                        }
+                        
+                        if i < pipelineStatuses.count - 1 {
+                            Rectangle()
+                                .fill(Color.primary.opacity(0.06))
+                                .frame(width: 1, height: 30)
                         }
                     }
+                }
+                .background {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.primary.opacity(0.03))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
+                        )
                 }
             }
             .padding(18)
