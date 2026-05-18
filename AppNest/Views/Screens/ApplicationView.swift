@@ -107,24 +107,18 @@ struct ApplicationView: View {
                     }
                     Spacer()
                     HStack(spacing: 10) {
-                        Menu {
-                            Button {
-                                exportCSV()
-                            } label: {
-                                Label("Export CSV", systemImage: "square.and.arrow.up")
-                            }
-                            .disabled(applications.isEmpty)
-
-                            Button {
-                                isImportingCSV = true
-                            } label: {
-                                Label("Import CSV", systemImage: "square.and.arrow.down")
-                            }
+                        Button {
+                            exportCSV()
                         } label: {
-                            Image(systemName: "ellipsis.circle")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(DarkTheme.textSecondary)
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(applications.isEmpty
+                                    ? DarkTheme.textTertiary.opacity(0.4)
+                                    : DarkTheme.textSecondary)
                         }
+                        .buttonStyle(.plain)
+                        .disabled(applications.isEmpty)
+                        .animation(.appCrisp, value: applications.isEmpty)
                         .padding(.top, 12)
 
                         if !applications.isEmpty {
@@ -620,6 +614,22 @@ struct ApplicationView: View {
                     }
                     .animation(.appCrisp, value: sortOption)
             }
+
+            // Import button
+            Button {
+                isImportingCSV = true
+            } label: {
+                Image(systemName: "square.and.arrow.down")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(DarkTheme.textPrimary)
+                    .frame(width: 44, height: 44)
+                    .background {
+                        Circle()
+                            .fill(DarkTheme.cardFill)
+                            .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+                    }
+            }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, 20)
     }
@@ -690,10 +700,26 @@ struct ApplicationView: View {
             Text("No applications yet")
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(DarkTheme.textPrimary)
-            Text("Tap New to add your first application.")
+            Text("Tap New to add your first application,\nor import from a CSV file.")
                 .font(.subheadline)
                 .foregroundStyle(DarkTheme.textSecondary)
                 .multilineTextAlignment(.center)
+            Button {
+                isImportingCSV = true
+            } label: {
+                Label("Import from CSV", systemImage: "square.and.arrow.down")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(DarkTheme.textSecondary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 9)
+                    .background(
+                        Capsule()
+                            .fill(Color.primary.opacity(0.07))
+                            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.10), lineWidth: 1))
+                    )
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 60)
