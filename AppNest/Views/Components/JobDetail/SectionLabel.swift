@@ -8,19 +8,21 @@ struct SectionLabel: View {
     var isRequired: Bool = false
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(DarkTheme.textSecondary)
+                .font(.system(size: DarkTheme.sectionLabelSize - 1, weight: .black))
+                .foregroundStyle(Color.accentColor.opacity(0.8))
+            
             HStack(spacing: 2) {
                 Text(title)
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .tracking(1.4)
+                    .font(.system(size: DarkTheme.sectionLabelSize, weight: .bold))
+                    .tracking(DarkTheme.sectionLabelSpacing)
                     .textCase(.uppercase)
                     .foregroundStyle(DarkTheme.textSecondary)
+                
                 if isRequired {
                     Text("*")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .font(.system(size: DarkTheme.sectionLabelSize, weight: .bold))
                         .foregroundStyle(Color.orange)
                         .accessibilityLabel("Required")
                 }

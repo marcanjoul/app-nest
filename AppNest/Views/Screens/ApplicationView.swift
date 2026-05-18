@@ -163,44 +163,29 @@ struct ApplicationView: View {
                         .selectionDisabled()
                 } else {
                     if isEditMode {
-                        HStack(spacing: 8) {
-                            Text("\(selectedJobIDs.count) selected")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundStyle(DarkTheme.textPrimary)
-                            
-                            Spacer()
-                            
-                            Button(selectedJobIDs.count == filteredAndSorted.count ? "Deselect All" : "Select All") {
-                                withAnimation(.appCrisp) {
-                                    if selectedJobIDs.count == filteredAndSorted.count {
-                                        selectedJobIDs.removeAll()
-                                    } else {
-                                        selectedJobIDs = Set(filteredAndSorted.map(\.id))
-                                    }
-                                }
-                                AppHaptics.shared.light()
-                            }
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(Color.accentColor)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background {
-                                Capsule()
-                                    .fill(Color.accentColor.opacity(0.12))
-                            }
-                        }
-                        .listRowInsets(EdgeInsets(top: 4, leading: 24, bottom: 10, trailing: 24))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .selectionDisabled()
-                        .transition(.move(edge: .top).combined(with: .opacity))
+                        selectionToolbar
+                            .listRowInsets(EdgeInsets(top: 4, leading: 24, bottom: 10, trailing: 24))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .selectionDisabled()
+                            .transition(.move(edge: .top).combined(with: .opacity))
                     }
 
-                    ForEach(filteredAndSorted) { job in
+                    ForEach(Array(filteredAndSorted.enumerated()), id: \.element.id) { index, job in
                         JobCardSwipeRow(job: job, isEditMode: isEditMode, onDelete: { scheduleDelete(job) })
                             .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
+                            .visualEffect { content, proxy in
+                                content
+                                    .scaleEffect(cardScale(proxy))
+                                    .opacity(cardOpacity(proxy))
+                            }
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.95)),
+                                removal: .opacity.combined(with: .scale(scale: 0.9))
+                            ))
+                            .animation(.appSmooth.delay(Double(min(index, 6)) * 0.05), value: filteredAndSorted.count)
                     }
                 }
 
@@ -252,7 +237,7 @@ struct ApplicationView: View {
                     Spacer()
                     HStack(spacing: 0) {
                         Button(role: .destructive) {
-                            deleteSelected()
+                            isConfirmingBulkDelete = true
                         } label: {
                             VStack(spacing: 4) {
                                 Image(systemName: "trash")
@@ -457,12 +442,60 @@ struct ApplicationView: View {
         }
     }
 
+    // MARK: - List View Helpers
+
+    private var selectionToolbar: some View {
+        HStack(spacing: 8) {
+            Text("\(selectedJobIDs.count) selected")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(DarkTheme.textPrimary)
+            
+            Spacer()
+            
+            Button(selectedJobIDs.count == filteredAndSorted.count ? "Deselect All" : "Select All") {
+                withAnimation(.appCrisp) {
+                    if selectedJobIDs.count == filteredAndSorted.count {
+                        selectedJobIDs.removeAll()
+                    } else {
+                        selectedJobIDs = Set(filteredAndSorted.map(\.id))
+                    }
+                }
+                AppHaptics.shared.light()
+            }
+            .font(.system(size: 13, weight: .bold))
+            .foregroundStyle(Color.accentColor)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background {
+                Capsule()
+                    .fill(Color.accentColor.opacity(0.12))
+            }
+        }
+    }
+
+    private func cardScale(_ proxy: GeometryProxy) -> CGFloat {
+        let minY = proxy.frame(in: .global).minY
+        let screenHeight = UIScreen.main.bounds.height
+        if minY < 100 { return max(0.96, 1.0 - (100 - minY) / 2000) }
+        else if minY > screenHeight - 200 { return max(0.96, 1.0 - (minY - (screenHeight - 200)) / 2000) }
+        return 1.0
+    }
+
+    private func cardOpacity(_ proxy: GeometryProxy) -> Double {
+        let minY = proxy.frame(in: .global).minY
+        let screenHeight = UIScreen.main.bounds.height
+        if minY < 0 { return max(0, 1.0 + minY / 400) }
+        else if minY > screenHeight - 100 { return max(0, 1.0 - (minY - (screenHeight - 100)) / 400) }
+        return 1.0
+    }
+
     // MARK: - Import / Export
 
     private func importCSV(at url: URL) {
         let _ = url.startAccessingSecurityScopedResource()
         defer { url.stopAccessingSecurityScopedResource() }
         do {
+            isShowingCSVGuide = true // Pop up guide on import attempt
             let raw = try String(contentsOf: url, encoding: .utf8)
             let rows = CSVImporter.parse(raw)
             guard !rows.isEmpty else {
@@ -477,6 +510,7 @@ struct ApplicationView: View {
     }
 
     private func exportCSV() {
+        isShowingCSVGuide = true // Pop up guide on export attempt
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let exportable = cycleFiltered.sorted { $0.dateApplied > $1.dateApplied }
@@ -666,24 +700,6 @@ struct ApplicationView: View {
                                     .fill(.ultraThinMaterial)
                                     .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
                                     .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
-                            }
-                    }
-                    .buttonStyle(PressScaleButtonStyle())
-                    .transition(.scale(scale: 0.9).combined(with: .opacity))
-
-                    // Guide button
-                    Button {
-                        isShowingCSVGuide = true
-                        AppHaptics.shared.light()
-                    } label: {
-                        Image(systemName: "questionmark.circle")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(Color.accentColor)
-                            .frame(width: 44, height: 44)
-                            .background {
-                                Circle()
-                                    .fill(Color.accentColor.opacity(0.1))
-                                    .overlay(Circle().strokeBorder(Color.accentColor.opacity(0.2), lineWidth: 1))
                             }
                     }
                     .buttonStyle(PressScaleButtonStyle())
@@ -1024,6 +1040,7 @@ private struct JobCardSwipeRow: View {
     let onDelete: () -> Void
 
     @GestureState private var dragOffset: CGFloat = 0
+    @State private var isSwiping = false
 
     private let advanceThresholds: [CGFloat] = [65, 130, 200]
     private let deleteThreshold: CGFloat = 80
@@ -1051,7 +1068,7 @@ private struct JobCardSwipeRow: View {
             ZStack {
                 NavigationLink(destination: JobDetailView(job: job)) { EmptyView() }
                     .opacity(0)
-                    .disabled(isEditMode)
+                    .disabled(isEditMode || isSwiping)
                 DarkJobCardView(job: job)
             }
             .offset(x: cardOffset(dragOffset))

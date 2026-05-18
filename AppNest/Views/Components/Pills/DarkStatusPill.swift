@@ -158,6 +158,7 @@ struct SparkleView: View {
 /// Full glassmorphic job application card with avatar and status pill.
 struct DarkJobCardView: View {
     let job: JobApplication
+    @State private var showCelebration = false
 
     private var dateText: String {
         let f = RelativeDateTimeFormatter()
@@ -179,8 +180,14 @@ struct DarkJobCardView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .shadow(color: .black.opacity(0.20), radius: 4, y: 2)
                 .overlay {
-                    if job.status == .offer {
+                    if showCelebration {
                         SparkleView(color: Color(red: 0.30, green: 0.80, blue: 0.45))
+                            .onAppear {
+                                // Automatically reset after animation to prevent repetitive triggers
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                    showCelebration = false
+                                }
+                            }
                     }
                 }
 
@@ -236,6 +243,7 @@ struct DarkJobCardView: View {
         }
         .onChange(of: job.status) { old, new in
             if new == .offer && old != .offer {
+                showCelebration = true
                 AppHaptics.shared.success()
             }
         }
