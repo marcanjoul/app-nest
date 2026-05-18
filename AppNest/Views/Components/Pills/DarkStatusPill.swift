@@ -44,25 +44,26 @@ struct DarkStatusPill: View {
 struct DarkTypeTag: View {
     let text: String
     var icon: String? = nil
+    var color: Color = DarkTheme.textSecondary
 
     var body: some View {
         HStack(spacing: 4) {
             if let icon {
                 Image(systemName: icon)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.system(size: 10, weight: .bold))
             }
             Text(text)
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 11, weight: .bold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
-        .foregroundStyle(DarkTheme.textSecondary)
+        .foregroundStyle(color)
         .padding(.horizontal, 9)
         .padding(.vertical, 5)
         .background(
             Capsule()
-                .fill(Color.primary.opacity(0.07))
-                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.10), lineWidth: 0.5))
+                .fill(color.opacity(0.08))
+                .overlay(Capsule().strokeBorder(color.opacity(0.15), lineWidth: 0.5))
         )
     }
 }
@@ -93,22 +94,22 @@ struct StatChip: View {
             AppHaptics.shared.light()
             action?()
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: 7) {
                 Image(systemName: style.iconName)
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(isSelected ? Color.white : style.tintColor)
 
                 Text("\(number)")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundStyle(isSelected ? Color.white : DarkTheme.textPrimary)
 
                 Text(label)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(isSelected ? Color.white.opacity(0.88) : DarkTheme.textSecondary)
                     .lineLimit(1)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 11)
+            .padding(.vertical, 7)
             .background(
                 Capsule()
                     .fill(isSelected ? AnyShapeStyle(style.tintColor) : AnyShapeStyle(style.fillColor))
@@ -118,7 +119,7 @@ struct StatChip: View {
                             lineWidth: isSelected ? 0 : 0.8
                         )
                     )
-                    .shadow(color: isSelected ? style.tintColor.opacity(0.28) : .clear, radius: 10, y: 3)
+                    .shadow(color: isSelected ? style.tintColor.opacity(0.28) : .clear, radius: 8, y: 3)
             )
         }
         .buttonStyle(PressScaleButtonStyle())
@@ -208,7 +209,7 @@ struct DarkJobCardView: View {
                         DarkStatusPill(status: status)
                     }
                     if let type = job.jobType {
-                        DarkTypeTag(text: type.rawValue, icon: type.iconName)
+                        DarkTypeTag(text: type.rawValue, icon: type.iconName, color: type.color)
                     }
                 }
                 .padding(.top, 2)

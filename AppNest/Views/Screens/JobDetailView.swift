@@ -340,13 +340,13 @@ struct JobDetailView: View {
                 if !isNewApplication {
                     Button { isShowingDeleteConfirmation = true } label: {
                         Image(systemName: "trash")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(Color(red: 0.93, green: 0.38, blue: 0.44))
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(Color(red: 0.93, green: 0.33, blue: 0.40))
                             .frame(width: 40, height: 40)
                             .background {
                                 Circle()
-                                    .fill(Color(red: 0.93, green: 0.38, blue: 0.44).opacity(0.10))
-                                    .overlay(Circle().strokeBorder(Color(red: 0.93, green: 0.38, blue: 0.44).opacity(0.22), lineWidth: 1))
+                                    .fill(Color(red: 0.93, green: 0.33, blue: 0.40).opacity(0.10))
+                                    .overlay(Circle().strokeBorder(Color(red: 0.93, green: 0.33, blue: 0.40).opacity(0.18), lineWidth: 1))
                             }
                     }
                     .buttonStyle(PressScaleButtonStyle())

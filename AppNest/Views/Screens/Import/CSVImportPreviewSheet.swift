@@ -37,11 +37,7 @@ struct CSVImportPreviewSheet: View {
                 
                 VStack(spacing: 0) {
                     if !localRows.isEmpty {
-                        statBlock
-                            .padding(.horizontal, 20)
-                            .padding(.top, 16)
-                        
-                        filterAndSelectAllRow
+                        filterAndSelectionInfoRow
                             .padding(.vertical, 16)
                     }
 
@@ -78,6 +74,24 @@ struct CSVImportPreviewSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                }
+                
+                ToolbarItem(placement: .topBarTrailing) {
+                    if !localRows.isEmpty {
+                        Button(selectedRows.count == displayedRows.count && !displayedRows.isEmpty
+                            ? "Deselect All" : "Select All") {
+                            withAnimation(.appCrisp) {
+                                if selectedRows.count == displayedRows.count {
+                                    selectedRows.removeAll()
+                                } else {
+                                    selectedRows = Set(displayedRows.map(\.id))
+                                }
+                            }
+                            AppHaptics.shared.light()
+                        }
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(Color.accentColor)
+                    }
                 }
                 
                 ToolbarItemGroup(placement: .bottomBar) {
@@ -139,43 +153,7 @@ struct CSVImportPreviewSheet: View {
         }
     }
 
-    private var statBlock: some View {
-        HStack(spacing: 0) {
-            VStack(spacing: 4) {
-                Text("\(readyRows.count)")
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color(red: 0.30, green: 0.69, blue: 0.49))
-                Text("READY")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(DarkTheme.textSecondary)
-                    .tracking(1.0)
-            }
-            .frame(maxWidth: .infinity)
-
-            Rectangle()
-                .fill(Color.primary.opacity(0.1))
-                .frame(width: 1, height: 40)
-
-            VStack(spacing: 4) {
-                Text("\(attentionRows.count)")
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color(red: 0.96, green: 0.65, blue: 0.14))
-                Text("NEEDS ATTENTION")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(DarkTheme.textSecondary)
-                    .tracking(1.0)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .padding(.vertical, 20)
-        .background {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.white.opacity(0.04))
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
-        }
-    }
-
-    private var filterAndSelectAllRow: some View {
+    private var filterAndSelectionInfoRow: some View {
         VStack(spacing: 12) {
             HStack {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -186,29 +164,6 @@ struct CSVImportPreviewSheet: View {
                     }
                     .padding(.horizontal, 20)
                 }
-                
-                Spacer(minLength: 0)
-                
-                Button(selectedRows.count == displayedRows.count && !displayedRows.isEmpty
-                    ? "Deselect All" : "Select All") {
-                    withAnimation(.appCrisp) {
-                        if selectedRows.count == displayedRows.count {
-                            selectedRows.removeAll()
-                        } else {
-                            selectedRows = Set(displayedRows.map(\.id))
-                        }
-                    }
-                    AppHaptics.shared.light()
-                }
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(Color.accentColor)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background {
-                    Capsule()
-                        .fill(Color.accentColor.opacity(0.12))
-                }
-                .padding(.trailing, 20)
             }
             
             if !selectedRows.isEmpty {
@@ -427,6 +382,14 @@ struct CSVImportPreviewSheet: View {
             .padding(.horizontal, 7)
             .padding(.vertical, 3)
             .background(Capsule().fill(color.opacity(0.12)))
+    }
+
+    private func count(for filter: ImportPreviewFilter) -> Int {
+        switch filter {
+        case .all: return localRows.count
+        case .ready: return readyRows.count
+        case .attention: return attentionRows.count
+        }
     }
 
     private func checkFilterConsistency() {

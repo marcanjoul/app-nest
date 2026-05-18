@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 struct EmailParserView: View {
     @Environment(\.modelContext) private var modelContext
@@ -23,6 +24,12 @@ struct EmailParserView: View {
     @State private var editStatus    = ApplicationStatus.applied
     @State private var editSeason: ApplicationSeason?  = nil
     @State private var editDate      = Date()
+    @State private var editCompensationKind: CompensationKind? = nil
+    @State private var editCompensationAmount: Double? = nil
+    @State private var editCompensationCurrency: Currency? = .usd
+    @State private var editSalaryPeriod: SalaryPeriod? = .yearly
+    @State private var editNotes     = ""
+    @State private var editAttachedResume: ResumeDocument? = nil
 
     @State private var cardAppeared    = false
     @State private var parseCount      = 0
@@ -32,6 +39,7 @@ struct EmailParserView: View {
     @State private var isFetchingLogo       = false
     @State private var highlights: [HighlightSpan] = []
     @State private var isHighlightExpanded  = false
+    @State private var pickerItem: PhotosPickerItem? = nil
 
     private let parser = EmailParser()
 
@@ -148,12 +156,12 @@ struct EmailParserView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     if isHighlightExpanded {
                         Text(buildHighlightedString(emailText, spans: highlights))
-                            .font(.system(size: 12))
+                            .font(.system(size: 13))
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .foregroundStyle(DarkTheme.textSecondary)
                     } else {
                         Text(buildHighlightedString(emailText, spans: highlights))
-                            .font(.system(size: 12))
+                            .font(.system(size: 13))
                             .lineLimit(3)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .foregroundStyle(DarkTheme.textSecondary)
@@ -290,39 +298,62 @@ struct EmailParserView: View {
                 }
             }
 
-            // Company avatar
+            // Company avatar with PhotosPicker
             HStack {
                 Spacer()
-                ZStack {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(DarkTheme.avatarGradient(for: editCompany.isEmpty ? "?" : editCompany))
-                    let initial = editCompany.trimmingCharacters(in: .whitespaces).first.map { String($0).uppercased() } ?? "?"
-                    Text(initial)
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                        .opacity(fetchedLogoData == nil ? 1 : 0)
-                    if let data = fetchedLogoData, let ui = UIImage(data: data) {
-                        Image(uiImage: ui)
-                            .resizable()
-                            .scaledToFill()
-                            .transition(.opacity.combined(with: .scale(scale: 0.92)))
-                    }
-                    if isFetchingLogo {
+                PhotosPicker(selection: $pickerItem, matching: .images) {
+                    ZStack {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                        ProgressView().tint(.white)
+                            .fill(DarkTheme.avatarGradient(for: editCompany.isEmpty ? "?" : editCompany))
+                        let initial = editCompany.trimmingCharacters(in: .whitespaces).first.map { String($0).uppercased() } ?? "?"
+                        Text(initial)
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .opacity(fetchedLogoData == nil ? 1 : 0)
+                        if let data = fetchedLogoData, let ui = UIImage(data: data) {
+                            Image(uiImage: ui)
+                                .resizable()
+                                .scaledToFill()
+                                .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                        }
+                        if isFetchingLogo {
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(.ultraThinMaterial)
+                            ProgressView().tint(.white)
+                        }
+                    }
+                    .frame(width: 60, height: 60)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
+                    .overlay(alignment: .bottomTrailing) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.accentColor)
+                                .frame(width: 20, height: 20)
+                            Image(systemName: "pencil")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(.white)
+                        }
+                        .shadow(color: Color.accentColor.opacity(0.28), radius: 4, y: 2)
+                        .offset(x: 2, y: 2)
                     }
                 }
-                .frame(width: 60, height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
+                .buttonStyle(.plain)
+                .onChange(of: pickerItem) { _, newValue in
+                    guard let newValue else { return }
+                    Task {
+                        if let data = try? await newValue.loadTransferable(type: Data.self) {
+                            withAnimation(.appSmooth) { fetchedLogoData = data }
+                        }
+                    }
+                }
                 .animation(.appSmooth, value: fetchedLogoData == nil)
                 .animation(.appFastOut, value: isFetchingLogo)
                 Spacer()
             }
 
             // Editable fields
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 EditableFieldRow(
                     icon: "building.2",
                     label: "Company",
@@ -341,6 +372,21 @@ struct EmailParserView: View {
                 StatusPickerRow(status: $editStatus, index: 3)
                 SeasonPickerRow(season: $editSeason, index: 4)
                 DatePickerRow(date: $editDate, index: 5)
+                
+                // Added Compensation, Resume and Notes
+                Group {
+                    CompensationSection(
+                        kind: $editCompensationKind,
+                        amount: compensationAmountBinding,
+                        currency: compensationCurrencyBinding,
+                        salaryPeriod: editSalaryPeriod ?? .yearly
+                    )
+                    
+                    resumeSection
+                    
+                    JobNotesSection(jobNotes: $editNotes)
+                }
+                .padding(.top, 4)
             }
             .id(parseCount)
 
@@ -377,6 +423,37 @@ struct EmailParserView: View {
         ))
     }
 
+    private var resumeSection: some View {
+        ResumeSection(
+            resumes: resumes,
+            attachedResume: editAttachedResume,
+            legacyResumeFileName: nil,
+            attachedResumeWasDeleted: false,
+            onSelectResume: { editAttachedResume = $0 },
+            onViewAll: {}, 
+            onPick: { /* File picker handled by resumes query and internal pills */ },
+            onClear: { editAttachedResume = nil }
+        )
+    }
+
+    private var compensationAmountBinding: Binding<String> {
+        Binding(
+            get: {
+                guard let v = editCompensationAmount else { return "" }
+                return v.truncatingRemainder(dividingBy: 1) == 0
+                    ? String(Int(v)) : String(v)
+            },
+            set: { editCompensationAmount = Double($0) }
+        )
+    }
+
+    private var compensationCurrencyBinding: Binding<Currency> {
+        Binding(
+            get: { editCompensationCurrency ?? .usd },
+            set: { editCompensationCurrency = $0 }
+        )
+    }
+
     // MARK: - Actions
 
     private func parseEmail() {
@@ -391,6 +468,10 @@ struct EmailParserView: View {
                 editStatus      = result.status      ?? .applied
                 editSeason      = nil
                 editDate        = result.dateApplied ?? Date()
+                editCompensationKind = nil
+                editCompensationAmount = nil
+                editNotes       = ""
+                editAttachedResume = defaultResume
                 isParsing       = false
                 hasResult       = true
                 isEmailExpanded     = false
@@ -403,7 +484,7 @@ struct EmailParserView: View {
     }
 
     private func saveApplication() {
-        let attached = defaultResume
+        let attached = editAttachedResume
         let selectedCycle = appState.selectedCycleID.flatMap { id in cycles.first { $0.id == id } }
         modelContext.insert(JobApplication(
             companyName: editCompany.isEmpty  ? "Unknown Company"  : editCompany,
@@ -414,9 +495,14 @@ struct EmailParserView: View {
             season:      editSeason,
             cycle:       selectedCycle,
             dateApplied: editDate,
+            jobNotes:    editNotes,
             resumeFileName: attached?.fileName,
             resumeBookmark: attached?.bookmark,
-            resumeID: attached?.id
+            resumeID: attached?.id,
+            compensationKind: editCompensationKind,
+            compensationAmount: editCompensationAmount,
+            compensationCurrency: editCompensationCurrency,
+            salaryPeriod: editSalaryPeriod
         ))
         AppHaptics.shared.success()
         withAnimation(.appSmooth) {
@@ -433,6 +519,10 @@ struct EmailParserView: View {
                 editStatus      = .applied
                 editSeason      = nil
                 editDate        = Date()
+                editCompensationKind = nil
+                editCompensationAmount = nil
+                editNotes       = ""
+                editAttachedResume = nil
                 isEmailExpanded = true
                 fetchedLogoData     = nil
                 isFetchingLogo      = false
@@ -467,7 +557,7 @@ struct EmailParserView: View {
                     let lo = result.index(result.startIndex, offsetByCharacters: raw.distance(from: raw.startIndex, to: swiftRange.lowerBound))
                     let hi = result.index(result.startIndex, offsetByCharacters: raw.distance(from: raw.startIndex, to: swiftRange.upperBound))
                     result[lo..<hi].foregroundColor = color
-                    result[lo..<hi].font = Font.system(size: 12, weight: .semibold)
+                    result[lo..<hi].font = Font.system(size: 14, weight: .bold)
                 }
                 searchStart = found.location + found.length
             }
@@ -559,7 +649,7 @@ private struct JobTypePickerRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Image(systemName: "tag")
+                Image(systemName: "list.bullet")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(DarkTheme.textSecondary)
                     .frame(width: 14)
@@ -614,7 +704,7 @@ private struct StatusPickerRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Image(systemName: "flag")
+                Image(systemName: "rectangle.and.hand.point.up.left.fill")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(DarkTheme.textSecondary)
                     .frame(width: 14)
@@ -670,7 +760,7 @@ private struct SeasonPickerRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                Image(systemName: "calendar.badge.clock")
+                Image(systemName: "sun.snow.fill")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(DarkTheme.textSecondary)
                     .frame(width: 14)

@@ -190,12 +190,19 @@ struct ApplicationView: View {
                     }
                 }
 
-                Color.clear
-                    .frame(height: 100)
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .selectionDisabled()
+                // Attribution Footer
+                VStack(spacing: 4) {
+                    Text("Logos provided by Logo.dev")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(DarkTheme.textTertiary.opacity(0.6))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 40)
+                .padding(.bottom, 60)
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .selectionDisabled()
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
@@ -638,6 +645,8 @@ struct ApplicationView: View {
             .background(.ultraThinMaterial)
             .clipShape(Capsule())
             .overlay(Capsule().strokeBorder(isSearchFocused ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08), lineWidth: 1))
+            .frame(maxWidth: .infinity)
+            .clipped()
             .animation(.appBubbly, value: isSearchFocused)
 
             if !applications.isEmpty && !isSearchFocused {
