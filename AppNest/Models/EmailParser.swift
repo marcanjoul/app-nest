@@ -158,6 +158,8 @@ struct EmailParser {
 
     private func extractPosition(from text: String) -> String? {
         let patterns = [
+            // "application/applied for Data Science Intern." — title ends sentence with no trailing keyword
+            #"(?:application|applied|applying)\s+for\s+(?:the\s+)?(.+?)(?:\s+(?:position|role)\b|\s+(?:at|with|@)\s+|[.,\n]|$)"#,
             // "apply/application/applied/applying for the AI Engineering Intern position" — title ends at "position/role"
             #"(?:\bapply\b|application|applied|applying)\s+(?:for|to)\s+(?:the\s+)?(.+?)\s+(?:position|role)\b"#,
             // "application/applied/applying for [POSITION] at Company" — requires company context
