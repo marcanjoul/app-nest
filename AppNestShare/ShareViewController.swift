@@ -341,6 +341,7 @@ private final class ShareViewModel {
         companyName = initial.companyName
         position    = initial.position
         sourceURL   = rawURL
+        jobType     = Self.detectJobType(from: initial.position)
 
         if companyName.isEmpty && position.isEmpty, rawURL != nil {
             isFetchingTitle = true
@@ -348,9 +349,32 @@ private final class ShareViewModel {
         }
     }
 
+    private static func detectJobType(from position: String) -> ShareJobType? {
+        guard !position.isEmpty else { return nil }
+        let lower = position.lowercased()
+
+        func hasWord(_ word: String) -> Bool {
+            guard let r = lower.range(of: word, options: .caseInsensitive) else { return false }
+            let prevOK = r.lowerBound == lower.startIndex || !lower[lower.index(before: r.lowerBound)].isLetter
+            let nextOK = r.upperBound == lower.endIndex   || !lower[r.upperBound].isLetter
+            return prevOK && nextOK
+        }
+
+        if hasWord("internship") || hasWord("intern")          { return .internship }
+        if hasWord("co-op") || hasWord("coop") || hasWord("co op") { return .coop }
+        if hasWord("part-time") || hasWord("part time")        { return .partTime }
+        if hasWord("full-time") || hasWord("full time")        { return .fullTime }
+        if hasWord("contract") || hasWord("freelance")         { return .contract }
+        if hasWord("temporary") || hasWord("temp")             { return .temporary }
+        return nil
+    }
+
     @MainActor
     func fetchPageTitle(from url: URL?) async {
-        defer { isFetchingTitle = false }
+        defer {
+            isFetchingTitle = false
+            if jobType == nil { jobType = Self.detectJobType(from: position) }
+        }
         guard let url else { return }
 
         var request = URLRequest(url: url, timeoutInterval: 10)
