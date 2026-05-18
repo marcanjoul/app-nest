@@ -368,7 +368,7 @@ struct ProfileView: View {
             if resumes.isEmpty {
                 HStack {
                     Spacer()
-                    ResumePill(title: "Upload Resume", style: .add, isLarge: true) {
+                    ResumePill(title: "Attach Resume", style: .add, isLarge: true) {
                         isShowingDocumentPicker = true
                     }
                     Spacer()
@@ -561,7 +561,7 @@ private struct ResumeManagerSheet: View {
                         Image(systemName: "plus")
                             .font(.system(size: 14, weight: .bold))
                     }
-                    .accessibilityLabel("Upload resume")
+                    .accessibilityLabel("Attach resume")
                 }
             }
         }

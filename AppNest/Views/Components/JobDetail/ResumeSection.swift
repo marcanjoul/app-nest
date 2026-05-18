@@ -68,14 +68,9 @@ struct ResumeSection: View {
             ResumePill(title: "File Deleted", style: .deleted, isLarge: true)
         } else {
             // New premium Add state matching ProfileView
-            ResumePill(
-                title: "Attach Resume",
-                style: .add,
-                isSelected: true,
-                showsGlow: false,
-                isLarge: true,
-                action: onPick
-            )
+            ResumePill(title: "Attach Resume", style: .add, isLarge: true) {
+                onPick()
+            }
         }
     }
 
