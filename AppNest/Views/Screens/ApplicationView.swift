@@ -38,7 +38,8 @@ struct ApplicationView: View {
     @State private var csvImportPreview: [CSVImportRow]? = nil
     @State private var isShowingImportPreview = false
     @State private var isImportingCSV = false
-    @State private var isShowingCSVGuide = false
+    @State private var isShowingImportConfirmation = false
+    @State private var isShowingExportConfirmation = false
     @State private var csvFileURL: URL? = nil
     @State private var isShowingShareSheet = false
     @State private var importErrorMessage: String?
@@ -429,8 +430,17 @@ struct ApplicationView: View {
         .sheet(isPresented: $isShowingShareSheet) {
             if let url = csvFileURL { ShareSheet(activityItems: [url]) }
         }
-        .sheet(isPresented: $isShowingCSVGuide) {
-            CSVFormatGuideSheet()
+        .alert("Import CSV", isPresented: $isShowingImportConfirmation) {
+            Button("Select File") { isImportingCSV = true }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Select a CSV file to import your applications.")
+        }
+        .alert("Export CSV", isPresented: $isShowingExportConfirmation) {
+            Button("Export") { exportCSV() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Create a CSV file of your applications to share or backup.")
         }
         .alert("Import Failed", isPresented: Binding(
             get: { importErrorMessage != nil },
@@ -495,7 +505,6 @@ struct ApplicationView: View {
         let _ = url.startAccessingSecurityScopedResource()
         defer { url.stopAccessingSecurityScopedResource() }
         do {
-            isShowingCSVGuide = true // Pop up guide on import attempt
             let raw = try String(contentsOf: url, encoding: .utf8)
             let rows = CSVImporter.parse(raw)
             guard !rows.isEmpty else {
@@ -510,7 +519,6 @@ struct ApplicationView: View {
     }
 
     private func exportCSV() {
-        isShowingCSVGuide = true // Pop up guide on export attempt
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let exportable = cycleFiltered.sorted { $0.dateApplied > $1.dateApplied }
@@ -670,7 +678,7 @@ struct ApplicationView: View {
                     
                     // Import button
                     Button {
-                        isImportingCSV = true
+                        isShowingImportConfirmation = true
                         AppHaptics.shared.light()
                     } label: {
                         Image(systemName: "square.and.arrow.down")
@@ -688,7 +696,7 @@ struct ApplicationView: View {
 
                     // Export button
                     Button {
-                        exportCSV()
+                        isShowingExportConfirmation = true
                         AppHaptics.shared.light()
                     } label: {
                         Image(systemName: "square.and.arrow.up")
@@ -873,7 +881,7 @@ struct ApplicationView: View {
                 .buttonStyle(PressScaleButtonStyle())
 
                 Button {
-                    isImportingCSV = true
+                    isShowingImportConfirmation = true
                     AppHaptics.shared.light()
                 } label: {
                     Label("Import CSV", systemImage: "square.and.arrow.down")
@@ -890,17 +898,6 @@ struct ApplicationView: View {
                 .buttonStyle(PressScaleButtonStyle())
             }
             .padding(.top, 10)
-            
-            Button {
-                isShowingCSVGuide = true
-                AppHaptics.shared.light()
-            } label: {
-                Label("CSV Format Guide", systemImage: "questionmark.circle")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 80)
@@ -938,7 +935,7 @@ struct ApplicationView: View {
                 .buttonStyle(PressScaleButtonStyle())
 
                 Button {
-                    isImportingCSV = true
+                    isShowingImportConfirmation = true
                     AppHaptics.shared.light()
                 } label: {
                     Label("Import CSV", systemImage: "square.and.arrow.down")
@@ -955,17 +952,6 @@ struct ApplicationView: View {
                 .buttonStyle(PressScaleButtonStyle())
             }
             .padding(.top, 10)
-            
-            Button {
-                isShowingCSVGuide = true
-                AppHaptics.shared.light()
-            } label: {
-                Label("CSV Format Guide", systemImage: "questionmark.circle")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 80)
@@ -1070,20 +1056,33 @@ private struct JobCardSwipeRow: View {
                     .opacity(0)
                     .disabled(isEditMode || isSwiping)
                 DarkJobCardView(job: job)
+                    .scaleEffect(isSwiping ? 0.98 : 1.0)
+                    .animation(.appCrisp, value: isSwiping)
             }
             .offset(x: cardOffset(dragOffset))
             .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.85), value: dragOffset)
         }
         .simultaneousGesture(
-            DragGesture(minimumDistance: 12)
+            DragGesture(minimumDistance: 28) // High threshold to prioritize scroll
+                .onChanged { value in
+                    guard !isEditMode else { return }
+                    let dx = value.translation.width
+                    let dy = value.translation.height
+                    // Strict directional lock (Emil principle)
+                    guard abs(dx) > abs(dy) * 2.0 else { return }
+                    isSwiping = true
+                }
                 .updating($dragOffset) { value, state, _ in
                     guard !isEditMode else { return }
                     let dx = value.translation.width
-                    guard abs(dx) > abs(value.translation.height) else { return }
+                    let dy = value.translation.height
+                    guard abs(dx) > abs(dy) * 2.0 else { return }
+                    
                     if dx > 0, pipeline.isEmpty { return }
                     state = dx
                 }
                 .onEnded { value in
+                    isSwiping = false
                     guard !isEditMode else { return }
                     let dx = value.translation.width
                     if dx > 0 {
