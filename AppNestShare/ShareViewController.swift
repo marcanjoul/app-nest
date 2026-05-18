@@ -272,8 +272,8 @@ class ShareViewController: UIViewController {
                 position = String(cleaned[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
                 company  = String(cleaned[r.upperBound...]).trimmingCharacters(in: .whitespaces)
             } else if let r = cleaned.range(of: " - ") ?? cleaned.range(of: " – ") {
-                company  = String(cleaned[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
-                position = String(cleaned[r.upperBound...]).trimmingCharacters(in: .whitespaces)
+                position = String(cleaned[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
+                company  = String(cleaned[r.upperBound...]).trimmingCharacters(in: .whitespaces)
             } else if let r = cleaned.range(of: " | ") {
                 company  = String(cleaned[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
                 position = String(cleaned[r.upperBound...]).trimmingCharacters(in: .whitespaces)
