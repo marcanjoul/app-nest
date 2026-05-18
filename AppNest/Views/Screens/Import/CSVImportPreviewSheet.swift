@@ -41,25 +41,12 @@ struct CSVImportPreviewSheet: View {
                             .padding(.horizontal, 20)
                             .padding(.top, 16)
                         
-                        filterPillRow
+                        filterAndSelectAllRow
                             .padding(.vertical, 16)
                     }
 
                     if localRows.isEmpty {
-                        VStack(spacing: 14) {
-                            Image(systemName: "doc.text.magnifyingglass")
-                                .font(.system(size: 44))
-                                .foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
-                            Text("No rows found")
-                                .font(.title3.weight(.semibold))
-                                .foregroundStyle(DarkTheme.textPrimary)
-                            Text("The file didn't contain any readable data rows.")
-                                .font(.subheadline)
-                                .foregroundStyle(DarkTheme.textSecondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 30)
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        emptyRowsView
                     } else if displayedRows.isEmpty {
                         noFilterResultsView
                     } else {
@@ -103,15 +90,10 @@ struct CSVImportPreviewSheet: View {
                         Spacer()
                         
                         Menu {
-                            Button {
-                                newCycleName = ""
-                                isAddingNewCycle = true
-                            } label: {
-                                Label("New Cycle...", systemImage: "plus")
-                            }
-                            
-                            if !cycles.isEmpty {
-                                Divider()
+                            Section("Cycle") {
+                                Button { isAddingNewCycle = true } label: {
+                                    Label("New Cycle...", systemImage: "plus")
+                                }
                                 ForEach(cycles) { cycle in
                                     Button(cycle.name) {
                                         moveToCycle(cycle)
@@ -193,34 +175,20 @@ struct CSVImportPreviewSheet: View {
         }
     }
 
-    private var filterPillRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(ImportPreviewFilter.allCases, id: \.self) { filter in
-                    let count = count(for: filter)
-                    Button {
-                        withAnimation(.appCrisp) { activeFilter = filter }
-                    } label: {
-                        HStack(spacing: 8) {
-                            Text(filter.rawValue)
-                            Text("\(count)")
-                                .opacity(0.6)
-                        }
-                        .font(.system(size: 13, weight: activeFilter == filter ? .bold : .semibold))
-                        .foregroundStyle(activeFilter == filter ? .white : DarkTheme.textSecondary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background {
-                            Capsule()
-                                .fill(activeFilter == filter ? Color.accentColor : Color.clear)
-                                .overlay(Capsule().strokeBorder(activeFilter == filter ? Color.clear : Color.primary.opacity(0.12), lineWidth: 1))
-                        }
+    private var filterAndSelectAllRow: some View {
+        VStack(spacing: 12) {
+            HStack {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        filterChip(for: .all, count: localRows.count, icon: "tray.2.fill", color: .accentColor)
+                        filterChip(for: .ready, count: readyRows.count, icon: "checkmark.circle.fill", color: Color(red: 0.30, green: 0.69, blue: 0.49))
+                        filterChip(for: .attention, count: attentionRows.count, icon: "exclamationmark.triangle.fill", color: Color(red: 0.96, green: 0.65, blue: 0.14))
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, 20)
                 }
-
-                Spacer(minLength: 20)
-
+                
+                Spacer(minLength: 0)
+                
                 Button(selectedRows.count == displayedRows.count && !displayedRows.isEmpty
                     ? "Deselect All" : "Select All") {
                     withAnimation(.appCrisp) {
@@ -232,11 +200,79 @@ struct CSVImportPreviewSheet: View {
                     }
                     AppHaptics.shared.light()
                 }
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(Color.accentColor)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background {
+                    Capsule()
+                        .fill(Color.accentColor.opacity(0.12))
+                }
+                .padding(.trailing, 20)
             }
-            .padding(.horizontal, 20)
+            
+            if !selectedRows.isEmpty {
+                HStack {
+                    Text("\(selectedRows.count) selected")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(DarkTheme.textSecondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 24)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
+    }
+
+    @ViewBuilder
+    private func filterChip(for filter: ImportPreviewFilter, count: Int, icon: String, color: Color) -> some View {
+        let isSelected = activeFilter == filter
+        Button {
+            withAnimation(.appCrisp) { activeFilter = filter }
+            AppHaptics.shared.light()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(isSelected ? .white : color)
+                
+                Text("\(count)")
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundStyle(isSelected ? .white : DarkTheme.textPrimary)
+                
+                Text(filter.rawValue)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(isSelected ? .white.opacity(0.9) : DarkTheme.textSecondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background {
+                Capsule()
+                    .fill(isSelected ? AnyShapeStyle(color) : AnyShapeStyle(DarkTheme.cardFill))
+                    .overlay {
+                        Capsule().strokeBorder(isSelected ? Color.clear : Color.primary.opacity(0.12), lineWidth: 1)
+                    }
+            }
+            .shadow(color: isSelected ? color.opacity(0.25) : .clear, radius: 8, y: 3)
+        }
+        .buttonStyle(PressScaleButtonStyle())
+    }
+
+    private var emptyRowsView: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "doc.text.magnifyingglass")
+                .font(.system(size: 44))
+                .foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
+            Text("No rows found")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(DarkTheme.textPrimary)
+            Text("The file didn't contain any readable data rows.")
+                .font(.subheadline)
+                .foregroundStyle(DarkTheme.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 30)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var noFilterResultsView: some View {
@@ -392,14 +428,6 @@ struct CSVImportPreviewSheet: View {
             .padding(.horizontal, 7)
             .padding(.vertical, 3)
             .background(Capsule().fill(color.opacity(0.12)))
-    }
-
-    private func count(for filter: ImportPreviewFilter) -> Int {
-        switch filter {
-        case .all: return localRows.count
-        case .ready: return readyRows.count
-        case .attention: return attentionRows.count
-        }
     }
 
     private func checkFilterConsistency() {

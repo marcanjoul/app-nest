@@ -649,8 +649,8 @@ struct ApplicationView: View {
             .padding(.horizontal, 12)
             .frame(height: 44)
             .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+            .clipShape(Capsule())
+            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
 
             // Sort button
             Menu {
@@ -666,15 +666,26 @@ struct ApplicationView: View {
                     }
                 }
             } label: {
-                Image(systemName: "line.3.horizontal.decrease.circle")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
-                    .frame(width: 44, height: 44)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Circle())
-                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(sortOption == .dateNewest ? DarkTheme.textPrimary : Color.accentColor)
+                        .frame(width: 44, height: 44)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+                    
+                    if sortOption != .dateNewest {
+                        Circle()
+                            .fill(Color.accentColor)
+                            .frame(width: 8, height: 8)
+                            .offset(x: -4, y: 4)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                }
             }
             .buttonStyle(PressScaleButtonStyle())
+            .animation(.appCrisp, value: sortOption)
         }
     }
 
