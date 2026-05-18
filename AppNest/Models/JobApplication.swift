@@ -127,7 +127,13 @@ class JobApplication {
     
     /// Optional notes or details added by the user.
     var jobNotes: String?
-    
+
+    /// Notes on company background, mission, and culture for interview prep.
+    var companyResearch: String?
+
+    /// STAR stories, questions to ask, and talking points for the interview.
+    var interviewNotes: String?
+
     /// Optional filename of the attached resume.
     var resumeFileName: String?
     

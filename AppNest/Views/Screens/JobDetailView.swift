@@ -37,6 +37,8 @@ struct JobDetailView: View {
     @State private var isShowingResumeLibrary = false
     @State private var pickerItem: PhotosPickerItem? = nil
     @State private var reminderEnabled: Bool
+    @State private var companyResearch:   String
+    @State private var interviewNotes:    String
     @State private var isShowingDeleteConfirmation = false
     @State private var isConfirmingResumeClear = false
     @State private var isShowingLogoAttribution = false
@@ -67,6 +69,10 @@ struct JobDetailView: View {
         return type.map { allowed.contains($0) } ?? false
     }
 
+    private var isInterviewStage: Bool {
+        status == .interview || status == .offer
+    }
+
     init(job: JobApplication?) {
         self.job = job
         _companyName            = State(initialValue: job?.companyName ?? "")
@@ -85,6 +91,8 @@ struct JobDetailView: View {
         _compensationCurrency   = State(initialValue: job?.compensationCurrency ?? .usd)
         _salaryPeriod           = State(initialValue: job?.salaryPeriod ?? .yearly)
         _reminderEnabled        = State(initialValue: job?.reminderEnabled ?? false)
+        _companyResearch        = State(initialValue: job?.companyResearch ?? "")
+        _interviewNotes         = State(initialValue: job?.interviewNotes ?? "")
     }
 
     private static func formatAmount(_ value: Double) -> String {
@@ -208,11 +216,22 @@ struct JobDetailView: View {
                             onClear: { isConfirmingResumeClear = true }
                         )
                         JobNotesSection(jobNotes: $jobNotes)
+                        if isInterviewStage {
+                            InterviewKitSection(
+                                companyResearch: $companyResearch,
+                                interviewNotes: $interviewNotes
+                            )
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .move(edge: .bottom)).combined(with: .scale(scale: 0.96, anchor: .top)),
+                                removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .top))
+                            ))
+                        }
                     }
                     .onChange(of: type) { _, _ in
                         if !isSeasonAllowed { season = nil }
                     }
                     .animation(.appSmooth, value: isSeasonAllowed)
+                    .animation(.appSmooth, value: isInterviewStage)
                     .padding()
                 }
                 .scrollDismissesKeyboard(.interactively)
@@ -383,6 +402,8 @@ struct JobDetailView: View {
             job.compensationCurrency = compensationCurrency
             job.salaryPeriod        = resolvedSalaryPeriod
             job.reminderEnabled     = wantsReminder
+            job.companyResearch     = companyResearch.isEmpty ? nil : companyResearch
+            job.interviewNotes      = interviewNotes.isEmpty  ? nil : interviewNotes
 
             updateReminder(for: job, wantsReminder: wantsReminder)
         } else {
@@ -406,6 +427,8 @@ struct JobDetailView: View {
                 salaryPeriod: resolvedSalaryPeriod,
                 reminderEnabled: wantsReminder
             )
+            newJob.companyResearch = companyResearch.isEmpty ? nil : companyResearch
+            newJob.interviewNotes  = interviewNotes.isEmpty  ? nil : interviewNotes
             modelContext.insert(newJob)
             updateReminder(for: newJob, wantsReminder: wantsReminder)
         }
@@ -840,6 +863,78 @@ struct JobNotesSection: View {
         }
         .padding(16)
         .glassCard()
+    }
+}
+
+// MARK: - Interview Kit Section
+
+struct InterviewKitSection: View {
+    @Binding var companyResearch: String
+    @Binding var interviewNotes: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SectionLabel(icon: "person.wave.2.fill", title: "Interview Kit")
+
+            VStack(alignment: .leading, spacing: 8) {
+                subLabel(icon: "building.2.fill", title: "Company Research")
+                noteEditor(
+                    text: $companyResearch,
+                    placeholder: "Mission, culture, recent news, why you're excited…"
+                )
+            }
+
+            Divider().opacity(0.4)
+
+            VStack(alignment: .leading, spacing: 8) {
+                subLabel(icon: "mic.fill", title: "Interview Prep")
+                noteEditor(
+                    text: $interviewNotes,
+                    placeholder: "STAR stories, questions to ask, talking points…"
+                )
+            }
+        }
+        .padding(16)
+        .glassCard()
+    }
+
+    @ViewBuilder
+    private func subLabel(icon: String, title: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(DarkTheme.textSecondary)
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(DarkTheme.textSecondary)
+        }
+    }
+
+    @ViewBuilder
+    private func noteEditor(text: Binding<String>, placeholder: String) -> some View {
+        ZStack(alignment: .topLeading) {
+            if text.wrappedValue.isEmpty {
+                Text(placeholder)
+                    .foregroundStyle(.secondary)
+                    .font(.subheadline)
+                    .padding(.horizontal, 4)
+                    .padding(.top, 8)
+            }
+            TextEditor(text: text)
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
+                .frame(minHeight: 100)
+                .font(.subheadline)
+        }
+        .padding(12)
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.primary.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                )
+        }
     }
 }
 
