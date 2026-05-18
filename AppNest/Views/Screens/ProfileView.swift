@@ -659,7 +659,20 @@ struct CSVImportPreviewSheet: View {
                 AmbientBackground()
 
                 if localRows.isEmpty {
-                    ContentUnavailableView("No rows found", systemImage: "doc.text.magnifyingglass")
+                    VStack(spacing: 14) {
+                        Image(systemName: "doc.text.magnifyingglass")
+                            .font(.system(size: 44))
+                            .foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
+                        Text("No rows found")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(DarkTheme.textPrimary)
+                        Text("The file didn't contain any readable data rows.")
+                            .font(.subheadline)
+                            .foregroundStyle(DarkTheme.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 30)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ScrollView {
                         VStack(spacing: 0) {
@@ -672,10 +685,11 @@ struct CSVImportPreviewSheet: View {
                                         Text("All \(localRows.count) ready")
                                             .foregroundStyle(Color.accentColor)
                                     } else {
-                                        Text("\(readyCount) ready  ·  ")
+                                        let readyText = Text("\(readyCount) ready  ·  ")
                                             .foregroundStyle(DarkTheme.textSecondary)
-                                        + Text("\(incompleteRows.count) incomplete")
+                                        let incompleteText = Text("\(incompleteRows.count) incomplete")
                                             .foregroundStyle(Color.orange)
+                                        Text("\(readyText)\(incompleteText)")
                                     }
                                 }
                                 .font(.system(size: 13, weight: .medium))
@@ -852,8 +866,9 @@ struct CSVImportPreviewSheet: View {
     private func previewRow(row: Binding<CSVImportRow>, index: Int) -> some View {
         let r = row.wrappedValue
         let isSelected = selectedRows.contains(r.id)
+        let hasBadge = r.status != nil || r.jobType != nil || r.cycleID != nil
 
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             // Selection toggle
             Button {
                 withAnimation(.appCrisp) {
@@ -865,85 +880,85 @@ struct CSVImportPreviewSheet: View {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 22))
                     .foregroundStyle(isSelected ? Color.accentColor : DarkTheme.textTertiary)
+                    .animation(.appCrisp, value: isSelected)
             }
             .buttonStyle(.plain)
 
             // Logo
             ZStack {
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(DarkTheme.avatarGradient(for: r.companyName.isEmpty ? "?" : r.companyName))
                 if let data = r.logoData, let ui = UIImage(data: data) {
                     Image(uiImage: ui)
                         .resizable()
                         .scaledToFill()
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 } else {
                     let initial = String(r.companyName.prefix(1)).uppercased()
                     Text(initial.isEmpty ? "?" : initial)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
                 }
             }
-            .frame(width: 36, height: 36)
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .frame(width: 44, height: 44)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .animation(.appSmooth, value: r.logoData == nil)
 
-            // Tappable content → open edit
+            // Tappable content
             Button { editingRow = r } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(r.companyName.isEmpty ? "Missing Company" : r.companyName)
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(r.companyName.isEmpty ? .orange : DarkTheme.textPrimary)
-                            .lineLimit(1)
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 3) {
                         Text(r.position.isEmpty ? "Missing Position" : r.position)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(r.position.isEmpty ? .orange : DarkTheme.textSecondary)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(r.position.isEmpty ? .orange : DarkTheme.textPrimary)
                             .lineLimit(1)
-                        let hasBadge = r.status != nil || r.jobType != nil || r.cycleID != nil
-                        HStack(spacing: 5) {
-                            previewBadge(r.dateApplied.formatted(.dateTime.month(.abbreviated).day()), color: DarkTheme.textSecondary)
-                            if let status = r.status {
-                                previewBadge(status.rawValue, color: status.color)
+                        Text(r.companyName.isEmpty ? "Missing Company" : r.companyName)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(r.companyName.isEmpty ? .orange : DarkTheme.textSecondary)
+                            .lineLimit(1)
+                        if hasBadge {
+                            HStack(spacing: 5) {
+                                if let status = r.status {
+                                    previewBadge(status.rawValue, color: status.color)
+                                }
+                                if let type = r.jobType {
+                                    previewBadge(type.rawValue, color: type.color)
+                                }
+                                if let cycleID = r.cycleID,
+                                   let cycle = cycles.first(where: { $0.id == cycleID }) {
+                                    previewBadge(cycle.name, color: Color.accentColor)
+                                }
                             }
-                            if let type = r.jobType {
-                                previewBadge(type.rawValue, color: type.color)
-                            }
-                            if let cycleID = r.cycleID,
-                               let cycle = cycles.first(where: { $0.id == cycleID }) {
-                                previewBadge(cycle.name, color: Color.accentColor)
-                            }
-                            if !hasBadge {
-                                previewBadge("No metadata", color: DarkTheme.textTertiary)
-                            }
+                            .padding(.top, 1)
                         }
                     }
                     Spacer()
-                    if !r.isComplete {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
-                            .font(.system(size: 13))
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text(r.dateApplied.formatted(.dateTime.month(.abbreviated).day()))
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(DarkTheme.textTertiary)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(DarkTheme.textTertiary.opacity(0.6))
                     }
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(DarkTheme.textTertiary)
                 }
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressScaleButtonStyle())
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 13)
         .background {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
                 .fill(DarkTheme.cardFill)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(!r.isComplete ? Color.orange.opacity(0.055) : Color.clear)
+                    RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                        .fill(!r.isComplete ? Color.orange.opacity(0.05) : Color.clear)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
                         .strokeBorder(
-                            isSelected ? Color.accentColor.opacity(0.4) : (!r.isComplete ? Color.orange.opacity(0.22) : DarkTheme.cardBorder),
-                            lineWidth: isSelected ? 1.5 : (!r.isComplete ? 1.2 : 1)
+                            isSelected ? Color.accentColor.opacity(0.45) : (!r.isComplete ? Color.orange.opacity(0.25) : DarkTheme.cardBorder),
+                            lineWidth: isSelected ? 1.5 : 1
                         )
                 )
         }
@@ -986,11 +1001,11 @@ struct CSVImportPreviewSheet: View {
     @ViewBuilder
     private func previewBadge(_ label: String, color: Color) -> some View {
         Text(label)
-            .font(.system(size: 10, weight: .bold))
+            .font(.system(size: 10, weight: .semibold))
             .foregroundStyle(color)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(Capsule().fill(color.opacity(0.12)))
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(Capsule().fill(color.opacity(0.13)))
     }
 
     // MARK: - Actions
