@@ -21,6 +21,9 @@ struct ApplicationView: View {
     @State private var contentAppeared = false
     @State private var searchText: String = ""
     @State private var isPresentingNewApplication = false
+    @State private var isPresentingShareImport = false
+    @State private var shareImportCompany = ""
+    @State private var shareImportPosition = ""
     @State private var selectedStatuses: Set<ApplicationStatus> = []
     @State private var sortOption: SortOption = .dateNewest
     @State private var pendingDeleteJob: JobApplication? = nil
@@ -436,6 +439,24 @@ struct ApplicationView: View {
         }
         .sheet(isPresented: $isShowingShareSheet) {
             if let url = csvFileURL { ShareSheet(activityItems: [url]) }
+        }
+        .sheet(isPresented: Binding(
+            get: { isPresentingShareImport },
+            set: {
+                isPresentingShareImport = $0
+                appState.isPresentingSheet = $0
+            }
+        )) {
+            NavigationStack {
+                JobDetailView(job: nil, prefillCompany: shareImportCompany, prefillPosition: shareImportPosition)
+            }
+        }
+        .onChange(of: appState.pendingJobImport) { _, pending in
+            guard let pending else { return }
+            shareImportCompany = pending.companyName
+            shareImportPosition = pending.position
+            appState.pendingJobImport = nil
+            isPresentingShareImport = true
         }
         .alert("Import CSV", isPresented: $isShowingImportConfirmation) {
             Button("Select File") { isImportingCSV = true }

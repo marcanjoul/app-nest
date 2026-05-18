@@ -73,11 +73,11 @@ struct JobDetailView: View {
         status == .interview || status == .offer
     }
 
-    init(job: JobApplication?) {
+    init(job: JobApplication?, prefillCompany: String = "", prefillPosition: String = "") {
         self.job = job
-        _companyName            = State(initialValue: job?.companyName ?? "")
+        _companyName            = State(initialValue: job?.companyName ?? prefillCompany)
         _companyLogoImageData   = State(initialValue: job?.companyLogoImageData)
-        _position               = State(initialValue: job?.position ?? "")
+        _position               = State(initialValue: job?.position ?? prefillPosition)
         _type                   = State(initialValue: job?.jobType)
         _status                 = State(initialValue: job?.status ?? .applied)
         _season                 = State(initialValue: job?.season)
