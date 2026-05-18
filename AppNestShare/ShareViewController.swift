@@ -251,7 +251,17 @@ class ShareViewController: UIViewController {
                 company  = String(cleaned[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
                 position = String(cleaned[r.upperBound...]).trimmingCharacters(in: .whitespaces)
             } else if !cleaned.isEmpty {
-                position = cleaned
+                // Strip "jobs in Location" or "in City, State" suffixes (e.g. Adzuna)
+                var pos = cleaned
+                if let r = pos.range(of: " jobs in ", options: .caseInsensitive) {
+                    pos = String(pos[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
+                } else if let r = pos.range(of: " in ", options: .caseInsensitive) {
+                    let after = String(pos[r.upperBound...])
+                    if after.contains(",") || after.contains(";") {
+                        pos = String(pos[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
+                    }
+                }
+                position = pos.isEmpty ? cleaned : pos
             }
         }
 
