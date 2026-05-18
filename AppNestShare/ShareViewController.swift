@@ -512,13 +512,25 @@ private struct ShareView: View {
     }
 
     private func loadContainerAppIcon() -> UIImage? {
-        var url = Bundle.main.bundleURL
+        // UIImage(named:in:) crashes from extensions — use contentsOfFile instead.
+        var appURL = Bundle.main.bundleURL
         for _ in 0..<4 {
-            url = url.deletingLastPathComponent()
-            if url.pathExtension == "app", let bundle = Bundle(url: url) {
-                return UIImage(named: "App Nest Icon", in: bundle, compatibleWith: nil)
-                    ?? UIImage(named: "AppIcon", in: bundle, compatibleWith: nil)
-            }
+            appURL = appURL.deletingLastPathComponent()
+            if appURL.pathExtension == "app" { break }
+        }
+        guard appURL.pathExtension == "app" else { return nil }
+
+        let scale = Int(UIScreen.main.scale)
+        let candidates = [
+            "AppIcon60@\(scale)x",
+            "AppIcon60@2x",
+            "AppIcon76@\(scale)x",
+            "AppIcon76@2x",
+            "AppIcon",
+        ]
+        for name in candidates {
+            let path = appURL.appendingPathComponent("\(name).png").path
+            if let img = UIImage(contentsOfFile: path) { return img }
         }
         return nil
     }
