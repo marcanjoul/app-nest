@@ -3,6 +3,7 @@ import SwiftData
 import PhotosUI
 
 struct EmailParserView: View {
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
     @Environment(AppState.self) private var appState

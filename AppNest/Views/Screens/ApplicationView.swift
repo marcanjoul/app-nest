@@ -912,63 +912,11 @@ struct ApplicationView: View {
     }
 }
 
-private struct FABStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? AppAnimations.pressScale : 1.0)
-            .animation(.appFastOut, value: configuration.isPressed)
-    }
-}
-
 #Preview {
     let container = try! ModelContainer(
         for: JobApplication.self, ResumeDocument.self, JobCycle.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
-    let ctx = container.mainContext
-    let samples: [(String, String, ApplicationType, ApplicationStatus, ApplicationSeason, Int)] = [
-        ("Meta",      "Software Engineering Intern",  .internship, .applied,   .summer, 5),
-        ("Uber",      "iOS Engineer Intern",          .internship, .interview, .summer, 8),
-        ("JPMorgan",  "Software Engineer Intern",     .internship, .applied,   .summer, 10),
-        ("Honeywell", "Embedded Systems Intern",      .internship, .rejected,  .summer, 12),
-        ("Google",    "SWE Intern – iOS",             .internship, .offer,     .summer, 20),
-        ("Amazon",    "SDE Intern",                   .internship, .applied,   .summer, 22),
-        ("Netflix",   "Mobile Engineering Intern",    .internship, .toApply,   .summer, 24),
-    ]
-    for (company, position, type, status, season, days) in samples {
-        ctx.insert(JobApplication(
-            companyName: company, position: position,
-            jobType: type, status: status, season: season,
-            dateApplied: Date().addingTimeInterval(-86_400 * Double(days))
-        ))
-    }
-    return NavigationStack { ApplicationView() }
-        .environment(AppState())
-        .modelContainer(container)
-}
-Meta",      "Software Engineering Intern",  .internship, .applied,   .summer, 5),
-        ("Uber",      "iOS Engineer Intern",          .internship, .interview, .summer, 8),
-        ("JPMorgan",  "Software Engineer Intern",     .internship, .applied,   .summer, 10),
-        ("Honeywell", "Embedded Systems Intern",      .internship, .rejected,  .summer, 12),
-        ("Google",    "SWE Intern – iOS",             .internship, .offer,     .summer, 20),
-        ("Amazon",    "SDE Intern",                   .internship, .applied,   .summer, 22),
-        ("Netflix",   "Mobile Engineering Intern",    .internship, .toApply,   .summer, 24),
-    ]
-    for (company, position, type, status, season, days) in samples {
-        ctx.insert(JobApplication(
-            companyName: company, position: position,
-            jobType: type, status: status, season: season,
-            dateApplied: Date().addingTimeInterval(-86_400 * Double(days))
-        ))
-    }
-    return NavigationStack { ApplicationView() }
-        .environment(AppState())
-        .modelContainer(container)
-}
-atus: status, season: season,
-            dateApplied: Date().addingTimeInterval(-86_400 * Double(days))
-        ))
-    }
     return NavigationStack { ApplicationView() }
         .environment(AppState())
         .modelContainer(container)
