@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="640" viewBox="0 0 1400 640">
+<rect width="1400" height="640" fill="#070b14"/>
+<defs><pattern id="g" width="36" height="36" patternUnits="userSpaceOnUse"><path d="M 36 0 L 0 0 0 36" fill="none" stroke="rgba(255,255,255,.028)" stroke-width=".6"/></pattern><marker id="ah" viewBox="0 -4 10 8" refX="10" refY="0" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,-4L10,0L0,4" fill="rgba(255,255,255,.4)"/></marker></defs>
+<rect width="1400" height="640" fill="url(#g)"/>
+<text x="700" y="11" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.25)">AppNest — Architecture  ·  2 Targets  ·  44 Files  ·  made with Claude</text>
+<rect x="16" y="16" width="184" height="268" rx="12" fill="#38bdf8" fill-opacity="0.07" stroke="#fff" stroke-opacity="0.2" stroke-width="1.2"/>
+<rect x="16" y="16" width="184" height="22" rx="12" fill="#38bdf8" fill-opacity=".2"/><rect x="16" y="27" width="184" height="11" fill="#38bdf8" fill-opacity=".2"/><text x="26" y="30.5" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="10.5" font-weight="800" letter-spacing="1.3" fill="#38bdf8">SHARE EXTENSION</text>
+<text x="24" y="47" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.4)">AppNestShare/</text>
+<text x="24" y="60" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="rgba(255,255,255,.9)">ShareViewController</text>
+<text x="24" y="73" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.4)">.swift</text>
+<text x="24" y="91" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.55)">~1000 lines</text>
+<text x="24" y="104" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.55)">Self-contained</text>
+<text x="24" y="117" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.55)">UIKit host +</text>
+<text x="24" y="130" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.55)">SwiftUI popup</text>
+<text x="24" y="148" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.55)">Extracts URL + title</text>
+<text x="24" y="161" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.55)">Parses job info</text>
+<text x="24" y="174" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.55)">Detects type/season</text>
+<text x="24" y="192" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.55)">Writes PendingJob-</text>
+<text x="24" y="205" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.55)">Import → App Group</text>
+<rect x="210" y="16" width="258" height="268" rx="12" fill="#fbbf24" fill-opacity="0.07" stroke="#fff" stroke-opacity="0.2" stroke-width="1.2"/>
+<rect x="210" y="16" width="258" height="22" rx="12" fill="#fbbf24" fill-opacity=".2"/><rect x="210" y="27" width="258" height="11" fill="#fbbf24" fill-opacity=".2"/><text x="220" y="30.5" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="10.5" font-weight="800" letter-spacing="1.3" fill="#fbbf24">APP ENTRY & CORE</text>
+<text x="218" y="47" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.4)">Core/</text>
+<text x="218" y="60" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="rgba(255,255,255,.88)">AppNestApp.swift (@main)</text>
+<text x="218" y="78" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  Creates ModelContainer</text>
+<text x="218" y="91" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  Injects AppState</text>
+<text x="218" y="104" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  Gates on onboarding flag</text>
+<text x="218" y="117" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  Consumes PendingJobImport</text>
+<text x="218" y="130" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  on scenePhase .active</text>
+<text x="218" y="148" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="rgba(255,255,255,.88)">AppState.swift (@Observable)</text>
+<text x="218" y="161" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  selectedCycleID</text>
+<text x="218" y="174" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  isPresentingSheet</text>
+<text x="218" y="187" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  pendingJobImport</text>
+<text x="218" y="205" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="500" fill="rgba(255,255,255,.65)">APIKeys.swift (gitignored)</text>
+<text x="218" y="218" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="500" fill="rgba(255,255,255,.65)">OnboardingView.swift</text>
+<rect x="478" y="16" width="368" height="268" rx="12" fill="#a78bfa" fill-opacity="0.07" stroke="#fff" stroke-opacity="0.2" stroke-width="1.2"/>
+<rect x="478" y="16" width="368" height="22" rx="12" fill="#a78bfa" fill-opacity=".2"/><rect x="478" y="27" width="368" height="11" fill="#a78bfa" fill-opacity=".2"/><text x="488" y="30.5" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="10.5" font-weight="800" letter-spacing="1.3" fill="#a78bfa">SCREENS</text>
+<text x="486" y="47" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="rgba(255,255,255,.88)">RootView.swift — 3-tab TabView</text>
+<text x="486" y="60" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  scale+blur behind sheets</text>
+<text x="486" y="78" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="rgba(255,255,255,.88)">Tab 1 · ApplicationView.swift</text>
+<text x="486" y="91" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  @Query jobs+cycles · search · sort</text>
+<text x="486" y="104" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  swipe rows · FAB · bulk edit</text>
+<text x="486" y="117" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  CSV import / export</text>
+<text x="486" y="130" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="500" fill="rgba(255,255,255,.65)">  → JobDetailView (push)</text>
+<text x="486" y="143" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">     create / edit, shake validation</text>
+<text x="486" y="161" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="rgba(255,255,255,.88)">Tab 2 · EmailParserView.swift</text>
+<text x="486" y="174" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  paste email → NLTagger+regex</text>
+<text x="486" y="187" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  colour highlights → save job</text>
+<text x="486" y="205" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="rgba(255,255,255,.88)">Tab 3 · ProfileView.swift</text>
+<text x="486" y="218" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  resumes · stats · cycles · export</text>
+<text x="486" y="231" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  ProfileStatsView · CycleListView</text>
+<rect x="856" y="16" width="528" height="268" rx="12" fill="#2dd4bf" fill-opacity="0.07" stroke="#fff" stroke-opacity="0.2" stroke-width="1.2"/>
+<rect x="856" y="16" width="528" height="22" rx="12" fill="#2dd4bf" fill-opacity=".2"/><rect x="856" y="27" width="528" height="11" fill="#2dd4bf" fill-opacity=".2"/><text x="866" y="30.5" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="10.5" font-weight="800" letter-spacing="1.3" fill="#2dd4bf">JOB FORM SECTIONS  —  all hosted by JobDetailView</text>
+<circle cx="866" cy="43.5" r="3" fill="#2dd4bf" fill-opacity=".8"/>
+<text x="873" y="47" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">SectionLabel.swift</text>
+<text x="873" y="59" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">icon + title header row</text>
+<circle cx="866" cy="68.5" r="3" fill="#2dd4bf" fill-opacity=".8"/>
+<text x="873" y="72" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">JobInfoSection.swift</text>
+<text x="873" y="84" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">logo (PhotosPicker + LogoFetcher)</text>
+<circle cx="866" cy="93.5" r="3" fill="#2dd4bf" fill-opacity=".8"/>
+<text x="873" y="97" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">TypePickerSection.swift</text>
+<text x="873" y="109" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">horizontal pill scroll</text>
+<circle cx="866" cy="118.5" r="3" fill="#2dd4bf" fill-opacity=".8"/>
+<text x="873" y="122" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">StatusPickerSection.swift</text>
+<text x="873" y="134" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">horizontal pill scroll</text>
+<circle cx="866" cy="143.5" r="3" fill="#2dd4bf" fill-opacity=".8"/>
+<text x="873" y="147" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">SeasonPickerSection.swift</text>
+<text x="873" y="159" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">horizontal pill scroll</text>
+<circle cx="866" cy="168.5" r="3" fill="#2dd4bf" fill-opacity=".8"/>
+<text x="873" y="172" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">DateAppliedSection.swift</text>
+<text x="873" y="184" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">DatePicker + reminder toggle</text>
+<circle cx="866" cy="193.5" r="3" fill="#2dd4bf" fill-opacity=".8"/>
+<text x="873" y="197" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">CompensationSection.swift</text>
+<text x="873" y="209" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">kind/amount/currency/period</text>
+<circle cx="1130" cy="43.5" r="3" fill="#2dd4bf" fill-opacity=".8"/>
+<text x="1137" y="47" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">JobLinkSection.swift</text>
+<text x="1137" y="59" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">URL + open-in-browser</text>
+<circle cx="1130" cy="68.5" r="3" fill="#2dd4bf" fill-opacity=".8"/>
+<text x="1137" y="72" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">JobNotesSection.swift</text>
+<text x="1137" y="84" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">TextEditor, free-form</text>
+<circle cx="1130" cy="93.5" r="3" fill="#2dd4bf" fill-opacity=".8"/>
+<text x="1137" y="97" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">ResumeSection.swift</text>
+<text x="1137" y="109" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">attach file or library pick</text>
+<circle cx="1130" cy="118.5" r="3" fill="#2dd4bf" fill-opacity=".8"/>
+<text x="1137" y="122" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">InterviewKitSection.swift</text>
+<text x="1137" y="134" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">research + interview prep</text>
+<text x="1128" y="153" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="500" fill="rgba(255,255,255,.4)">Import Flow:</text>
+<circle cx="1130" cy="161.5" r="3" fill="#2dd4bf" fill-opacity=".8"/>
+<text x="1137" y="165" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">CSVImportPreviewSheet</text>
+<text x="1137" y="177" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">preview+validate rows</text>
+<circle cx="1130" cy="186.5" r="3" fill="#2dd4bf" fill-opacity=".8"/>
+<text x="1137" y="190" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">EditImportRowView</text>
+<text x="1137" y="202" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">fix individual row</text>
+<rect x="16" y="310" width="184" height="250" rx="12" fill="#60a5fa" fill-opacity="0.07" stroke="#fff" stroke-opacity="0.2" stroke-width="1.2"/>
+<rect x="16" y="310" width="184" height="22" rx="12" fill="#60a5fa" fill-opacity=".2"/><rect x="16" y="321" width="184" height="11" fill="#60a5fa" fill-opacity=".2"/><text x="26" y="324.5" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="10.5" font-weight="800" letter-spacing="1.3" fill="#60a5fa">DATA MODELS</text>
+<text x="24" y="341" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.4)">Models/ — SwiftData→SQLite</text>
+<text x="24" y="359" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="700" fill="rgba(255,255,255,.9)">JobApplication.swift ★</text>
+<text x="24" y="372" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="#fbbf24">  READ THIS FIRST</text>
+<text x="24" y="385" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  @Model · 20+ fields</text>
+<text x="24" y="398" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  All enums defined here</text>
+<text x="24" y="416" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="rgba(255,255,255,.82)">JobCycle.swift</text>
+<text x="24" y="429" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  @Model · nullify delete</text>
+<text x="24" y="447" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="rgba(255,255,255,.82)">PendingJobImport.swift</text>
+<text x="24" y="460" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  Codable · not @Model</text>
+<text x="24" y="473" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  App Group handoff</text>
+<rect x="210" y="310" width="258" height="250" rx="12" fill="#fb923c" fill-opacity="0.07" stroke="#fff" stroke-opacity="0.2" stroke-width="1.2"/>
+<rect x="210" y="310" width="258" height="22" rx="12" fill="#fb923c" fill-opacity=".2"/><rect x="210" y="321" width="258" height="11" fill="#fb923c" fill-opacity=".2"/><text x="220" y="324.5" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="10.5" font-weight="800" letter-spacing="1.3" fill="#fb923c">SERVICES</text>
+<text x="218" y="341" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="rgba(255,255,255,.88)">LogoFetcher.swift</text>
+<text x="218" y="354" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  Logo.dev 2-step API</text>
+<text x="218" y="367" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  NSCache in-session</text>
+<text x="218" y="380" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  called by JobInfoSection</text>
+<text x="218" y="398" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="rgba(255,255,255,.88)">NotificationManager.swift</text>
+<text x="218" y="411" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  UNUserNotificationCenter</text>
+<text x="218" y="424" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  requestAuth · schedule · cancel</text>
+<text x="218" y="437" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  isDenied() for warning banner</text>
+<text x="218" y="455" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="rgba(255,255,255,.88)">CSVImporter.swift</text>
+<text x="218" y="468" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  Flexible column mapper</text>
+<text x="218" y="481" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  →[CSVImportRow] + validate</text>
+<text x="218" y="499" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="rgba(255,255,255,.88)">EmailParser.swift</text>
+<text x="218" y="512" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  Regex + NLTagger hybrid</text>
+<text x="218" y="525" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  Returns highlight spans</text>
+<rect x="478" y="310" width="368" height="250" rx="12" fill="#f472b6" fill-opacity="0.07" stroke="#fff" stroke-opacity="0.2" stroke-width="1.2"/>
+<rect x="478" y="310" width="368" height="22" rx="12" fill="#f472b6" fill-opacity=".2"/><rect x="478" y="321" width="368" height="11" fill="#f472b6" fill-opacity=".2"/><text x="488" y="324.5" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="10.5" font-weight="800" letter-spacing="1.3" fill="#f472b6">DESIGN SYSTEM</text>
+<text x="486" y="341" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.4)">Design System/ — used by ALL screens</text>
+<text x="486" y="359" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="rgba(255,255,255,.88)">DarkTheme.swift</text>
+<text x="486" y="372" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  cardRadius=20 · cardFill</text>
+<text x="486" y="385" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  cardBorder (adaptive light/dark)</text>
+<text x="486" y="398" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  statusStyle(for:) → StatusStyle</text>
+<text x="486" y="411" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="500" fill="rgba(255,255,255,.65)">  .glassCard() ViewModifier</text>
+<text x="486" y="429" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="rgba(255,255,255,.88)">Animations.swift</text>
+<text x="486" y="442" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  .appSmooth  spring(0.35,0.82)</text>
+<text x="486" y="455" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  .appCrisp   spring(0.22,0.85)</text>
+<text x="486" y="468" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  .appBouncy  .appBubbly  .appFastOut</text>
+<text x="486" y="481" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  ShakeEffect (form validation)</text>
+<text x="486" y="499" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="600" fill="rgba(255,255,255,.88)">Haptics.swift</text>
+<text x="486" y="512" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  AppHaptics.shared</text>
+<text x="486" y="525" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9.2" font-weight="400" fill="rgba(255,255,255,.5)">  .light() .medium() .success()</text>
+<rect x="856" y="310" width="528" height="250" rx="12" fill="#34d399" fill-opacity="0.07" stroke="#fff" stroke-opacity="0.2" stroke-width="1.2"/>
+<rect x="856" y="310" width="528" height="22" rx="12" fill="#34d399" fill-opacity=".2"/><rect x="856" y="321" width="528" height="11" fill="#34d399" fill-opacity=".2"/><text x="866" y="324.5" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="10.5" font-weight="800" letter-spacing="1.3" fill="#34d399">COMPONENTS</text>
+<text x="864" y="341" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="700" fill="#34d399">CARDS</text>
+<circle cx="866" cy="351.5" r="3" fill="#34d399" fill-opacity=".8"/>
+<text x="872" y="355" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">JobCardView.swift</text>
+<text x="872" y="367" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">DarkJobCardView — logo · name · status pill · date</text>
+<circle cx="866" cy="375.5" r="3" fill="#34d399" fill-opacity=".8"/>
+<text x="872" y="379" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">JobCardSwipeRow.swift</text>
+<text x="872" y="391" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">right→advance (3 stages) · left→delete · tap→detail</text>
+<text x="864" y="408" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="700" fill="#34d399">PILLS</text>
+<circle cx="866" cy="418.5" r="3" fill="#34d399" fill-opacity=".8"/>
+<text x="872" y="422" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">PillUI.swift</text>
+<text x="872" y="434" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">base style · color/icon extensions on enums</text>
+<circle cx="866" cy="442.5" r="3" fill="#34d399" fill-opacity=".8"/>
+<text x="872" y="446" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">SelectablePill.swift</text>
+<text x="872" y="458" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">toggleable picker pill (type/status/season)</text>
+<circle cx="866" cy="466.5" r="3" fill="#34d399" fill-opacity=".8"/>
+<text x="872" y="470" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">DarkStatusPill.swift</text>
+<text x="872" y="482" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">read-only status badge on JobCardView</text>
+<text x="864" y="499" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="700" fill="#34d399">SHARED</text>
+<circle cx="866" cy="509.5" r="3" fill="#34d399" fill-opacity=".8"/>
+<text x="872" y="513" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="9" font-weight="600" fill="rgba(255,255,255,.82)">CycleSelectorView.swift</text>
+<text x="872" y="525" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.45)">horizontal chip strip, shared by Tab 1 + Tab 3</text>
+<path d="M 200 150 C 205.0 150, 205.0 150, 210 150" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ah)"/><text x="205.0" y="146.0" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8" fill="rgba(255,255,255,.35)" text-anchor="middle">App Group
+UserDefaults</text>
+<path d="M 468 150 C 473.0 150, 473.0 150, 478 150" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ah)"/><text x="473.0" y="146.0" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8" fill="rgba(255,255,255,.35)" text-anchor="middle">injects AppState
++ navigation</text>
+<path d="M 846 150 C 851.0 150, 851.0 150, 856 150" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ah)"/><text x="851.0" y="146.0" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8" fill="rgba(255,255,255,.35)" text-anchor="middle">JobDetailView
+hosts sections</text>
+<path d="M 108 284 C 108 297.0, 108 297.0, 108 310" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ah)"/><text x="108.0" y="293.0" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8" fill="rgba(255,255,255,.35)" text-anchor="middle">App Group
+payload</text>
+<path d="M 339 284 C 339 297.0, 339 297.0, 339 310" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ah)"/>
+<path d="M 662 284 C 662 297.0, 662 297.0, 662 310" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ah)"/><text x="662.0" y="293.0" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8" fill="rgba(255,255,255,.35)" text-anchor="middle">used by all
+screens</text>
+<path d="M 1120 284 C 1120 297.0, 1120 297.0, 1120 310" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ah)"/>
+<rect x="0" y="620" width="1400" height="20" fill="rgba(0,0,0,.4)"/>
+<text text-anchor="middle" x="700" y="633" font-family="system-ui,Helvetica,Arial,sans-serif" font-size="8.5" font-weight="400" fill="rgba(255,255,255,.3)" font-style='italic'>★ Start reading here  ·  For the full interactive map open ARCHITECTURE.html</text>
+</svg>

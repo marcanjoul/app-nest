@@ -70,6 +70,82 @@ AppNestShare/
 
 ---
 
+## Architecture Map
+
+> For the full interactive visual map, open **`ARCHITECTURE.html`** in a browser (gitignored, lives locally). It shows all 44 files as a colour-coded, force-directed graph — hover for descriptions, click to inspect, toggle layers, enable reading-order badges.
+
+![AppNest Architecture Map](ARCHITECTURE_MAP.svg)
+
+```
+AppNest/
+├── Core/
+│   ├── AppNestApp.swift          @main · SwiftData container · share extension bridge
+│   ├── AppState.swift            @Observable · selectedCycleID · pendingJobImport
+│   └── APIKeys.swift             Logo.dev keys (gitignored — never commit)
+│
+├── Models/
+│   ├── JobApplication.swift      THE central file — @Model + all enums (read first)
+│   ├── JobCycle.swift            @Model · named search period · nullify delete rule
+│   ├── PendingJobImport.swift    Codable handoff payload from share extension
+│   ├── LogoFetcher.swift         Logo.dev two-step API · NSCache
+│   ├── NotificationManager.swift UNUserNotificationCenter helper
+│   ├── CSVImporter.swift         Flexible CSV column mapper
+│   └── EmailParser.swift         Regex + NLTagger hybrid · highlight spans
+│
+├── Design System/
+│   ├── Theme/DarkTheme.swift     Tokens · .glassCard() · statusStyle(for:)
+│   ├── Motion/Animations.swift   Named presets (.appSmooth etc.) · ShakeEffect
+│   └── Haptics/Haptics.swift     AppHaptics.shared · respects user toggle
+│
+├── Views/
+│   ├── Screens/
+│   │   ├── RootView.swift            3-tab shell · blur/scale behind sheets
+│   │   ├── ApplicationView.swift     Tab 1 · list · search · swipe · FAB · CSV
+│   │   ├── JobDetailView.swift       Create / edit · shake validation · 10 sections
+│   │   ├── EmailParserView.swift     Tab 2 · paste email → parse → save
+│   │   ├── ProfileView.swift         Tab 3 · settings · resumes · stats · export
+│   │   ├── OnboardingView.swift      First-launch gate
+│   │   ├── ProfileStatsView.swift    Stats sheet
+│   │   ├── CycleListView.swift       Create / rename / delete cycles
+│   │   └── Import/
+│   │       ├── CSVImportPreviewSheet.swift   Preview + validate rows before commit
+│   │       ├── EditImportRowView.swift       Fix individual row
+│   │       └── ImportSupport.swift           Column normalisation utilities
+│   │
+│   └── Components/
+│       ├── Cards/
+│       │   ├── JobCardView.swift       Card face (logo · name · status pill · date)
+│       │   └── JobCardSwipeRow.swift   Swipe wrapper (advance pipeline / delete)
+│       ├── Pills/
+│       │   ├── PillUI.swift            Base style · enum color/icon extensions
+│       │   ├── SelectablePill.swift    Toggleable picker pill
+│       │   └── DarkStatusPill.swift    Read-only status badge on cards
+│       ├── JobDetail/                  One file per form section in JobDetailView
+│       │   ├── SectionLabel.swift
+│       │   ├── JobInfoSection.swift    Logo + LogoFetcher auto-fetch
+│       │   ├── TypePickerSection.swift
+│       │   ├── StatusPickerSection.swift
+│       │   ├── SeasonPickerSection.swift
+│       │   ├── DateAppliedSection.swift    DatePicker + NotificationManager
+│       │   ├── CompensationSection.swift
+│       │   ├── JobLinkSection.swift
+│       │   ├── JobNotesSection.swift
+│       │   ├── ResumeSection.swift
+│       │   └── InterviewKitSection.swift
+│       └── CycleSelectorView.swift     Shared chip strip (Tab 1 + Tab 3)
+│
+└── Assets.xcassets
+
+AppNestShare/
+└── ShareViewController.swift     Self-contained ~1000 lines · UIKit host + SwiftUI popup
+```
+
+**Share extension flow:** Safari share → `ShareViewController` parses URL/title → writes `PendingJobImport` JSON to App Group UserDefaults → on next foreground `AppNestApp.consume()` → sets `appState.pendingJobImport` → `ApplicationView.onChange` inserts `JobApplication` into SwiftData.
+
+**Reading order:** `JobApplication.swift` → `AppNestApp.swift` → `AppState.swift` → `RootView.swift` → `ApplicationView.swift` → `JobDetailView.swift` → `DarkTheme.swift` → `Animations.swift` → `ShareViewController.swift`.
+
+---
+
 ## Getting Started
 
 ### Requirements
