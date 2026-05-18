@@ -9,5 +9,4 @@ class AppState {
     var isImportingCSV = false
     var csvImportPreview: [CSVImportRow]?
     var isShowingImportPreview = false
-    var csvImportSkippedCount: Int = 0
 }
