@@ -41,6 +41,18 @@ enum AppAnimations {
     }
 }
 
+// MARK: - Geometry Effects
+
+struct ShakeEffect: GeometryEffect {
+    var animatableData: CGFloat = 0
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        let amplitude: CGFloat = 8
+        let translation = amplitude * sin(animatableData * .pi * 4) * (1 - animatableData)
+        return ProjectionTransform(CGAffineTransform(translationX: translation, y: 0))
+    }
+}
+
 // MARK: - Global Button Styles
 
 struct PressScaleButtonStyle: ButtonStyle {
