@@ -71,14 +71,41 @@ private enum ShareJobStatus: String, CaseIterable {
     }
 }
 
+private enum ShareJobSeason: String, CaseIterable {
+    case winter = "Winter"
+    case spring = "Spring"
+    case summer = "Summer"
+    case fall   = "Fall"
+
+    var color: Color {
+        switch self {
+        case .winter: return Color(red: 0.55, green: 0.75, blue: 0.95)
+        case .spring: return Color(red: 0.30, green: 0.80, blue: 0.45)
+        case .summer: return Color(red: 0.96, green: 0.73, blue: 0.28)
+        case .fall:   return Color(red: 0.93, green: 0.48, blue: 0.28)
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .winter: return "snowflake"
+        case .spring: return "leaf.fill"
+        case .summer: return "sun.max.fill"
+        case .fall:   return "wind"
+        }
+    }
+}
+
 // MARK: - Pending import model (mirrors AppNest/Models/PendingJobImport.swift)
 
 struct SharePendingImport: Codable {
     var companyName: String
     var position: String
     var sourceURL: String?
-    var jobType: String?   // ShareJobType.rawValue — decoded as ApplicationType in main app
-    var status: String?    // ShareJobStatus.rawValue — decoded as ApplicationStatus in main app
+    var jobType: String?
+    var status: String?
+    var season: String?
+    var notes: String?
 }
 
 // MARK: - View controller
@@ -331,6 +358,8 @@ private final class ShareViewModel {
     let sourceURL: URL?
     var jobType: ShareJobType?   = nil
     var status: ShareJobStatus?  = nil
+    var season: ShareJobSeason?  = nil
+    var notes: String            = ""
 
     var logoData: Data?
     var isLogoAutoFetched = false
@@ -342,6 +371,7 @@ private final class ShareViewModel {
         position    = initial.position
         sourceURL   = rawURL
         jobType     = Self.detectJobType(from: initial.position)
+        season      = Self.detectSeason(from: initial.position)
 
         if companyName.isEmpty && position.isEmpty, rawURL != nil {
             isFetchingTitle = true
@@ -369,11 +399,28 @@ private final class ShareViewModel {
         return nil
     }
 
+    private static func detectSeason(from position: String) -> ShareJobSeason? {
+        guard !position.isEmpty else { return nil }
+        let lower = position.lowercased()
+        func hasWord(_ word: String) -> Bool {
+            guard let r = lower.range(of: word, options: .caseInsensitive) else { return false }
+            let prevOK = r.lowerBound == lower.startIndex || !lower[lower.index(before: r.lowerBound)].isLetter
+            let nextOK = r.upperBound == lower.endIndex   || !lower[r.upperBound].isLetter
+            return prevOK && nextOK
+        }
+        if hasWord("summer")                      { return .summer }
+        if hasWord("winter")                      { return .winter }
+        if hasWord("spring")                      { return .spring }
+        if hasWord("fall") || hasWord("autumn")   { return .fall   }
+        return nil
+    }
+
     @MainActor
     func fetchPageTitle(from url: URL?) async {
         defer {
             isFetchingTitle = false
             if jobType == nil { jobType = Self.detectJobType(from: position) }
+            if season == nil  { season  = Self.detectSeason(from: position)  }
         }
         guard let url else { return }
 
@@ -506,6 +553,8 @@ private struct ShareView: View {
                         infoSection
                         typePicker
                         statusPicker
+                        seasonPicker
+                        notesSection
                         if let url = model.sourceURL {
                             urlSection(url)
                         }
@@ -793,6 +842,64 @@ private struct ShareView: View {
         return [sel] + ShareJobStatus.allCases.filter { $0 != sel }
     }
 
+    // MARK: - Season Picker
+
+    private var seasonPicker: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionLabel(icon: "calendar", title: "Season")
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(ShareJobSeason.allCases, id: \.self) { option in
+                        sharePill(
+                            title: option.rawValue,
+                            icon: option.icon,
+                            color: option.color,
+                            isSelected: model.season == option
+                        ) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                model.season = (model.season == option ? nil : option)
+                            }
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 2)
+            }
+        }
+        .padding(16)
+        .shareGlassCard()
+    }
+
+    // MARK: - Notes Section
+
+    private var notesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionLabel(icon: "note.text", title: "Notes")
+
+            ZStack(alignment: .topLeading) {
+                if model.notes.isEmpty {
+                    Text("Add notes about this role…")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.tertiary)
+                        .padding(.horizontal, 5)
+                        .padding(.top, 8)
+                }
+                TextEditor(text: Binding(
+                    get: { model.notes },
+                    set: { model.notes = $0 }
+                ))
+                .font(.system(size: 14))
+                .foregroundStyle(.primary)
+                .frame(minHeight: 80)
+                .scrollContentBackground(.hidden)
+            }
+        }
+        .padding(16)
+        .shareGlassCard()
+    }
+
     // MARK: - URL Section
 
     private func urlSection(_ url: URL) -> some View {
@@ -831,7 +938,9 @@ private struct ShareView: View {
                 position: model.position,
                 sourceURL: model.sourceURL?.absoluteString,
                 jobType: model.jobType?.rawValue,
-                status: model.status?.rawValue
+                status: model.status?.rawValue,
+                season: model.season?.rawValue,
+                notes: model.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : model.notes
             ))
         } label: {
             Text("Add to App Nest")

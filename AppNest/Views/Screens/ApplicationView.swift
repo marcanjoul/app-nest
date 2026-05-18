@@ -21,12 +21,6 @@ struct ApplicationView: View {
     @State private var contentAppeared = false
     @State private var searchText: String = ""
     @State private var isPresentingNewApplication = false
-    @State private var isPresentingShareImport = false
-    @State private var shareImportCompany = ""
-    @State private var shareImportPosition = ""
-    @State private var shareImportURL = ""
-    @State private var shareImportJobType: ApplicationType? = nil
-    @State private var shareImportStatus: ApplicationStatus? = nil
     @State private var selectedStatuses: Set<ApplicationStatus> = []
     @State private var sortOption: SortOption = .dateNewest
     @State private var pendingDeleteJob: JobApplication? = nil
@@ -443,26 +437,21 @@ struct ApplicationView: View {
         .sheet(isPresented: $isShowingShareSheet) {
             if let url = csvFileURL { ShareSheet(activityItems: [url]) }
         }
-        .sheet(isPresented: Binding(
-            get: { isPresentingShareImport },
-            set: {
-                isPresentingShareImport = $0
-                appState.isPresentingSheet = $0
-            }
-        )) {
-            NavigationStack {
-                JobDetailView(job: nil, prefillCompany: shareImportCompany, prefillPosition: shareImportPosition, prefillURL: shareImportURL, prefillType: shareImportJobType, prefillStatus: shareImportStatus)
-            }
-        }
         .onChange(of: appState.pendingJobImport) { _, pending in
             guard let pending else { return }
-            shareImportCompany  = pending.companyName
-            shareImportPosition = pending.position
-            shareImportURL      = pending.sourceURL ?? ""
-            shareImportJobType  = pending.jobType
-            shareImportStatus   = pending.status
+            let job = JobApplication(
+                companyName: pending.companyName,
+                position: pending.position,
+                jobType: pending.jobType,
+                status: pending.status ?? .toApply,
+                season: pending.season,
+                dateApplied: Date(),
+                jobURL: pending.sourceURL,
+                jobNotes: pending.notes
+            )
+            modelContext.insert(job)
+            try? modelContext.save()
             appState.pendingJobImport = nil
-            isPresentingShareImport = true
         }
         .alert("Import CSV", isPresented: $isShowingImportConfirmation) {
             Button("Select File") { isImportingCSV = true }
