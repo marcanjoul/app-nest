@@ -290,11 +290,9 @@ struct ProfileView: View {
 
     private var pipelineSection: some View {
         NavigationLink(destination: ProfileStatsView()) {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 18) {
                 HStack {
-                    Text("Pipeline")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(DarkTheme.textPrimary)
+                    SectionLabel(icon: "chart.bar.fill", title: "Pipeline")
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.system(size: 12, weight: .bold))
@@ -303,24 +301,38 @@ struct ProfileView: View {
 
                 PipelineSegmentedBar(segments: pipelineSegments, total: totalCount)
 
-                HStack(spacing: 0) {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                     ForEach(pipelineStatuses, id: \.self) { status in
                         let c = count(for: status)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("\(c)")
-                                .font(.system(size: 17, weight: .bold, design: .rounded))
-                                .foregroundStyle(c > 0 ? DarkTheme.textPrimary : DarkTheme.textTertiary)
+                        let style = DarkTheme.statusStyle(for: status)
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Image(systemName: style.iconName)
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundStyle(c > 0 ? style.tintColor : DarkTheme.textTertiary)
+                                Spacer()
+                                Text("\(c)")
+                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                                    .foregroundStyle(c > 0 ? DarkTheme.textPrimary : DarkTheme.textTertiary)
+                            }
+                            
                             Text(pipelineLabel(for: status))
-                                .font(.system(size: 10, weight: .semibold))
-                                .foregroundStyle(
-                                    c > 0
-                                        ? DarkTheme.statusStyle(for: status).tintColor
-                                        : DarkTheme.textTertiary
-                                )
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(c > 0 ? DarkTheme.textSecondary : DarkTheme.textTertiary)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.8)
                         }
+                        .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .background {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(c > 0 ? style.tintColor.opacity(0.06) : Color.primary.opacity(0.04))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .strokeBorder(c > 0 ? style.tintColor.opacity(0.12) : Color.primary.opacity(0.06), lineWidth: 1)
+                                }
+                        }
                     }
                 }
             }

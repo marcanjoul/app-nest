@@ -113,7 +113,15 @@ struct CyclePickerSheet: View {
             AppHaptics.shared.light()
             isPresented = false
         }
-        .contextMenu {
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+                cycleToEdit = cycle
+                isConfirmingDelete = true
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+        .swipeActions(edge: .leading) {
             Button {
                 cycleToEdit = cycle
                 newCycleName = cycle.name
@@ -121,13 +129,7 @@ struct CyclePickerSheet: View {
             } label: {
                 Label("Rename", systemImage: "pencil")
             }
-
-            Button(role: .destructive) {
-                cycleToEdit = cycle
-                isConfirmingDelete = true
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
+            .tint(.orange)
         }
     }
 

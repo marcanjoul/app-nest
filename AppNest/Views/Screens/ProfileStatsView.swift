@@ -177,15 +177,19 @@ struct ProfileStatsView: View {
                 Spacer()
             }
 
-            VStack(spacing: 14) {
+            VStack(spacing: 0) {
                 FunnelRow(
                     title: "Applied",
                     count: appliedTotal,
                     progress: 1.0,
                     tint: Color(red: 0.35, green: 0.65, blue: 0.96),
                     icon: "paperplane.fill",
-                    animate: animateProgress
+                    animate: animateProgress,
+                    isFirst: true
                 )
+                
+                FunnelConnector(progress: interviewProgress, tint: Color(red: 0.96, green: 0.73, blue: 0.28), animate: animateProgress)
+                
                 FunnelRow(
                     title: "Interview",
                     count: interviewCount + offerCount,
@@ -194,15 +198,20 @@ struct ProfileStatsView: View {
                     icon: "person.2.fill",
                     animate: animateProgress
                 )
+                
+                FunnelConnector(progress: offerProgress, tint: Color(red: 0.30, green: 0.80, blue: 0.45), animate: animateProgress)
+
                 FunnelRow(
                     title: "Offer",
                     count: offerCount,
                     progress: offerProgress,
                     tint: Color(red: 0.30, green: 0.80, blue: 0.45),
                     icon: "checkmark.seal.fill",
-                    animate: animateProgress
+                    animate: animateProgress,
+                    isLast: true
                 )
             }
+            .padding(.top, 4)
         }
         .padding(18)
         .glassCard()
@@ -336,19 +345,35 @@ private struct FunnelRow: View {
     let tint: Color
     let icon: String
     var animate: Bool = false
+    var isFirst: Bool = false
+    var isLast: Bool = false
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             ZStack {
                 Circle()
                     .fill(tint.opacity(0.12))
-                    .frame(width: 30, height: 30)
+                    .frame(width: 32, height: 32)
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(tint)
             }
+            .background {
+                VStack(spacing: 0) {
+                    if !isFirst {
+                        Rectangle().fill(tint.opacity(0.08)).frame(width: 2)
+                    } else {
+                        Color.clear.frame(height: 16)
+                    }
+                    if !isLast {
+                        Rectangle().fill(tint.opacity(0.08)).frame(width: 2)
+                    } else {
+                        Color.clear.frame(height: 16)
+                    }
+                }
+            }
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text(title)
                         .font(.system(size: 14, weight: .semibold))
@@ -366,10 +391,28 @@ private struct FunnelRow: View {
                         Capsule()
                             .fill(tint)
                             .frame(width: animate ? geo.size.width * CGFloat(progress) : 0)
+                            .shadow(color: tint.opacity(0.15), radius: 4, y: 2)
                     }
                 }
                 .frame(height: 8)
             }
+        }
+        .padding(.vertical, 8)
+    }
+}
+
+private struct FunnelConnector: View {
+    let progress: Double
+    let tint: Color
+    let animate: Bool
+    
+    var body: some View {
+        HStack {
+            Spacer().frame(width: 15)
+            Rectangle()
+                .fill(tint.opacity(0.08))
+                .frame(width: 2, height: 12)
+            Spacer()
         }
     }
 }

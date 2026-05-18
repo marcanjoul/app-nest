@@ -17,6 +17,7 @@ struct ApplicationView: View {
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
 
     @Namespace private var filterNS
+    @FocusState private var isSearchFocused: Bool
     @State private var contentAppeared = false
     @State private var searchText: String = ""
     @State private var isPresentingNewApplication = false
@@ -87,95 +88,35 @@ struct ApplicationView: View {
             List(selection: $selectedJobIDs) {
                 // Header
                 VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .center) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("App Nest")
-                                .font(.system(size: 40, weight: .bold))
-                                .foregroundStyle(DarkTheme.textPrimary)
-                            
-                            if !searchText.isEmpty {
-                                Text("\(filteredAndSorted.count) results")
-                                    .font(.system(size: 13, weight: .bold))
-                                    .foregroundStyle(Color.accentColor)
-                                    .transition(.opacity.combined(with: .move(edge: .leading)))
-                            }
-                        }
-                        
-                        Spacer()
-                        
-                        HStack(spacing: 8) {
-                            if !applications.isEmpty {
-                                // Header Import button
-                                Button {
-                                    isImportingCSV = true
-                                    AppHaptics.shared.light()
-                                } label: {
-                                    Image(systemName: "square.and.arrow.down")
-                                        .font(.system(size: 15, weight: .bold))
+                    Group {
+                        if !isSearchFocused {
+                            HStack(alignment: .center) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("App Nest")
+                                        .font(.system(size: 40, weight: .bold))
                                         .foregroundStyle(DarkTheme.textPrimary)
-                                        .frame(width: 44, height: 44)
-                                        .background {
-                                            Circle()
-                                                .fill(.ultraThinMaterial)
-                                                .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-                                        }
+                                    
+                                    if !searchText.isEmpty {
+                                        Text("\(filteredAndSorted.count) results")
+                                            .font(.system(size: 13, weight: .bold))
+                                            .foregroundStyle(Color.accentColor)
+                                            .transition(.opacity.combined(with: .move(edge: .leading)))
+                                    }
                                 }
-                                .buttonStyle(PressScaleButtonStyle())
-                                .transition(.scale(scale: 0.9).combined(with: .opacity))
-
-                                // Header Export button
-                                Button {
-                                    exportCSV()
-                                    AppHaptics.shared.light()
-                                } label: {
-                                    Image(systemName: "square.and.arrow.up")
-                                        .font(.system(size: 15, weight: .bold))
-                                        .foregroundStyle(DarkTheme.textPrimary)
-                                        .frame(width: 44, height: 44)
-                                        .background {
-                                            Circle()
-                                                .fill(.ultraThinMaterial)
-                                                .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-                                        }
-                                }
-                                .buttonStyle(PressScaleButtonStyle())
-                                .transition(.scale(scale: 0.9).combined(with: .opacity))
                                 
-                                // Header Edit button
-                                Button(isEditMode ? "Done" : "Edit") {
-                                    withAnimation(.appSmooth) {
-                                        isEditMode.toggle()
-                                        if !isEditMode { selectedJobIDs.removeAll() }
-                                    }
-                                    AppHaptics.shared.light()
-                                }
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundStyle(isEditMode ? Color.white : Color.accentColor)
-                                .padding(.horizontal, 16)
-                                .frame(height: 44)
-                                .background {
-                                    if isEditMode {
-                                        Capsule()
-                                            .fill(Color.accentColor)
-                                            .shadow(color: Color.accentColor.opacity(0.3), radius: 8, y: 3)
-                                    } else {
-                                        Capsule()
-                                            .fill(.ultraThinMaterial)
-                                            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-                                    }
-                                }
-                                .buttonStyle(PressScaleButtonStyle())
+                                Spacer()
                             }
+                            .padding(.top, 16)
+                            
+                            cycleSelectorChip
+                                .padding(.top, 8)
                         }
                     }
-                    .padding(.top, 16)
-                    
-                    cycleSelectorChip
-                        .padding(.top, 8)
                 }
                 .opacity(contentAppeared ? 1 : 0)
                 .offset(y: contentAppeared ? 0 : 20)
                 .animation(.appSmooth, value: contentAppeared)
+                .animation(.appSmooth, value: isSearchFocused)
                 .animation(.appSmooth, value: searchText.isEmpty)
                 .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
                 .listRowBackground(Color.clear)
@@ -280,7 +221,7 @@ struct ApplicationView: View {
             .environment(\.editMode, .constant(isEditMode ? .active : .inactive))
 
             // Pill FAB
-            if !isEditMode {
+            if !isEditMode && !filteredAndSorted.isEmpty {
                 VStack {
                     Spacer()
                     HStack {
@@ -626,19 +567,24 @@ struct ApplicationView: View {
             // Glass search bar
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(isSearchFocused ? Color.accentColor : DarkTheme.textSecondary)
                     .font(.system(size: 15, weight: .medium))
 
-                TextField("Search applications…", text: $searchText)
+                TextField(isSearchFocused ? "Search company, position, or type..." : "Search applications...", text: $searchText)
                     .foregroundStyle(DarkTheme.textPrimary)
                     .tint(.accentColor)
+                    .focused($isSearchFocused)
 
-                if !searchText.isEmpty {
+                if !searchText.isEmpty || isSearchFocused {
                     Button { 
-                        searchText = ""
+                        if isSearchFocused && searchText.isEmpty {
+                            isSearchFocused = false
+                        } else {
+                            searchText = ""
+                        }
                         AppHaptics.shared.light()
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
+                        Image(systemName: isSearchFocused && searchText.isEmpty ? "xmark" : "xmark.circle.fill")
                             .foregroundStyle(DarkTheme.textSecondary)
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
@@ -650,9 +596,9 @@ struct ApplicationView: View {
             .frame(height: 44)
             .background(.ultraThinMaterial)
             .clipShape(Capsule())
-            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+            .overlay(Capsule().strokeBorder(isSearchFocused ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08), lineWidth: 1))
 
-            if !applications.isEmpty {
+            if !applications.isEmpty && !isSearchFocused {
                 HStack(spacing: 8) {
                     // Sort button
                     Menu {
@@ -719,6 +665,7 @@ struct ApplicationView: View {
                                 Circle()
                                     .fill(.ultraThinMaterial)
                                     .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                                    .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
                             }
                     }
                     .buttonStyle(PressScaleButtonStyle())
@@ -750,6 +697,7 @@ struct ApplicationView: View {
                     }
                     .buttonStyle(PressScaleButtonStyle())
                 }
+                .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
     }
@@ -856,63 +804,111 @@ struct ApplicationView: View {
     // MARK: - Empty States
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             Image(systemName: "tray.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(DarkTheme.textSecondary.opacity(0.5))
-            Text("No applications yet")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(DarkTheme.textPrimary)
-            Text("Tap New to add your first application,\nor import from a CSV file.")
-                .font(.subheadline)
-                .foregroundStyle(DarkTheme.textSecondary)
-                .multilineTextAlignment(.center)
-            Button {
-                isImportingCSV = true
-                AppHaptics.shared.light()
-            } label: {
-                Text("Import CSV")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(Capsule().fill(Color.accentColor))
+                .font(.system(size: 52))
+                .foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
+            
+            VStack(spacing: 8) {
+                Text("No applications yet")
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(DarkTheme.textPrimary)
+                Text("Track your first job manually or import from a CSV file.")
+                    .font(.subheadline)
+                    .foregroundStyle(DarkTheme.textSecondary)
+                    .multilineTextAlignment(.center)
             }
-            .buttonStyle(PressScaleButtonStyle())
-            .padding(.top, 8)
+            .padding(.horizontal, 40)
+
+            HStack(spacing: 12) {
+                Button {
+                    isPresentingNewApplication = true
+                    AppHaptics.shared.light()
+                } label: {
+                    Label("Add Job", systemImage: "plus")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(Capsule().fill(Color.accentColor))
+                }
+                .buttonStyle(PressScaleButtonStyle())
+
+                Button {
+                    isImportingCSV = true
+                    AppHaptics.shared.light()
+                } label: {
+                    Label("Import CSV", systemImage: "square.and.arrow.down")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(DarkTheme.textPrimary)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background {
+                            Capsule()
+                                .fill(.ultraThinMaterial)
+                                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                        }
+                }
+                .buttonStyle(PressScaleButtonStyle())
+            }
+            .padding(.top, 10)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 60)
+        .padding(.vertical, 80)
     }
 
     private var emptyCycleState: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             Image(systemName: "folder.badge.questionmark")
-                .font(.system(size: 48))
-                .foregroundStyle(DarkTheme.textSecondary.opacity(0.5))
-            Text("No apps in this cycle")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(DarkTheme.textPrimary)
-            Text("You haven't added any jobs to this cycle yet.")
-                .font(.subheadline)
-                .foregroundStyle(DarkTheme.textSecondary)
-                .multilineTextAlignment(.center)
-            Button {
-                isPresentingNewApplication = true
-                AppHaptics.shared.light()
-            } label: {
-                Text("Add Job to Cycle")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(Capsule().fill(Color.accentColor))
+                .font(.system(size: 52))
+                .foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
+            
+            VStack(spacing: 8) {
+                Text("No apps in this cycle")
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(DarkTheme.textPrimary)
+                Text("You haven't added any jobs to this search cycle yet.")
+                    .font(.subheadline)
+                    .foregroundStyle(DarkTheme.textSecondary)
+                    .multilineTextAlignment(.center)
             }
-            .buttonStyle(PressScaleButtonStyle())
-            .padding(.top, 8)
+            .padding(.horizontal, 40)
+
+            HStack(spacing: 12) {
+                Button {
+                    isPresentingNewApplication = true
+                    AppHaptics.shared.light()
+                } label: {
+                    Label("Add to Cycle", systemImage: "plus")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(Capsule().fill(Color.accentColor))
+                }
+                .buttonStyle(PressScaleButtonStyle())
+
+                Button {
+                    isImportingCSV = true
+                    AppHaptics.shared.light()
+                } label: {
+                    Label("Import CSV", systemImage: "square.and.arrow.down")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(DarkTheme.textPrimary)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background {
+                            Capsule()
+                                .fill(.ultraThinMaterial)
+                                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                        }
+                }
+                .buttonStyle(PressScaleButtonStyle())
+            }
+            .padding(.top, 10)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 60)
+        .padding(.vertical, 80)
     }
 
     private var noResultsState: some View {
