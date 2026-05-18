@@ -44,6 +44,14 @@ struct ApplicationView: View {
     @State private var isEditMode = false
     @State private var isConfirmingBulkDelete = false
 
+    // Import / Export
+    @State private var csvImportPreview: [CSVImportRow]? = nil
+    @State private var isShowingImportPreview = false
+    @State private var isImportingCSV = false
+    @State private var csvFileURL: URL? = nil
+    @State private var isShowingShareSheet = false
+    @State private var importErrorMessage: String?
+
     // Cycle-filtered base (before search/status)
     private var cycleFiltered: [JobApplication] {
         let base = applications.filter { $0 !== pendingDeleteJob }
@@ -98,16 +106,38 @@ struct ApplicationView: View {
                             .padding(.top, 6)
                     }
                     Spacer()
-                    if !applications.isEmpty {
-                        Button(isEditMode ? "Done" : "Edit") {
-                            withAnimation(.appSmooth) {
-                                isEditMode.toggle()
-                                if !isEditMode { selectedJobIDs.removeAll() }
+                    HStack(spacing: 10) {
+                        Menu {
+                            Button {
+                                exportCSV()
+                            } label: {
+                                Label("Export CSV", systemImage: "square.and.arrow.up")
                             }
+                            .disabled(applications.isEmpty)
+
+                            Button {
+                                isImportingCSV = true
+                            } label: {
+                                Label("Import CSV", systemImage: "square.and.arrow.down")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(DarkTheme.textSecondary)
                         }
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color.accentColor)
                         .padding(.top, 12)
+
+                        if !applications.isEmpty {
+                            Button(isEditMode ? "Done" : "Edit") {
+                                withAnimation(.appSmooth) {
+                                    isEditMode.toggle()
+                                    if !isEditMode { selectedJobIDs.removeAll() }
+                                }
+                            }
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Color.accentColor)
+                            .padding(.top, 12)
+                        }
                     }
                 }
                 .opacity(contentAppeared ? 1 : 0)
@@ -390,6 +420,98 @@ struct ApplicationView: View {
         } message: {
             Text("This will permanently remove the selected application\(selectedJobIDs.count == 1 ? "" : "s").")
         }
+        .fileImporter(
+            isPresented: $isImportingCSV,
+            allowedContentTypes: [.commaSeparatedText],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first { importCSV(at: url) }
+            case .failure(let error):
+                importErrorMessage = error.localizedDescription
+            }
+        }
+        .sheet(isPresented: $isShowingImportPreview) {
+            if let rows = csvImportPreview {
+                CSVImportPreviewSheet(initialRows: rows)
+                    .environment(appState)
+            }
+        }
+        .sheet(isPresented: $isShowingShareSheet) {
+            if let url = csvFileURL { ShareSheet(activityItems: [url]) }
+        }
+        .alert("Import Failed", isPresented: Binding(
+            get: { importErrorMessage != nil },
+            set: { if !$0 { importErrorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(importErrorMessage ?? "")
+        }
+    }
+
+    // MARK: - Import / Export
+
+    private func importCSV(at url: URL) {
+        let _ = url.startAccessingSecurityScopedResource()
+        defer { url.stopAccessingSecurityScopedResource() }
+        do {
+            let raw = try String(contentsOf: url, encoding: .utf8)
+            let rows = CSVImporter.parse(raw)
+            guard !rows.isEmpty else {
+                importErrorMessage = "No data rows found in this file. Make sure it has a header row and at least one data row."
+                return
+            }
+            csvImportPreview = rows
+            isShowingImportPreview = true
+        } catch {
+            importErrorMessage = "Could not read the file: \(error.localizedDescription)"
+        }
+    }
+
+    private func exportCSV() {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let exportable = cycleFiltered.sorted { $0.dateApplied > $1.dateApplied }
+        let header = "Company,Position,Type,Status,Season,Date Applied,Compensation,Currency,Resume,Notes\n"
+        let rows = exportable.map { app -> String in
+            let compensation: String = {
+                guard let amount = app.compensationAmount else { return "" }
+                let kind = app.compensationKind?.rawValue ?? ""
+                let period = app.salaryPeriod.map { "/\($0.rawValue)" } ?? ""
+                return "\(amount)\(period.isEmpty ? " \(kind)" : " \(kind)\(period)")"
+            }()
+            return [
+                escapeCSV(app.companyName),
+                escapeCSV(app.position),
+                escapeCSV(app.jobType?.rawValue ?? ""),
+                escapeCSV(app.status?.rawValue ?? ""),
+                escapeCSV(app.season?.rawValue ?? ""),
+                escapeCSV(dateFormatter.string(from: app.dateApplied)),
+                escapeCSV(compensation),
+                escapeCSV(app.compensationAmount != nil ? (app.compensationCurrency?.rawValue ?? "") : ""),
+                escapeCSV(app.resumeFileName ?? ""),
+                escapeCSV(app.jobNotes ?? "")
+            ].joined(separator: ",")
+        }
+        let csv = header + rows.joined(separator: "\n") + "\n"
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("AppNest_Export_\(dateFormatter.string(from: Date())).csv")
+        do {
+            try csv.write(to: tempURL, atomically: true, encoding: .utf8)
+            csvFileURL = tempURL
+            isShowingShareSheet = true
+        } catch {
+            print("CSV export failed: \(error)")
+        }
+    }
+
+    private func escapeCSV(_ field: String) -> String {
+        if field.contains(",") || field.contains("\"") || field.contains("\n") {
+            return "\"" + field.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+        }
+        return field
     }
 
     // MARK: - Bulk Actions

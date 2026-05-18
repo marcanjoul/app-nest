@@ -21,12 +21,9 @@ struct ProfileView: View {
 
     @State private var avatarSelection: PhotosPickerItem?
     @State private var isShowingDocumentPicker = false
-    @State private var isShowingShareSheet     = false
-    @State private var csvFileURL: URL?        = nil
     @State private var resumePendingDeletion: ResumeDocument?
     @State private var isShowingResumeManager  = false
     @State private var isShowingCyclePicker    = false
-    @State private var importErrorMessage: String?
 
     @FocusState private var isNameFocused: Bool
 
@@ -97,8 +94,6 @@ struct ProfileView: View {
                     VStack(spacing: 14) {
                         pipelineSection
                         resumeSection
-                        exportRow
-                        importRow
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 20)
@@ -129,9 +124,6 @@ struct ProfileView: View {
                 }
             }
         }
-        .sheet(isPresented: $isShowingShareSheet) {
-            if let url = csvFileURL { ShareSheet(activityItems: [url]) }
-        }
         .alert("Delete Resume?", isPresented: deletionAlertBinding, presenting: resumePendingDeletion) { resume in
             Button("Cancel", role: .cancel) { resumePendingDeletion = nil }
             Button("Delete", role: .destructive) { deleteResume(resume) }
@@ -160,36 +152,6 @@ struct ProfileView: View {
         .onChange(of: avatarSelection) { _, newValue in
             guard let newValue else { return }
             Task { await updateProfileAvatar(from: newValue) }
-        }
-        .fileImporter(
-            isPresented: Binding(
-                get: { appState.isImportingCSV },
-                set: { appState.isImportingCSV = $0 }
-            ),
-            allowedContentTypes: [.commaSeparatedText],
-            allowsMultipleSelection: false
-        ) { result in
-            switch result {
-            case .success(let urls):
-                if let url = urls.first { importCSV(at: url) }
-            case .failure(let error):
-                importErrorMessage = error.localizedDescription
-            }
-        }
-        .sheet(isPresented: Binding(
-            get: { appState.isShowingImportPreview },
-            set: { appState.isShowingImportPreview = $0 }
-        )) {
-            CSVImportPreviewSheet()
-                .environment(appState)
-        }
-        .alert("Import Failed", isPresented: Binding(
-            get: { importErrorMessage != nil },
-            set: { if !$0 { importErrorMessage = nil } }
-        )) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(importErrorMessage ?? "")
         }
     }
 
@@ -449,79 +411,6 @@ struct ProfileView: View {
         .glassCard()
     }
 
-    // MARK: - Export row
-
-    private var exportRow: some View {
-        let empty = cycleFilteredApplications.isEmpty
-        return Button { exportCSV() } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(empty ? DarkTheme.textTertiary : Color.accentColor)
-                    .frame(width: 32, height: 32)
-                    .background(Circle().fill(
-                        empty ? Color.primary.opacity(0.06) : Color.accentColor.opacity(0.12)
-                    ))
-
-                Text("Export as CSV")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(empty ? DarkTheme.textSecondary : DarkTheme.textPrimary)
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(DarkTheme.textTertiary)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background {
-                RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
-                    .fill(DarkTheme.cardFill)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
-                            .strokeBorder(DarkTheme.cardBorder, lineWidth: 1)
-                    }
-            }
-        }
-        .buttonStyle(.plain)
-        .disabled(empty)
-        .opacity(empty ? 0.45 : 1)
-    }
-
-    private var importRow: some View {
-        Button { appState.isImportingCSV = true } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "square.and.arrow.down")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
-                    .frame(width: 32, height: 32)
-                    .background(Circle().fill(Color.accentColor.opacity(0.12)))
-
-                Text("Import CSV")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(DarkTheme.textTertiary)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background {
-                RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
-                    .fill(DarkTheme.cardFill)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
-                            .strokeBorder(DarkTheme.cardBorder, lineWidth: 1)
-                    }
-            }
-        }
-        .buttonStyle(.plain)
-    }
-
     // MARK: - Helpers
 
     private var deletionAlertBinding: Binding<Bool> {
@@ -570,74 +459,6 @@ struct ProfileView: View {
         }
     }
 
-    private func importCSV(at url: URL) {
-        let _ = url.startAccessingSecurityScopedResource()
-        defer { url.stopAccessingSecurityScopedResource() }
-
-        do {
-            let data = try String(contentsOf: url, encoding: .utf8)
-            let rows = CSVImporter.parse(data)
-            guard !rows.isEmpty else {
-                importErrorMessage = "No data rows found in this file. Make sure it has a header row and at least one data row."
-                return
-            }
-            appState.csvImportPreview = rows
-            appState.isShowingImportPreview = true
-        } catch {
-            importErrorMessage = "Could not read the file: \(error.localizedDescription)"
-        }
-    }
-
-    // MARK: - CSV Export
-
-    private func exportCSV() {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-
-        let header = "Company,Position,Type,Status,Season,Date Applied,Compensation,Currency,Resume,Notes\n"
-        let rows = cycleFilteredApplications
-            .sorted { $0.dateApplied > $1.dateApplied }
-            .map { app -> String in
-                let compensation: String = {
-                    guard let amount = app.compensationAmount else { return "" }
-                    let kind = app.compensationKind?.rawValue ?? ""
-                    let period = app.salaryPeriod.map { "/\($0.rawValue)" } ?? ""
-                    return "\(amount)\(period.isEmpty ? " \(kind)" : " \(kind)\(period)")"
-                }()
-                let fields = [
-                    escapeCSV(app.companyName),
-                    escapeCSV(app.position),
-                    escapeCSV(app.jobType?.rawValue ?? ""),
-                    escapeCSV(app.status?.rawValue ?? ""),
-                    escapeCSV(app.season?.rawValue ?? ""),
-                    escapeCSV(dateFormatter.string(from: app.dateApplied)),
-                    escapeCSV(compensation),
-                    escapeCSV(app.compensationAmount != nil ? (app.compensationCurrency?.rawValue ?? "") : ""),
-                    escapeCSV(app.resumeFileName ?? ""),
-                    escapeCSV(app.jobNotes ?? "")
-                ]
-                return fields.joined(separator: ",")
-            }
-
-        let csv = header + rows.joined(separator: "\n") + "\n"
-        let datestamp = dateFormatter.string(from: Date())
-        let tempURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("AppNest_Export_\(datestamp).csv")
-        do {
-            try csv.write(to: tempURL, atomically: true, encoding: .utf8)
-            csvFileURL = tempURL
-            isShowingShareSheet = true
-        } catch {
-            print("CSV export failed: \(error)")
-        }
-    }
-
-    private func escapeCSV(_ field: String) -> String {
-        if field.contains(",") || field.contains("\"") || field.contains("\n") {
-            return "\"" + field.replacingOccurrences(of: "\"", with: "\"\"") + "\""
-        }
-        return field
-    }
 }
 
 // MARK: - Pipeline Segmented Bar
@@ -800,7 +621,7 @@ private struct ProfileDocumentPicker: UIViewControllerRepresentable {
 
 // MARK: - Share Sheet
 
-private struct ShareSheet: UIViewControllerRepresentable {
+struct ShareSheet: UIViewControllerRepresentable {
     let activityItems: [Any]
     func makeUIViewController(context: Context) -> UIActivityViewController {
         UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
@@ -810,7 +631,9 @@ private struct ShareSheet: UIViewControllerRepresentable {
 
 // MARK: - CSV Import UI
 
-private struct CSVImportPreviewSheet: View {
+struct CSVImportPreviewSheet: View {
+    let initialRows: [CSVImportRow]
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
@@ -823,6 +646,7 @@ private struct CSVImportPreviewSheet: View {
     @State private var isAddingNewCycle = false
     @State private var newCycleName = ""
     @State private var isConfirmingDelete = false
+    @State private var appearedRows = Set<UUID>()
 
     var body: some View {
         NavigationStack {
@@ -857,10 +681,12 @@ private struct CSVImportPreviewSheet: View {
                             .padding(.bottom, 10)
 
                             VStack(spacing: 8) {
-                                ForEach($localRows) { $row in
-                                    previewRow(row: $row)
+                                ForEach(Array($localRows.enumerated()), id: \.element.id) { index, _ in
+                                    previewRow(row: $localRows[index], index: index)
+                                        .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
                                 }
                             }
+                            .animation(.appSmooth, value: localRows.count)
 
                             if localRows.contains(where: { !$0.isComplete }) {
                                 HStack(spacing: 6) {
@@ -889,7 +715,7 @@ private struct CSVImportPreviewSheet: View {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Import") { finalizeImport() }
+                    Button("Import \(localRows.count)") { finalizeImport() }
                         .font(.system(size: 14, weight: .semibold))
                         .disabled(localRows.isEmpty || localRows.contains(where: { !$0.isComplete }))
                 }
@@ -936,7 +762,7 @@ private struct CSVImportPreviewSheet: View {
                 Text("The selected row\(selectedRows.count == 1 ? "" : "s") will be removed from this import preview.")
             }
             .onAppear {
-                if let preview = appState.csvImportPreview { localRows = preview }
+                if localRows.isEmpty { localRows = initialRows }
             }
             .sheet(item: $editingRow) { row in
                 EditImportRowView(row: row) { updated in
@@ -951,7 +777,7 @@ private struct CSVImportPreviewSheet: View {
     // MARK: - Row card
 
     @ViewBuilder
-    private func previewRow(row: Binding<CSVImportRow>) -> some View {
+    private func previewRow(row: Binding<CSVImportRow>, index: Int) -> some View {
         let r = row.wrappedValue
         let isSelected = selectedRows.contains(r.id)
 
@@ -992,7 +818,7 @@ private struct CSVImportPreviewSheet: View {
             // Tappable content → open edit
             Button { editingRow = r } label: {
                 HStack {
-                    VStack(alignment: .leading, spacing: 3) {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text(r.companyName.isEmpty ? "Missing Company" : r.companyName)
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(r.companyName.isEmpty ? .orange : DarkTheme.textPrimary)
@@ -1001,14 +827,17 @@ private struct CSVImportPreviewSheet: View {
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(r.position.isEmpty ? .orange : DarkTheme.textSecondary)
                             .lineLimit(1)
-                        if let cycleID = r.cycleID,
-                           let cycle = cycles.first(where: { $0.id == cycleID }) {
-                            Text(cycle.name)
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(Color.accentColor)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Capsule().fill(Color.accentColor.opacity(0.12)))
+                        HStack(spacing: 5) {
+                            if let status = r.status {
+                                previewBadge(status.rawValue, color: status.color)
+                            }
+                            if let type = r.jobType {
+                                previewBadge(type.rawValue, color: type.color)
+                            }
+                            if let cycleID = r.cycleID,
+                               let cycle = cycles.first(where: { $0.id == cycleID }) {
+                                previewBadge(cycle.name, color: Color.accentColor)
+                            }
                         }
                     }
                     Spacer()
@@ -1038,6 +867,14 @@ private struct CSVImportPreviewSheet: View {
                 )
         }
         .animation(.appCrisp, value: isSelected)
+        .opacity(appearedRows.contains(r.id) ? 1 : 0)
+        .offset(y: appearedRows.contains(r.id) ? 0 : 10)
+        .onAppear {
+            let delay = Double(min(index, 8)) * 0.045
+            withAnimation(.appSmooth.delay(delay)) {
+                appearedRows.insert(r.id)
+            }
+        }
         .task(id: r.companyName) {
             guard row.wrappedValue.logoData == nil else { return }
             let trimmed = r.companyName.trimmingCharacters(in: .whitespaces)
@@ -1046,6 +883,18 @@ private struct CSVImportPreviewSheet: View {
                 withAnimation(.appSmooth) { row.logoData.wrappedValue = data }
             }
         }
+    }
+
+    // MARK: - Badge helper
+
+    @ViewBuilder
+    private func previewBadge(_ label: String, color: Color) -> some View {
+        Text(label)
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(color)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(color.opacity(0.12)))
     }
 
     // MARK: - Actions
@@ -1098,17 +947,17 @@ private struct CSVImportPreviewSheet: View {
         }
         try? modelContext.save()
         AppHaptics.shared.success()
-        appState.csvImportPreview = nil
         dismiss()
     }
 }
 
-private struct EditImportRowView: View {
+struct EditImportRowView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
     @State var row: CSVImportRow
     var onSave: (CSVImportRow) -> Void
+    @State private var appeared = false
 
     var body: some View {
         NavigationStack {
@@ -1117,18 +966,40 @@ private struct EditImportRowView: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         logoSection
+                            .opacity(appeared ? 1 : 0)
+                            .offset(y: appeared ? 0 : 10)
+                            .animation(.appSmooth.delay(0.00), value: appeared)
                         basicInfoCard
+                            .opacity(appeared ? 1 : 0)
+                            .offset(y: appeared ? 0 : 10)
+                            .animation(.appSmooth.delay(0.05), value: appeared)
                         typeStatusCard
+                            .opacity(appeared ? 1 : 0)
+                            .offset(y: appeared ? 0 : 10)
+                            .animation(.appSmooth.delay(0.10), value: appeared)
                         dateCard
+                            .opacity(appeared ? 1 : 0)
+                            .offset(y: appeared ? 0 : 10)
+                            .animation(.appSmooth.delay(0.15), value: appeared)
                         compensationCard
+                            .opacity(appeared ? 1 : 0)
+                            .offset(y: appeared ? 0 : 10)
+                            .animation(.appSmooth.delay(0.20), value: appeared)
                         cycleCard
+                            .opacity(appeared ? 1 : 0)
+                            .offset(y: appeared ? 0 : 10)
+                            .animation(.appSmooth.delay(0.25), value: appeared)
                         notesCard
+                            .opacity(appeared ? 1 : 0)
+                            .offset(y: appeared ? 0 : 10)
+                            .animation(.appSmooth.delay(0.30), value: appeared)
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 16)
                 }
                 .scrollDismissesKeyboard(.interactively)
             }
+            .onAppear { appeared = true }
             .navigationTitle("Edit Row")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color(UIColor.systemBackground), for: .navigationBar)
