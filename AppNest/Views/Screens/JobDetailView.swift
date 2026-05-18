@@ -38,6 +38,7 @@ struct JobDetailView: View {
     @State private var pickerItem: PhotosPickerItem? = nil
     @State private var reminderEnabled: Bool
     @State private var isShowingDeleteConfirmation = false
+    @State private var isConfirmingResumeClear = false
     @State private var isShowingLogoAttribution = false
     @State private var shakeMissingFields = false
     @State private var scrollTargetSection: FormSection?
@@ -204,14 +205,7 @@ struct JobDetailView: View {
                             onSelectResume: attachResume,
                             onViewAll: { isShowingResumeLibrary = true },
                             onPick: { isShowingDocumentPicker = true },
-                            onClear: {
-                                if let attached = attachedResume {
-                                    modelContext.delete(attached)
-                                }
-                                resumeID = nil
-                                resumeFileName = nil
-                                _pendingResumeBookmark = nil
-                            }
+                            onClear: { isConfirmingResumeClear = true }
                         )
                         JobNotesSection(jobNotes: $jobNotes)
                     }
@@ -279,6 +273,20 @@ struct JobDetailView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This will permanently remove the job and cancel any pending reminders.")
+        }
+        .confirmationDialog(
+            "Remove Attached Resume?",
+            isPresented: $isConfirmingResumeClear,
+            titleVisibility: .visible
+        ) {
+            Button("Remove Resume", role: .destructive) {
+                resumeID = nil
+                resumeFileName = nil
+                _pendingResumeBookmark = nil
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The resume will be detached from this application.")
         }
     }
 

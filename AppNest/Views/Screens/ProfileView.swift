@@ -822,6 +822,7 @@ private struct CSVImportPreviewSheet: View {
     @State private var selectedRows = Set<UUID>()
     @State private var isAddingNewCycle = false
     @State private var newCycleName = ""
+    @State private var isConfirmingDelete = false
 
     var body: some View {
         NavigationStack {
@@ -894,7 +895,7 @@ private struct CSVImportPreviewSheet: View {
                 }
                 ToolbarItemGroup(placement: .bottomBar) {
                     if !selectedRows.isEmpty {
-                        Button(role: .destructive) { deleteSelected() } label: {
+                        Button(role: .destructive) { isConfirmingDelete = true } label: {
                             Label("Delete", systemImage: "trash")
                         }
                         .foregroundStyle(Color.red)
@@ -923,6 +924,16 @@ private struct CSVImportPreviewSheet: View {
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("Enter a name for the new job search cycle.")
+            }
+            .confirmationDialog(
+                "Delete \(selectedRows.count) Row\(selectedRows.count == 1 ? "" : "s")?",
+                isPresented: $isConfirmingDelete,
+                titleVisibility: .visible
+            ) {
+                Button("Delete", role: .destructive) { deleteSelected() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("The selected row\(selectedRows.count == 1 ? "" : "s") will be removed from this import preview.")
             }
             .onAppear {
                 if let preview = appState.csvImportPreview { localRows = preview }

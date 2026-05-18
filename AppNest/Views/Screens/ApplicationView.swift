@@ -42,6 +42,7 @@ struct ApplicationView: View {
     @State private var newCycleName = ""
     @State private var selectedJobIDs = Set<PersistentIdentifier>()
     @State private var isEditMode = false
+    @State private var isConfirmingBulkDelete = false
 
     // Cycle-filtered base (before search/status)
     private var cycleFiltered: [JobApplication] {
@@ -235,7 +236,7 @@ struct ApplicationView: View {
                     Spacer()
                     HStack(spacing: 0) {
                         Button(role: .destructive) {
-                            deleteSelected()
+                            isConfirmingBulkDelete = true
                         } label: {
                             VStack(spacing: 4) {
                                 Image(systemName: "trash")
@@ -378,6 +379,16 @@ struct ApplicationView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Enter a name for the new cycle.")
+        }
+        .confirmationDialog(
+            "Delete \(selectedJobIDs.count) Application\(selectedJobIDs.count == 1 ? "" : "s")?",
+            isPresented: $isConfirmingBulkDelete,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) { deleteSelected() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently remove the selected application\(selectedJobIDs.count == 1 ? "" : "s").")
         }
     }
 

@@ -12,6 +12,7 @@ struct CycleListView: View {
 
     @State private var isAddingCycle = false
     @State private var newCycleName  = ""
+    @State private var cycleToDelete: JobCycle?
 
     var body: some View {
         ZStack {
@@ -27,7 +28,7 @@ struct CycleListView: View {
                                 cycle: cycle,
                                 isActive: appState.selectedCycleID == cycle.id,
                                 onSelect: { selectCycle(cycle) },
-                                onDelete: { deleteCycle(cycle) }
+                                onDelete: { cycleToDelete = cycle }
                             )
                         }
                     }
@@ -58,6 +59,19 @@ struct CycleListView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Name this job search cycle.")
+        }
+        .confirmationDialog(
+            "Delete \"\(cycleToDelete?.name ?? "")\"?",
+            isPresented: Binding(get: { cycleToDelete != nil }, set: { if !$0 { cycleToDelete = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Delete Cycle", role: .destructive) {
+                if let cycle = cycleToDelete { deleteCycle(cycle) }
+                cycleToDelete = nil
+            }
+            Button("Cancel", role: .cancel) { cycleToDelete = nil }
+        } message: {
+            Text("Any applications in this cycle will be moved to \"All Applications\".")
         }
     }
 
