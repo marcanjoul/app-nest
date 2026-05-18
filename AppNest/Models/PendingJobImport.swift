@@ -1,7 +1,7 @@
 import Foundation
 
 /// Transient data passed from the Share Extension to the main app via App Group UserDefaults.
-struct PendingJobImport: Codable {
+struct PendingJobImport: Codable, Equatable {
     var companyName: String
     var position: String
     var sourceURL: String?
