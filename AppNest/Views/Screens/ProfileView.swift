@@ -647,6 +647,11 @@ struct CSVImportPreviewSheet: View {
     @State private var newCycleName = ""
     @State private var isConfirmingDelete = false
     @State private var appearedRows = Set<UUID>()
+    @State private var filterIncomplete = false
+
+    private var displayedRows: [CSVImportRow] {
+        filterIncomplete ? localRows.filter { !$0.isComplete } : localRows
+    }
 
     var body: some View {
         NavigationStack {
@@ -675,45 +680,67 @@ struct CSVImportPreviewSheet: View {
                                 }
                                 .font(.system(size: 13, weight: .medium))
                                 Spacer()
-                                if !incompleteRows.isEmpty {
-                                    Button("Select incomplete (\(incompleteRows.count))") {
-                                        withAnimation(.appCrisp) {
-                                            selectedRows = Set(incompleteRows.map(\.id))
-                                        }
-                                        AppHaptics.shared.light()
-                                    }
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(Color.orange)
-                                } else {
-                                    Button(selectedRows.count == localRows.count ? "Deselect All" : "Select All") {
-                                        withAnimation(.appCrisp) {
-                                            if selectedRows.count == localRows.count {
-                                                selectedRows.removeAll()
-                                            } else {
-                                                selectedRows = Set(localRows.map(\.id))
-                                            }
+                                Button(selectedRows.count == displayedRows.count ? "Deselect All" : "Select All") {
+                                    withAnimation(.appCrisp) {
+                                        if selectedRows.count == displayedRows.count {
+                                            selectedRows.removeAll()
+                                        } else {
+                                            selectedRows = Set(displayedRows.map(\.id))
                                         }
                                     }
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(Color.accentColor)
                                 }
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Color.accentColor)
                             }
                             .padding(.horizontal, 4)
-                            .padding(.bottom, 10)
+                            .padding(.bottom, incompleteRows.isEmpty ? 10 : 6)
+
+                            // Filter pill
+                            if !incompleteRows.isEmpty {
+                                HStack(spacing: 8) {
+                                    Button {
+                                        withAnimation(.appCrisp) { filterIncomplete.toggle() }
+                                        AppHaptics.shared.light()
+                                    } label: {
+                                        HStack(spacing: 5) {
+                                            Image(systemName: filterIncomplete ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                                                .font(.system(size: 12, weight: .semibold))
+                                            Text(filterIncomplete ? "Needs editing  ×" : "Needs editing")
+                                                .font(.system(size: 12, weight: .semibold))
+                                        }
+                                        .foregroundStyle(filterIncomplete ? .white : Color.orange)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(
+                                            Capsule()
+                                                .fill(filterIncomplete ? Color.orange : Color.orange.opacity(0.10))
+                                                .overlay(Capsule().strokeBorder(filterIncomplete ? Color.clear : Color.orange.opacity(0.28), lineWidth: 1))
+                                        )
+                                    }
+                                    .buttonStyle(.plain)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 4)
+                                .padding(.bottom, 10)
+                            }
 
                             VStack(spacing: 8) {
-                                ForEach(Array($localRows.enumerated()), id: \.element.id) { index, _ in
-                                    previewRow(row: $localRows[index], index: index)
-                                        .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
+                                ForEach(Array(displayedRows.enumerated()), id: \.element.id) { displayIndex, row in
+                                    if let localIndex = localRows.firstIndex(where: { $0.id == row.id }) {
+                                        previewRow(row: $localRows[localIndex], index: displayIndex)
+                                            .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
+                                    }
                                 }
                             }
                             .animation(.appSmooth, value: localRows.count)
+                            .animation(.appSmooth, value: filterIncomplete)
 
-                            if localRows.contains(where: { !$0.isComplete }) {
+                            let incompleteCount = localRows.filter { !$0.isComplete }.count
+                            if incompleteCount > 0 {
                                 HStack(spacing: 6) {
                                     Image(systemName: "exclamationmark.triangle.fill")
                                         .font(.system(size: 11))
-                                    Text("Highlighted rows are missing required fields — tap to fill them in before importing.")
+                                    Text("\(incompleteCount) highlighted \(incompleteCount == 1 ? "row is" : "rows are") missing required fields and will be skipped. Tap them to fill in, or delete them.")
                                         .font(.system(size: 12, weight: .medium))
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
@@ -747,9 +774,13 @@ struct CSVImportPreviewSheet: View {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Import \(localRows.count)") { finalizeImport() }
-                        .font(.system(size: 14, weight: .semibold))
-                        .disabled(localRows.isEmpty || localRows.contains(where: { !$0.isComplete }))
+                    let completeCount = localRows.filter { $0.isComplete }.count
+                    let hasIncomplete = completeCount < localRows.count
+                    Button(hasIncomplete ? "Import \(completeCount) of \(localRows.count)" : "Import \(localRows.count)") {
+                        finalizeImport()
+                    }
+                    .font(.system(size: 14, weight: .semibold))
+                    .disabled(completeCount == 0)
                 }
                 ToolbarItemGroup(placement: .bottomBar) {
                     if !selectedRows.isEmpty {
@@ -1007,7 +1038,7 @@ struct CSVImportPreviewSheet: View {
 
     private func finalizeImport() {
         let defaultCycle = cycles.first(where: { $0.id == appState.selectedCycleID })
-        for row in localRows {
+        for row in localRows where row.isComplete {
             let rowCycle = row.cycleID.flatMap { id in cycles.first(where: { $0.id == id }) }
             let app = JobApplication(
                 companyName: row.companyName,
@@ -1034,234 +1065,127 @@ struct CSVImportPreviewSheet: View {
 
 struct EditImportRowView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
     @State var row: CSVImportRow
     var onSave: (CSVImportRow) -> Void
-    @State private var appeared = false
+
+    @State private var pickerItem: PhotosPickerItem? = nil
+    @State private var reminderEnabled = false
+
+    private var isSeasonAllowed: Bool {
+        let allowed: [ApplicationType] = [.partTime, .internship, .temporary, .Co_op]
+        return row.jobType.map { allowed.contains($0) } ?? false
+    }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                AmbientBackground()
-                ScrollView {
-                    VStack(spacing: 16) {
-                        logoSection
-                            .opacity(appeared ? 1 : 0)
-                            .offset(y: appeared ? 0 : 10)
-                            .animation(.appSmooth.delay(0.00), value: appeared)
-                        basicInfoCard
-                            .opacity(appeared ? 1 : 0)
-                            .offset(y: appeared ? 0 : 10)
-                            .animation(.appSmooth.delay(0.05), value: appeared)
-                        typeStatusCard
-                            .opacity(appeared ? 1 : 0)
-                            .offset(y: appeared ? 0 : 10)
-                            .animation(.appSmooth.delay(0.10), value: appeared)
-                        dateCard
-                            .opacity(appeared ? 1 : 0)
-                            .offset(y: appeared ? 0 : 10)
-                            .animation(.appSmooth.delay(0.15), value: appeared)
-                        compensationCard
-                            .opacity(appeared ? 1 : 0)
-                            .offset(y: appeared ? 0 : 10)
-                            .animation(.appSmooth.delay(0.20), value: appeared)
-                        cycleCard
-                            .opacity(appeared ? 1 : 0)
-                            .offset(y: appeared ? 0 : 10)
-                            .animation(.appSmooth.delay(0.25), value: appeared)
-                        notesCard
-                            .opacity(appeared ? 1 : 0)
-                            .offset(y: appeared ? 0 : 10)
-                            .animation(.appSmooth.delay(0.30), value: appeared)
+        ZStack {
+            AmbientBackground()
+
+            ScrollView {
+                VStack(spacing: 16) {
+                    JobInfoSection(
+                        companyName: $row.companyName,
+                        companyLogoImageData: $row.logoData,
+                        position: $row.position,
+                        pickerItem: $pickerItem
+                    )
+                    TypePickerSection(type: $row.jobType)
+                    StatusPickerSection(status: $row.status)
+                    if isSeasonAllowed {
+                        SeasonPickerSection(season: $row.season)
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)),
+                                removal: .opacity
+                            ))
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 16)
+                    DateAppliedSection(
+                        dateApplied: $row.dateApplied,
+                        status: row.status,
+                        reminderEnabled: $reminderEnabled
+                    )
+                    CompensationSection(
+                        kind: $row.compensationKind,
+                        amount: compensationAmountBinding,
+                        currency: compensationCurrencyBinding,
+                        salaryPeriod: salaryPeriodBinding
+                    )
+                    cycleCard
+                    JobNotesSection(jobNotes: $row.notes)
                 }
-                .scrollDismissesKeyboard(.interactively)
+                .onChange(of: row.jobType) { _, _ in
+                    if !isSeasonAllowed { row.season = nil }
+                }
+                .animation(.appSmooth, value: isSeasonAllowed)
+                .padding()
             }
-            .onAppear { appeared = true }
-            .navigationTitle("Edit Row")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color(UIColor.systemBackground), for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        onSave(row)
-                        AppHaptics.shared.success()
-                        dismiss()
-                    }
+            .scrollDismissesKeyboard(.interactively)
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            floatingNavBar
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            saveBar
+        }
+    }
+
+    // MARK: - Floating nav bar
+
+    private var floatingNavBar: some View {
+        HStack {
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
                     .font(.system(size: 14, weight: .semibold))
-                }
+                    .foregroundStyle(DarkTheme.textPrimary)
+                    .frame(width: 40, height: 40)
+                    .background {
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                            .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                    }
             }
+            .buttonStyle(PressScaleButtonStyle())
+            Spacer()
         }
-        .task(id: row.companyName) {
-            let trimmed = row.companyName.trimmingCharacters(in: .whitespaces)
-            guard trimmed.count >= 2 else { return }
-            try? await Task.sleep(for: .milliseconds(500))
-            guard !Task.isCancelled else { return }
-            if let data = await LogoFetcher.fetchLogoData(for: trimmed, darkMode: colorScheme == .dark) {
-                withAnimation(.appSmooth) { row.logoData = data }
-            }
-        }
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
     }
 
-    // MARK: - Logo
+    // MARK: - Save bar
 
-    private var logoSection: some View {
-        HStack {
-            Spacer()
-            ZStack {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(DarkTheme.avatarGradient(for: row.companyName.isEmpty ? "?" : row.companyName))
-                if let data = row.logoData, let ui = UIImage(data: data) {
-                    Image(uiImage: ui)
-                        .resizable()
-                        .scaledToFill()
-                        .transition(.opacity.combined(with: .scale(scale: 0.92)))
-                } else {
-                    let initial = String(row.companyName.prefix(1)).uppercased()
-                    Text(initial.isEmpty ? "?" : initial)
-                        .font(.system(size: 26, weight: .bold, design: .rounded))
+    private var saveBar: some View {
+        VStack(spacing: 0) {
+            Divider().opacity(0.4)
+            HStack {
+                Button {
+                    onSave(row)
+                    AppHaptics.shared.success()
+                    dismiss()
+                } label: {
+                    Text("Save Changes")
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background {
+                            Capsule()
+                                .fill(Color.accentColor)
+                                .shadow(color: Color.accentColor.opacity(0.27), radius: 10, y: 3)
+                        }
                 }
+                .buttonStyle(PressScaleButtonStyle())
             }
-            .frame(width: 72, height: 72)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
-            .animation(.appSmooth, value: row.logoData == nil)
-            Spacer()
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(Color(UIColor.systemBackground))
         }
-    }
-
-    // MARK: - Basic info
-
-    private var basicInfoCard: some View {
-        VStack(spacing: 8) {
-            importFieldRow(
-                icon: "building.2", label: "Company",
-                text: $row.companyName, placeholder: "Company name", required: true
-            )
-            importFieldRow(
-                icon: "briefcase", label: "Position",
-                text: $row.position, placeholder: "Job title", required: true
-            )
-        }
-        .padding(18)
-        .glassCard()
-    }
-
-    // MARK: - Type / Status / Season
-
-    private var typeStatusCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            importPillRow(icon: "tag", label: "Job Type") {
-                ForEach(ApplicationType.allCases, id: \.self) { t in
-                    SelectablePill(option: t, isSelected: row.jobType == t, color: t.color, icon: t.iconName) {
-                        withAnimation(.appCrisp) { row.jobType = row.jobType == t ? nil : t }
-                        AppHaptics.shared.light()
-                    }
-                }
-            }
-            Divider().opacity(0.35)
-            importPillRow(icon: "flag", label: "Status") {
-                ForEach(ApplicationStatus.allCases, id: \.self) { s in
-                    SelectablePill(option: s, isSelected: row.status == s, color: s.color, icon: s.iconName) {
-                        withAnimation(.appCrisp) { row.status = row.status == s ? nil : s }
-                        AppHaptics.shared.light()
-                    }
-                }
-            }
-            Divider().opacity(0.35)
-            importPillRow(icon: "calendar.badge.clock", label: "Season") {
-                ForEach(ApplicationSeason.allCases, id: \.self) { s in
-                    SelectablePill(option: s, isSelected: row.season == s, color: s.color, icon: s.iconName) {
-                        withAnimation(.appCrisp) { row.season = row.season == s ? nil : s }
-                        AppHaptics.shared.light()
-                    }
-                }
-            }
-        }
-        .padding(18)
-        .glassCard()
-    }
-
-    // MARK: - Date
-
-    private var dateCard: some View {
-        HStack {
-            HStack(spacing: 6) {
-                Image(systemName: "calendar")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textSecondary)
-                    .frame(width: 14)
-                Text("Date Applied")
-                    .font(.caption)
-                    .foregroundStyle(DarkTheme.textSecondary)
-            }
-            Spacer()
-            DatePicker("", selection: $row.dateApplied, displayedComponents: .date)
-                .labelsHidden()
-                .tint(Color.accentColor)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 12)
-        .glassCard()
-    }
-
-    // MARK: - Compensation
-
-    private var compensationCard: some View {
-        CompensationSection(
-            kind: $row.compensationKind,
-            amount: compensationAmountBinding,
-            currency: compensationCurrencyBinding,
-            salaryPeriod: salaryPeriodBinding
-        )
-    }
-
-    private var compensationAmountBinding: Binding<String> {
-        Binding(
-            get: {
-                guard let v = row.compensationAmount else { return "" }
-                return v.truncatingRemainder(dividingBy: 1) == 0
-                    ? String(Int(v)) : String(v)
-            },
-            set: { row.compensationAmount = Double($0) }
-        )
-    }
-
-    private var compensationCurrencyBinding: Binding<Currency> {
-        Binding(
-            get: { row.compensationCurrency ?? .usd },
-            set: { row.compensationCurrency = $0 }
-        )
-    }
-
-    private var salaryPeriodBinding: Binding<SalaryPeriod> {
-        Binding(
-            get: { row.salaryPeriod ?? .yearly },
-            set: { row.salaryPeriod = $0 }
-        )
     }
 
     // MARK: - Cycle
 
     private var cycleCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: "tray.fill")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textSecondary)
-                    .frame(width: 14)
-                Text("Cycle")
-                    .font(.caption)
-                    .foregroundStyle(DarkTheme.textSecondary)
-            }
+        VStack(alignment: .leading, spacing: 12) {
+            SectionLabel(icon: "tray.fill", title: "Cycle")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     cycleChip(name: "None", id: nil)
@@ -1269,10 +1193,11 @@ struct EditImportRowView: View {
                         cycleChip(name: cycle.name, id: cycle.id)
                     }
                 }
-                .padding(.vertical, 2)
+                .padding(.vertical, 4)
+                .padding(.horizontal, 2)
             }
         }
-        .padding(18)
+        .padding(16)
         .glassCard()
     }
 
@@ -1303,89 +1228,31 @@ struct EditImportRowView: View {
         .animation(.appCrisp, value: isSelected)
     }
 
-    // MARK: - Notes
+    // MARK: - Compensation bindings
 
-    private var notesCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: "note.text")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textSecondary)
-                    .frame(width: 14)
-                Text("Notes")
-                    .font(.caption)
-                    .foregroundStyle(DarkTheme.textSecondary)
-            }
-            TextField("Add notes…", text: $row.notes, axis: .vertical)
-                .font(.subheadline)
-                .foregroundStyle(DarkTheme.textPrimary)
-                .lineLimit(3...8)
-        }
-        .padding(18)
-        .glassCard()
+    private var compensationAmountBinding: Binding<String> {
+        Binding(
+            get: {
+                guard let v = row.compensationAmount else { return "" }
+                return v.truncatingRemainder(dividingBy: 1) == 0
+                    ? String(Int(v)) : String(v)
+            },
+            set: { row.compensationAmount = Double($0) }
+        )
     }
 
-    // MARK: - Helpers
-
-    private func importFieldRow(
-        icon: String, label: String,
-        text: Binding<String>, placeholder: String, required: Bool
-    ) -> some View {
-        let isEmpty = required && text.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        return VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(isEmpty ? .orange : DarkTheme.textSecondary)
-                    .frame(width: 14)
-                Text(label)
-                    .font(.caption)
-                    .foregroundStyle(DarkTheme.textSecondary)
-                if isEmpty {
-                    Text("· Fill in")
-                        .font(.caption2)
-                        .foregroundStyle(.orange.opacity(0.85))
-                }
-            }
-            TextField(placeholder, text: text)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(DarkTheme.textPrimary)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(isEmpty ? Color.orange.opacity(0.06) : Color.primary.opacity(0.04))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(
-                            isEmpty ? Color.orange.opacity(0.28) : Color.primary.opacity(0.07),
-                            lineWidth: 1
-                        )
-                }
-        }
+    private var compensationCurrencyBinding: Binding<Currency> {
+        Binding(
+            get: { row.compensationCurrency ?? .usd },
+            set: { row.compensationCurrency = $0 }
+        )
     }
 
-    @ViewBuilder
-    private func importPillRow<Content: View>(
-        icon: String, label: String,
-        @ViewBuilder pills: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textSecondary)
-                    .frame(width: 14)
-                Text(label)
-                    .font(.caption)
-                    .foregroundStyle(DarkTheme.textSecondary)
-            }
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) { pills() }
-                    .padding(.vertical, 2)
-            }
-        }
+    private var salaryPeriodBinding: Binding<SalaryPeriod> {
+        Binding(
+            get: { row.salaryPeriod ?? .yearly },
+            set: { row.salaryPeriod = $0 }
+        )
     }
 }
 

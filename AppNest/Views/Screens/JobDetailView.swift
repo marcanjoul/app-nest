@@ -543,7 +543,7 @@ private struct ShakeEffect: GeometryEffect {
 
 // MARK: - Type Picker
 
-private struct TypePickerSection: View {
+struct TypePickerSection: View {
     @Binding var type: ApplicationType?
 
     private var orderedOptions: [ApplicationType] {
@@ -593,7 +593,7 @@ private struct TypePickerSection: View {
 
 // MARK: - Status Picker
 
-private struct StatusPickerSection: View {
+struct StatusPickerSection: View {
     @Binding var status: ApplicationStatus?
 
     private var orderedOptions: [ApplicationStatus] {
@@ -643,7 +643,7 @@ private struct StatusPickerSection: View {
 
 // MARK: - Season Picker
 
-private struct SeasonPickerSection: View {
+struct SeasonPickerSection: View {
     @Binding var season: ApplicationSeason?
 
     private var orderedOptions: [ApplicationSeason] {
@@ -693,7 +693,7 @@ private struct SeasonPickerSection: View {
 
 // MARK: - Date Section
 
-private struct DateAppliedSection: View {
+struct DateAppliedSection: View {
     @Binding var dateApplied: Date
     var status: ApplicationStatus?
     @Binding var reminderEnabled: Bool
@@ -807,7 +807,7 @@ private struct DateAppliedSection: View {
 
 // MARK: - Notes Section
 
-private struct JobNotesSection: View {
+struct JobNotesSection: View {
     @Binding var jobNotes: String
 
     var body: some View {
