@@ -378,8 +378,8 @@ struct EmailParserView: View {
                     CompensationSection(
                         kind: $editCompensationKind,
                         amount: compensationAmountBinding,
-                        currency: editCompensationCurrency ?? .usd,
-                        salaryPeriod: editSalaryPeriod ?? .yearly
+                        currency: compensationCurrencyBinding,
+                        salaryPeriod: salaryPeriodBinding
                     )
                     
                     resumeSection
@@ -392,27 +392,13 @@ struct EmailParserView: View {
 
             Divider().opacity(0.4)
 
-            HStack(spacing: 12) {
-                Button { resetParser() } label: {
-                    Text("Cancel")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(DarkTheme.textSecondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background {
-                            Capsule()
-                                .fill(Color.primary.opacity(0.06))
-                                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.1), lineWidth: 1))
-                        }
-                }
-                .buttonStyle(PressScaleButtonStyle())
-
+            VStack(spacing: 12) {
                 Button { saveApplication() } label: {
                     Label(
                         saveSuccess ? "Added!" : "Add to Applications",
                         systemImage: saveSuccess ? "checkmark.circle.fill" : "plus.circle.fill"
                     )
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
@@ -422,7 +408,7 @@ struct EmailParserView: View {
                                      : Color.accentColor
                         Capsule()
                             .fill(c)
-                            .shadow(color: isSaveDisabled ? .clear : c.opacity(0.27), radius: 10, y: 3)
+                            .shadow(color: isSaveDisabled ? .clear : c.opacity(0.25), radius: 10, y: 3)
                     }
                     .animation(.appSmooth, value: saveSuccess)
                 }
@@ -430,6 +416,20 @@ struct EmailParserView: View {
                 .scaleEffect(saveSuccess ? 1.02 : 1.0)
                 .animation(.appBouncy, value: saveSuccess)
                 .disabled(isSaveDisabled || saveSuccess)
+
+                Button { resetParser() } label: {
+                    Text("Cancel")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background {
+                            Capsule()
+                                .fill(Color(red: 0.93, green: 0.33, blue: 0.40))
+                                .shadow(color: Color(red: 0.93, green: 0.33, blue: 0.40).opacity(0.2), radius: 8, y: 3)
+                        }
+                }
+                .buttonStyle(PressScaleButtonStyle())
             }
         }
         .padding(18)
@@ -468,6 +468,13 @@ struct EmailParserView: View {
         Binding(
             get: { editCompensationCurrency ?? .usd },
             set: { editCompensationCurrency = $0 }
+        )
+    }
+
+    private var salaryPeriodBinding: Binding<SalaryPeriod> {
+        Binding(
+            get: { editSalaryPeriod ?? .yearly },
+            set: { editSalaryPeriod = $0 }
         )
     }
 

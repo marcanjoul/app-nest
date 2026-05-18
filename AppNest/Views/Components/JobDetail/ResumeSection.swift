@@ -122,9 +122,9 @@ struct ResumeSection: View {
                         Button(role: .destructive, action: onClear) {
                             Image(systemName: "trash")
                                 .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(hasAttachedResume ? Color.red : Color.red.opacity(0.35))
+                                .foregroundStyle(hasAttachedResume ? Color(red: 0.93, green: 0.33, blue: 0.40) : Color(red: 0.93, green: 0.33, blue: 0.40).opacity(0.35))
                                 .frame(width: 34, height: 34)
-                                .background(Circle().fill(Color.red.opacity(hasAttachedResume ? 0.10 : 0.04)))
+                                .background(Circle().fill(Color(red: 0.93, green: 0.33, blue: 0.40).opacity(hasAttachedResume ? 0.10 : 0.04)))
                         }
                         .buttonStyle(.plain)
                         .disabled(!hasAttachedResume)

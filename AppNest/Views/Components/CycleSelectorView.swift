@@ -142,6 +142,7 @@ struct CyclePickerSheet: View {
             } label: {
                 Label("Delete", systemImage: "trash")
             }
+            .tint(.red)
         }
         .swipeActions(edge: .leading, allowsFullSwipe: false) {
             Button {

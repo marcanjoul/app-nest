@@ -99,7 +99,7 @@ struct CSVImportPreviewSheet: View {
                         Button(role: .destructive) { isConfirmingDelete = true } label: {
                             Label("Delete", systemImage: "trash")
                         }
-                        .foregroundStyle(Color.red)
+                        .foregroundStyle(Color(red: 0.93, green: 0.33, blue: 0.40))
                         
                         Spacer()
                         
