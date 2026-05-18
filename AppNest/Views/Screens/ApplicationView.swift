@@ -660,6 +660,24 @@ struct ApplicationView: View {
                     }
                     .buttonStyle(PressScaleButtonStyle())
                     
+                    // Export button
+                    Button {
+                        isShowingExportConfirmation = true
+                        AppHaptics.shared.light()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(DarkTheme.textPrimary)
+                            .frame(width: 44, height: 44)
+                            .background {
+                                Circle()
+                                    .fill(.ultraThinMaterial)
+                                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                                    .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+                            }
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
+                    
                     // Edit button
                     Button {
                         withAnimation(.appSmooth) {
