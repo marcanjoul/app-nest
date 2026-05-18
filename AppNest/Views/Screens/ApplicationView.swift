@@ -611,7 +611,10 @@ struct ApplicationView: View {
                     .tint(.accentColor)
 
                 if !searchText.isEmpty {
-                    Button { searchText = "" } label: {
+                    Button { 
+                        searchText = ""
+                        AppHaptics.shared.light()
+                    } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(DarkTheme.textSecondary)
                             .frame(width: 44, height: 44)
@@ -629,17 +632,20 @@ struct ApplicationView: View {
                     .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
             }
 
-            // Sort menu
+            // Sort button
             Menu {
                 ForEach(SortOption.allCases, id: \.self) { option in
-                    Button {
+                    Button { 
                         sortOption = option
+                        AppHaptics.shared.light()
                     } label: {
                         HStack {
                             Text(option.rawValue)
                             if sortOption == option { Image(systemName: "checkmark") }
                         }
                     }
+                }
+            } label: {
                 }
             } label: {
                 Image(systemName: "arrow.up.arrow.down")
