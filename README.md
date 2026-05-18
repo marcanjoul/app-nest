@@ -74,7 +74,7 @@ AppNestShare/
 
 > For the full interactive visual map, open **`ARCHITECTURE.html`** in a browser (gitignored, lives locally). It shows all 44 files as a colour-coded, force-directed graph — hover for descriptions, click to inspect, toggle layers, enable reading-order badges.
 
-![AppNest Architecture Map](ARCHITECTURE_MAP.svg)
+![AppNest Architecture Map](ARCHITECTURE_MAP.png)
 
 ```
 AppNest/
