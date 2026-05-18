@@ -162,19 +162,25 @@ class ShareViewController: UIViewController {
         }
     }
 
-    // MARK: - URL-based parsing (LinkedIn slug: /jobs/view/position-at-company-numericid/)
+    // MARK: - URL-based parsing
+    // Handles /jobs/view/slug and /comm/jobs/view/slug (tracking variant)
 
     private static func parseFromURL(_ url: URL) -> (company: String, position: String)? {
         let host = url.host?.lowercased() ?? ""
         guard host.contains("linkedin.com") else { return nil }
 
         let segments = url.pathComponents
-        guard segments.count >= 4,
-              segments[1] == "jobs",
-              segments[2] == "view"
-        else { return nil }
+        let slugIndex: Int?
+        if segments.count >= 4, segments[1] == "jobs", segments[2] == "view" {
+            slugIndex = 3
+        } else if segments.count >= 5, segments[2] == "jobs", segments[3] == "view" {
+            slugIndex = 4
+        } else {
+            slugIndex = nil
+        }
+        guard let idx = slugIndex else { return nil }
 
-        let rawSlug = segments[3]
+        let rawSlug = segments[idx]
         let slug = rawSlug.replacingOccurrences(of: "-\\d+$", with: "", options: .regularExpression)
         guard !slug.isEmpty, !(slug == rawSlug && rawSlug.allSatisfy(\.isNumber)) else { return nil }
 
@@ -272,6 +278,16 @@ private func extractMetaContent(from html: String, property: String) -> String? 
     return nil
 }
 
+private func extractHTMLTitle(from html: String) -> String? {
+    guard let tagStart = html.range(of: "<title", options: .caseInsensitive),
+          let tagEnd   = html[tagStart.lowerBound...].range(of: ">"),
+          let closeTag = html[tagEnd.upperBound...].range(of: "</title>", options: .caseInsensitive)
+    else { return nil }
+    let raw = String(html[tagEnd.upperBound..<closeTag.lowerBound])
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    return raw.isEmpty ? nil : raw
+}
+
 private func htmlDecode(_ str: String) -> String {
     str.replacingOccurrences(of: "&#39;",  with: "'")
        .replacingOccurrences(of: "&#x27;", with: "'")
@@ -313,36 +329,37 @@ private final class ShareViewModel {
         defer { isFetchingTitle = false }
         guard let url else { return }
 
-        var request = URLRequest(url: url, timeoutInterval: 8)
+        var request = URLRequest(url: url, timeoutInterval: 10)
+        // Desktop Chrome UA — more broadly accepted than mobile Safari by job boards
         request.setValue(
-            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             forHTTPHeaderField: "User-Agent"
         )
+        request.setValue("en-US,en;q=0.9", forHTTPHeaderField: "Accept-Language")
 
         guard let (data, _) = try? await URLSession.shared.data(for: request),
               let html = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1)
         else { return }
 
-        if let raw = extractMetaContent(from: html, property: "og:title") {
-            let decoded = htmlDecode(raw)
-            let parsed  = ShareViewController.parseJobInfo(title: decoded, url: url)
+        // Collect everything useful from the page upfront
+        let ogTitle      = extractMetaContent(from: html, property: "og:title").map(htmlDecode)
+        let twitterTitle = extractMetaContent(from: html, property: "twitter:title").map(htmlDecode)
+        let ogSiteName   = extractMetaContent(from: html, property: "og:site_name").map(htmlDecode)
+        let htmlTitle    = extractHTMLTitle(from: html).map(htmlDecode)
+
+        // Try title sources in reliability order
+        for candidate in [ogTitle, twitterTitle, htmlTitle].compactMap({ $0 }) {
+            let parsed = ShareViewController.parseJobInfo(title: candidate, url: url)
             if !parsed.companyName.isEmpty || !parsed.position.isEmpty {
-                companyName = parsed.companyName
+                companyName = parsed.companyName.isEmpty ? (ogSiteName ?? "") : parsed.companyName
                 position    = parsed.position
                 return
             }
         }
 
-        if let tagStart  = html.range(of: "<title", options: .caseInsensitive),
-           let tagEnd    = html[tagStart.lowerBound...].range(of: ">"),
-           let closeTag  = html[tagEnd.upperBound...].range(of: "</title>", options: .caseInsensitive) {
-            let raw      = String(html[tagEnd.upperBound..<closeTag.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-            let decoded  = htmlDecode(raw)
-            let parsed   = ShareViewController.parseJobInfo(title: decoded, url: url)
-            if !parsed.companyName.isEmpty || !parsed.position.isEmpty {
-                companyName = parsed.companyName
-                position    = parsed.position
-            }
+        // Last resort: use og:site_name as company if at least the page loaded
+        if let siteName = ogSiteName, !siteName.isEmpty {
+            companyName = siteName
         }
     }
 
@@ -425,6 +442,9 @@ private struct ShareView: View {
                 Divider().opacity(0.10)
                 ScrollView {
                     VStack(spacing: 16) {
+                        if model.isFetchingTitle {
+                            scanningBanner
+                        }
                         infoSection
                         typePicker
                         statusPicker
@@ -433,6 +453,7 @@ private struct ShareView: View {
                         }
                     }
                     .padding()
+                    .animation(.easeOut(duration: 0.25), value: model.isFetchingTitle)
                 }
                 saveButton
                     .padding(.horizontal, 20)
@@ -440,7 +461,6 @@ private struct ShareView: View {
                     .padding(.top, 8)
             }
         }
-        .preferredColorScheme(.dark)
         .task(id: model.companyName) {
             if model.isLogoAutoFetched {
                 withAnimation(.easeOut(duration: 0.2)) {
@@ -463,7 +483,7 @@ private struct ShareView: View {
 
     private var handle: some View {
         Capsule()
-            .fill(Color.white.opacity(0.15))
+            .fill(Color.primary.opacity(0.15))
             .frame(width: 32, height: 4)
             .padding(.top, 10)
             .padding(.bottom, 6)
@@ -533,6 +553,24 @@ private struct ShareView: View {
             if let img = UIImage(contentsOfFile: path) { return img }
         }
         return nil
+    }
+
+    // MARK: - Scanning Banner
+
+    private var scanningBanner: some View {
+        HStack(spacing: 8) {
+            ProgressView()
+                .scaleEffect(0.8)
+                .tint(.secondary)
+            Text("Scanning page for job info…")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .shareGlassCard()
+        .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
     // MARK: - Info Section (JobInfoSection style)
