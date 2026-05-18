@@ -2,6 +2,8 @@ import SwiftUI
 import SwiftData
 
 struct RootView: View {
+    @Environment(AppState.self) private var appState
+    
     var body: some View {
         TabView {
             NavigationStack {
@@ -32,6 +34,15 @@ struct RootView: View {
             }
         }
         .tint(.accentColor)
+        .scaleEffect(appState.isPresentingSheet ? 0.95 : 1.0)
+        .blur(radius: appState.isPresentingSheet ? 2 : 0)
+        .overlay {
+            if appState.isPresentingSheet {
+                Color.black.opacity(0.15)
+                    .ignoresSafeArea()
+            }
+        }
+        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: appState.isPresentingSheet)
     }
 }
 

@@ -12,6 +12,8 @@ struct ProfileStatsView: View {
     @Query(sort: \JobApplication.dateApplied, order: .reverse) private var applications: [JobApplication]
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
 
+    @State private var animateProgress = false
+
     private var displayedApplications: [JobApplication] {
         guard let id = appState.selectedCycleID else { return applications }
         return applications.filter { $0.cycle?.id == id }
@@ -83,6 +85,12 @@ struct ProfileStatsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Color(UIColor.systemBackground), for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
+        .onAppear {
+            // Trigger progress animations on screen entry
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
+                animateProgress = true
+            }
+        }
     }
 
     // MARK: - Sections
@@ -146,7 +154,8 @@ struct ProfileStatsView: View {
                     StatusBreakdownRow(
                         status: status,
                         count: count,
-                        maxCount: maxStatusCount
+                        maxCount: maxStatusCount,
+                        animate: animateProgress
                     )
                 }
             }
@@ -174,21 +183,24 @@ struct ProfileStatsView: View {
                     count: appliedTotal,
                     progress: 1.0,
                     tint: Color(red: 0.35, green: 0.65, blue: 0.96),
-                    icon: "paperplane.fill"
+                    icon: "paperplane.fill",
+                    animate: animateProgress
                 )
                 FunnelRow(
                     title: "Interview",
                     count: interviewCount + offerCount,
                     progress: interviewProgress,
                     tint: Color(red: 0.96, green: 0.73, blue: 0.28),
-                    icon: "person.2.fill"
+                    icon: "person.2.fill",
+                    animate: animateProgress
                 )
                 FunnelRow(
                     title: "Offer",
                     count: offerCount,
                     progress: offerProgress,
                     tint: Color(red: 0.30, green: 0.80, blue: 0.45),
-                    icon: "checkmark.seal.fill"
+                    icon: "checkmark.seal.fill",
+                    animate: animateProgress
                 )
             }
         }
@@ -257,74 +269,57 @@ private struct StatsKPITile: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(tint)
+                    .font(.system(size: 10, weight: .bold))
                 Text(label.uppercased())
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .tracking(1.0)
-                    .foregroundStyle(DarkTheme.textSecondary)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
+                    .font(.system(size: 10, weight: .bold))
+                    .tracking(0.5)
             }
+            .foregroundStyle(tint)
 
             Text(value)
                 .font(.system(size: 26, weight: .bold, design: .rounded))
                 .foregroundStyle(DarkTheme.textPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
         .background {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(tint.opacity(0.12))
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.primary.opacity(0.04))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(tint.opacity(0.28), lineWidth: 0.8)
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
                 )
         }
     }
 }
 
-// MARK: - Status Breakdown Row
+// MARK: - Breakdown Row
 
 private struct StatusBreakdownRow: View {
     let status: ApplicationStatus
     let count: Int
     let maxCount: Int
-
-    private var style: DarkTheme.StatusStyle { DarkTheme.statusStyle(for: status) }
-
-    private var progress: Double {
-        guard maxCount > 0 else { return 0 }
-        return Double(count) / Double(maxCount)
-    }
+    var animate: Bool = false
 
     var body: some View {
-        VStack(spacing: 6) {
-            HStack(spacing: 8) {
-                Image(systemName: style.iconName)
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(style.tintColor)
-                    .frame(width: 16)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
                 Text(status.rawValue)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(DarkTheme.textPrimary)
                 Spacer()
                 Text("\(count)")
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundStyle(count == 0 ? DarkTheme.textTertiary : style.tintColor)
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundStyle(DarkTheme.textSecondary)
             }
 
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color.primary.opacity(0.06))
-                    if count > 0 {
-                        Capsule()
-                            .fill(style.tintColor.opacity(0.85))
-                            .frame(width: max(4, geo.size.width * progress))
-                    }
+                        .fill(Color.primary.opacity(0.05))
+                    Capsule()
+                        .fill(status.color)
+                        .frame(width: animate ? geo.size.width * CGFloat(count) / CGFloat(maxCount) : 0)
                 }
             }
             .frame(height: 6)
@@ -340,38 +335,41 @@ private struct FunnelRow: View {
     let progress: Double
     let tint: Color
     let icon: String
-
-    private var clampedProgress: Double { max(0, min(1, progress)) }
+    var animate: Bool = false
 
     var body: some View {
-        VStack(spacing: 6) {
-            HStack(spacing: 8) {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(tint.opacity(0.12))
+                    .frame(width: 30, height: 30)
                 Image(systemName: icon)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(tint)
-                    .frame(width: 16)
-                Text(title)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
-                Spacer()
-                Text("\(count)")
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundStyle(DarkTheme.textPrimary)
-                Text("\(Int((clampedProgress * 100).rounded()))%")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textTertiary)
             }
 
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.primary.opacity(0.06))
-                    Capsule()
-                        .fill(tint)
-                        .frame(width: max(4, geo.size.width * clampedProgress))
+            VStack(alignment: .leading, spacing: 5) {
+                HStack {
+                    Text(title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(DarkTheme.textPrimary)
+                    Spacer()
+                    Text("\(count)")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(DarkTheme.textSecondary)
                 }
+
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color.primary.opacity(0.05))
+                        Capsule()
+                            .fill(tint)
+                            .frame(width: animate ? geo.size.width * CGFloat(progress) : 0)
+                    }
+                }
+                .frame(height: 8)
             }
-            .frame(height: 8)
         }
     }
 }

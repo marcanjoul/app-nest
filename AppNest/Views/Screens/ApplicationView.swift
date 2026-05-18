@@ -1,38 +1,27 @@
 import SwiftUI
 import SwiftData
-#if canImport(UIKit)
 import UIKit
-#endif
 
 enum SortOption: String, CaseIterable {
     case dateNewest = "Newest"
     case dateOldest = "Oldest"
     case companyAZ  = "Company A–Z"
     case companyZA  = "Company Z–A"
-
-    var shortLabel: String {
-        switch self {
-        case .dateNewest: return "Newest"
-        case .dateOldest: return "Oldest"
-        case .companyAZ:  return "A–Z"
-        case .companyZA:  return "Z–A"
-        }
-    }
 }
 
 struct ApplicationView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppState.self) private var appState
+
     @Query(sort: \JobApplication.dateApplied, order: .reverse) private var applications: [JobApplication]
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
 
     @Namespace private var filterNS
-
+    @State private var contentAppeared = false
     @State private var searchText: String = ""
     @State private var isPresentingNewApplication = false
     @State private var selectedStatuses: Set<ApplicationStatus> = []
     @State private var sortOption: SortOption = .dateNewest
-    @State private var contentAppeared = false
     @State private var pendingDeleteJob: JobApplication? = nil
     @State private var undoTask: Task<Void, Never>? = nil
     @State private var toastDragY: CGFloat = 0
@@ -99,14 +88,24 @@ struct ApplicationView: View {
                 // Header
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .center) {
-                        Text("App Nest")
-                            .font(.system(size: 40, weight: .bold))
-                            .foregroundStyle(DarkTheme.textPrimary)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("App Nest")
+                                .font(.system(size: 40, weight: .bold))
+                                .foregroundStyle(DarkTheme.textPrimary)
+                            
+                            if !searchText.isEmpty {
+                                Text("\(filteredAndSorted.count) results")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundStyle(Color.accentColor)
+                                    .transition(.opacity.combined(with: .move(edge: .leading)))
+                            }
+                        }
                         
                         Spacer()
                         
                         HStack(spacing: 8) {
                             if !applications.isEmpty {
+                                // Header Import button
                                 Button {
                                     isImportingCSV = true
                                     AppHaptics.shared.light()
@@ -124,6 +123,7 @@ struct ApplicationView: View {
                                 .buttonStyle(PressScaleButtonStyle())
                                 .transition(.scale(scale: 0.9).combined(with: .opacity))
 
+                                // Header Export button
                                 Button {
                                     exportCSV()
                                     AppHaptics.shared.light()
@@ -141,11 +141,13 @@ struct ApplicationView: View {
                                 .buttonStyle(PressScaleButtonStyle())
                                 .transition(.scale(scale: 0.9).combined(with: .opacity))
                                 
+                                // Header Edit button
                                 Button(isEditMode ? "Done" : "Edit") {
                                     withAnimation(.appSmooth) {
                                         isEditMode.toggle()
                                         if !isEditMode { selectedJobIDs.removeAll() }
                                     }
+                                    AppHaptics.shared.light()
                                 }
                                 .font(.system(size: 15, weight: .bold))
                                 .foregroundStyle(isEditMode ? Color.white : Color.accentColor)
@@ -174,6 +176,7 @@ struct ApplicationView: View {
                 .opacity(contentAppeared ? 1 : 0)
                 .offset(y: contentAppeared ? 0 : 20)
                 .animation(.appSmooth, value: contentAppeared)
+                .animation(.appSmooth, value: searchText.isEmpty)
                 .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
@@ -238,6 +241,7 @@ struct ApplicationView: View {
                                         selectedJobIDs = Set(filteredAndSorted.map(\.id))
                                     }
                                 }
+                                AppHaptics.shared.light()
                             }
                             .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(Color.accentColor)
@@ -311,7 +315,7 @@ struct ApplicationView: View {
                     Spacer()
                     HStack(spacing: 0) {
                         Button(role: .destructive) {
-                            isConfirmingBulkDelete = true
+                            deleteSelected()
                         } label: {
                             VStack(spacing: 4) {
                                 Image(systemName: "trash")
@@ -360,41 +364,42 @@ struct ApplicationView: View {
                         Divider().opacity(0.5)
                     }
                 }
-                .transition(.move(edge: .bottom))
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
             // Undo delete toast
-            if pendingDeleteJob != nil {
+            if let pending = pendingDeleteJob {
                 VStack {
                     Spacer()
-                    HStack(spacing: 12) {
-                        Image(systemName: "trash.fill")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color(red: 0.93, green: 0.38, blue: 0.44))
-                        Text("Application deleted")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(DarkTheme.textPrimary)
-                        Spacer()
-                        Button("Undo") {
-                            undoDelete()
+                    HStack(spacing: 14) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Removed \(pending.companyName)")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(.white)
+                            Text("The application has been deleted.")
+                                .font(.system(size: 13))
+                                .foregroundStyle(.white.opacity(0.7))
                         }
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(Color.accentColor)
-                        .buttonStyle(.plain)
+                        Spacer()
+                        Button(action: undoDelete) {
+                            Text("Undo")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(Color.accentColor)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(Capsule().fill(Color.white.opacity(0.12)))
+                        }
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(DarkTheme.cardFill)
-                            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .strokeBorder(DarkTheme.cardBorder, lineWidth: 1))
-                    )
-                    .shadow(color: .black.opacity(0.14), radius: 12, y: 4)
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 110)
-                    .offset(y: max(0, toastDragY))
-                    .opacity(max(0, 1 - toastDragY / 120))
+                    .padding(.vertical, 16)
+                    .background {
+                        Capsule()
+                            .fill(Color(red: 0.12, green: 0.12, blue: 0.14))
+                            .shadow(color: .black.opacity(0.3), radius: 15, y: 8)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 34)
+                    .offset(y: toastDragY)
                     .gesture(
                         DragGesture(minimumDistance: 10)
                             .onChanged { value in
@@ -406,9 +411,7 @@ struct ApplicationView: View {
                                 if value.translation.height > 50 {
                                     undoTask?.cancel()
                                     undoTask = nil
-                                    if let pending = pendingDeleteJob {
-                                        modelContext.delete(pending)
-                                    }
+                                    modelContext.delete(pending)
                                     withAnimation(.appSmooth) {
                                         pendingDeleteJob = nil
                                         toastDragY = 0
@@ -431,10 +434,22 @@ struct ApplicationView: View {
         .onAppear {
             contentAppeared = true
         }
-        .sheet(isPresented: $isPresentingNewApplication) {
+        .sheet(isPresented: Binding(
+            get: { isPresentingNewApplication },
+            set: { 
+                isPresentingNewApplication = $0 
+                appState.isPresentingSheet = $0
+            }
+        )) {
             NavigationStack { JobDetailView(job: nil) }
         }
-        .sheet(isPresented: $isShowingCyclePicker) {
+        .sheet(isPresented: Binding(
+            get: { isShowingCyclePicker },
+            set: { 
+                isShowingCyclePicker = $0 
+                appState.isPresentingSheet = $0
+            }
+        )) {
             NavigationStack { CyclePickerSheet(isPresented: $isShowingCyclePicker) }
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
@@ -477,7 +492,13 @@ struct ApplicationView: View {
                 importErrorMessage = error.localizedDescription
             }
         }
-        .sheet(isPresented: $isShowingImportPreview) {
+        .sheet(isPresented: Binding(
+            get: { isShowingImportPreview },
+            set: { 
+                isShowingImportPreview = $0 
+                appState.isPresentingSheet = $0
+            }
+        )) {
             if let rows = csvImportPreview {
                 CSVImportPreviewSheet(initialRows: rows)
                     .environment(appState)
@@ -535,28 +556,30 @@ struct ApplicationView: View {
                 escapeCSV(app.season?.rawValue ?? ""),
                 escapeCSV(dateFormatter.string(from: app.dateApplied)),
                 escapeCSV(compensation),
-                escapeCSV(app.compensationAmount != nil ? (app.compensationCurrency?.rawValue ?? "") : ""),
+                escapeCSV(app.compensationCurrency?.rawValue ?? ""),
                 escapeCSV(app.resumeFileName ?? ""),
                 escapeCSV(app.jobNotes ?? "")
             ].joined(separator: ",")
-        }
-        let csv = header + rows.joined(separator: "\n") + "\n"
-        let tempURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("AppNest_Export_\(dateFormatter.string(from: Date())).csv")
+        }.joined(separator: "\n")
+
+        let csv = header + rows
+        let fileName = "AppNest_Export_\(Date().formatted(.dateTime.year().month().day())).csv"
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+
         do {
             try csv.write(to: tempURL, atomically: true, encoding: .utf8)
             csvFileURL = tempURL
             isShowingShareSheet = true
         } catch {
-            print("CSV export failed: \(error)")
+            importErrorMessage = "Failed to create export file."
         }
     }
 
-    private func escapeCSV(_ field: String) -> String {
-        if field.contains(",") || field.contains("\"") || field.contains("\n") {
-            return "\"" + field.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+    private func escapeCSV(_ str: String) -> String {
+        if str.contains(",") || str.contains("\"") || str.contains("\n") {
+            return "\"\(str.replacingOccurrences(of: "\"", with: "\"\""))\""
         }
-        return field
+        return str
     }
 
     // MARK: - Bulk Actions
@@ -621,16 +644,13 @@ struct ApplicationView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Clear search")
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background {
-                Capsule()
-                    .fill(DarkTheme.cardFill)
-                    .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
-            }
+            .padding(.horizontal, 12)
+            .frame(height: 44)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
 
             // Sort button
             Menu {
@@ -646,61 +666,26 @@ struct ApplicationView: View {
                     }
                 }
             } label: {
-                }
-            } label: {
-                Image(systemName: "arrow.up.arrow.down")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(sortOption == .dateNewest ? DarkTheme.textPrimary : Color.accentColor)
-                    .frame(width: 44, height: 44)
-                    .background {
-                        Circle()
-                            .fill(DarkTheme.cardFill)
-                            .overlay(Circle().strokeBorder(
-                                sortOption == .dateNewest ? Color.primary.opacity(0.08) : Color.accentColor.opacity(0.35),
-                                lineWidth: sortOption == .dateNewest ? 1 : 1.5
-                            ))
-                    }
-                    .overlay(alignment: .topTrailing) {
-                        if sortOption != .dateNewest {
-                            Circle()
-                                .fill(Color.accentColor)
-                                .frame(width: 7, height: 7)
-                                .padding(9)
-                                .transition(.scale.combined(with: .opacity))
-                        }
-                    }
-                    .animation(.appCrisp, value: sortOption)
-            }
-
-            // Import button
-            Button {
-                isImportingCSV = true
-            } label: {
-                Image(systemName: "square.and.arrow.down")
-                    .font(.system(size: 15, weight: .semibold))
+                Image(systemName: "line.3.horizontal.decrease.circle")
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(DarkTheme.textPrimary)
                     .frame(width: 44, height: 44)
-                    .background {
-                        Circle()
-                            .fill(DarkTheme.cardFill)
-                            .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
-                    }
+                    .background(.ultraThinMaterial)
+                    .clipShape(Circle())
+                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(PressScaleButtonStyle())
         }
-        .padding(.horizontal, 20)
     }
 
-    // MARK: - Stats Section
-
-    private let filterStatuses: [ApplicationStatus] = [.toApply, .applied, .interview, .offer, .rejected]
-
     private var statsSection: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .center, spacing: 0) {
-                // Selected group — tight spacing, visually clustered
+        let filterStatuses: [ApplicationStatus] = [.toApply, .applied, .interview, .offer, .rejected]
+        
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                // Selected group
                 if !selectedStatuses.isEmpty {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 10) {
                         ForEach(filterStatuses.filter { selectedStatuses.contains($0) }, id: \.self) { status in
                             chipView(for: status)
                                 .matchedGeometryEffect(id: status, in: filterNS)
@@ -747,6 +732,52 @@ struct ApplicationView: View {
         .opacity(count == 0 && !selectedStatuses.contains(status) ? 0.4 : 1.0)
     }
 
+    // MARK: - Cycle Chip
+
+    private var cycleSelectorChip: some View {
+        Button { 
+            isShowingCyclePicker = true 
+            AppHaptics.shared.light()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: appState.selectedCycleID != nil ? "tray.fill" : "tray.2.fill")
+                    .font(.system(size: 11, weight: .bold))
+                
+                Group {
+                    if let id = appState.selectedCycleID,
+                       let cycle = cycles.first(where: { $0.id == id }) {
+                        Text(cycle.name)
+                    } else {
+                        Text("All Applications")
+                    }
+                }
+                .font(.system(size: 14, weight: .bold))
+                
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 10, weight: .black))
+                    .opacity(0.5)
+            }
+            .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : DarkTheme.textSecondary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background {
+                Capsule()
+                    .fill(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.12) : DarkTheme.cardFill)
+                    .overlay(Capsule().strokeBorder(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.28) : Color.primary.opacity(0.08), lineWidth: 1))
+            }
+        }
+        .buttonStyle(PressScaleButtonStyle())
+    }
+
+    private func createFirstCycle() {
+        let trimmed = newCycleName.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        let cycle = JobCycle(name: trimmed)
+        modelContext.insert(cycle)
+        appState.selectedCycleID = cycle.id
+        AppHaptics.shared.success()
+    }
+
     // MARK: - Empty States
 
     private var emptyState: some View {
@@ -763,140 +794,69 @@ struct ApplicationView: View {
                 .multilineTextAlignment(.center)
             Button {
                 isImportingCSV = true
+                AppHaptics.shared.light()
             } label: {
-                Label("Import from CSV", systemImage: "square.and.arrow.down")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textSecondary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 9)
-                    .background(
-                        Capsule()
-                            .fill(Color.primary.opacity(0.07))
-                            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.10), lineWidth: 1))
-                    )
+                Text("Import CSV")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(Capsule().fill(Color.accentColor))
             }
-            .buttonStyle(.plain)
-            .padding(.top, 4)
+            .buttonStyle(PressScaleButtonStyle())
+            .padding(.top, 8)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 60)
+    }
+
+    private var emptyCycleState: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "folder.badge.questionmark")
+                .font(.system(size: 48))
+                .foregroundStyle(DarkTheme.textSecondary.opacity(0.5))
+            Text("No apps in this cycle")
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(DarkTheme.textPrimary)
+            Text("You haven't added any jobs to this cycle yet.")
+                .font(.subheadline)
+                .foregroundStyle(DarkTheme.textSecondary)
+                .multilineTextAlignment(.center)
+            Button {
+                isPresentingNewApplication = true
+                AppHaptics.shared.light()
+            } label: {
+                Text("Add Job to Cycle")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(Capsule().fill(Color.accentColor))
+            }
+            .buttonStyle(PressScaleButtonStyle())
+            .padding(.top, 8)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 60)
     }
 
     private var noResultsState: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 48))
+                .font(.system(size: 40))
                 .foregroundStyle(DarkTheme.textSecondary.opacity(0.5))
-            Text("No results")
-                .font(.title3.weight(.semibold))
+            Text("No results for \"\(searchText)\"")
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(DarkTheme.textPrimary)
-            Text("Try a different search or filter.")
-                .font(.subheadline)
-                .foregroundStyle(DarkTheme.textSecondary)
-                .multilineTextAlignment(.center)
-            Button {
-                withAnimation(.appSmooth) {
-                    searchText = ""
-                    selectedStatuses = []
-                }
-            } label: {
-                Text("Clear filters")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.accentColor)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
-                    .background(Capsule().fill(Color.accentColor.opacity(0.12)))
+            Button("Clear Search") {
+                searchText = ""
+                AppHaptics.shared.light()
             }
-            .buttonStyle(.plain)
+            .font(.system(size: 14, weight: .bold))
+            .foregroundStyle(Color.accentColor)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 60)
-    }
-
-    // MARK: - Cycle Selector
-
-    @ViewBuilder
-    private var cycleSelectorChip: some View {
-        if cycles.isEmpty {
-            Button {
-                newCycleName = ""
-                isAddingFirstCycle = true
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 11, weight: .semibold))
-                    Text("Start a job cycle")
-                        .font(.system(size: 12, weight: .semibold))
-                }
-                .foregroundStyle(Color.accentColor)
-                .padding(.horizontal, 11)
-                .padding(.vertical, 6)
-                .background(
-                    Capsule()
-                        .fill(Color.accentColor.opacity(0.11))
-                        .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.25), lineWidth: 1))
-                )
-            }
-            .buttonStyle(.plain)
-        } else {
-            Button { isShowingCyclePicker = true } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: appState.selectedCycleID != nil ? "tray.fill" : "tray.2.fill")
-                        .font(.system(size: 11, weight: .semibold))
-                    Group {
-                        if let id = appState.selectedCycleID,
-                           let cycle = cycles.first(where: { $0.id == id }) {
-                            Text(cycle.name)
-                        } else {
-                            Text("All Applications")
-                        }
-                    }
-                    .font(.system(size: 12, weight: .semibold))
-                    .lineLimit(1)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 9, weight: .bold))
-                }
-                .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : DarkTheme.textSecondary)
-                .padding(.horizontal, 11)
-                .padding(.vertical, 6)
-                .background(
-                    Capsule()
-                        .fill(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.11) : Color.primary.opacity(0.07))
-                        .overlay(Capsule().strokeBorder(
-                            appState.selectedCycleID != nil ? Color.accentColor.opacity(0.28) : Color.primary.opacity(0.08),
-                            lineWidth: 1
-                        ))
-                )
-            }
-            .buttonStyle(.plain)
-            .animation(.appCrisp, value: appState.selectedCycleID)
-        }
-    }
-
-    private var emptyCycleState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "tray.fill")
-                .font(.system(size: 48))
-                .foregroundStyle(DarkTheme.textSecondary.opacity(0.5))
-            Text("No applications in this cycle")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(DarkTheme.textPrimary)
-            Text("Add applications or switch to a different cycle.")
-                .font(.subheadline)
-                .foregroundStyle(DarkTheme.textSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 60)
-    }
-
-    private func createFirstCycle() {
-        let trimmed = newCycleName.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return }
-        let cycle = JobCycle(name: trimmed)
-        modelContext.insert(cycle)
-        appState.selectedCycleID = cycle.id
-        AppHaptics.shared.success()
     }
 
     // MARK: - Delete with Undo

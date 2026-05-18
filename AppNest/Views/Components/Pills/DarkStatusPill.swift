@@ -126,7 +126,34 @@ struct StatChip: View {
     }
 }
 
-// MARK: - Job Card
+// MARK: - Sparkle Animation
+
+struct SparkleView: View {
+    @State private var animate = false
+    let color: Color
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<6) { i in
+                Image(systemName: "sparkles")
+                    .font(.system(size: CGFloat.random(in: 12...20)))
+                    .foregroundStyle(color)
+                    .offset(x: animate ? CGFloat.random(in: -30...30) : 0,
+                            y: animate ? CGFloat.random(in: -30...30) : 0)
+                    .scaleEffect(animate ? 0.2 : 1.2)
+                    .opacity(animate ? 0 : 1)
+                    .rotationEffect(.degrees(Double(i) * 60))
+            }
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 1.2)) {
+                animate = true
+            }
+        }
+    }
+}
+
+// MARK: - Dark Job Card View
 
 /// Full glassmorphic job application card with avatar and status pill.
 struct DarkJobCardView: View {
@@ -146,48 +173,70 @@ struct DarkJobCardView: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .center, spacing: 16) {
             avatarView
-                .frame(width: 52, height: 52)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .shadow(color: .black.opacity(0.18), radius: 4, y: 2)
+                .frame(width: 60, height: 60)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(color: .black.opacity(0.20), radius: 4, y: 2)
+                .overlay {
+                    if job.status == .offer {
+                        SparkleView(color: Color(red: 0.30, green: 0.80, blue: 0.45))
+                    }
+                }
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(job.position)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 16, weight: .bold))
                     .foregroundStyle(DarkTheme.textPrimary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
+                Text(job.companyName)
+                    .font(.system(size: 14))
+                    .foregroundStyle(DarkTheme.textSecondary)
                     .lineLimit(1)
 
-                HStack(alignment: .firstTextBaseline) {
-                    Text(subtitleText)
-                        .font(.system(size: 13))
-                        .foregroundStyle(DarkTheme.textSecondary)
-                        .lineLimit(1)
-                    Spacer(minLength: 8)
-                    Text(dateText)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(DarkTheme.textTertiary)
+                HStack(spacing: 6) {
+                    if let status = job.status {
+                        DarkStatusPill(status: status)
+                    }
+                    if let type = job.jobType {
+                        DarkTypeTag(text: type.rawValue, icon: type.iconName)
+                    }
                 }
-
-                if let status = job.status {
-                    DarkStatusPill(status: status)
-                        .padding(.top, 1)
-                }
+                .padding(.top, 2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+
+            VStack(alignment: .trailing, spacing: 0) {
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.quaternary)
+                Spacer()
+                Text(dateText)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
         }
-        .padding(14)
+        .padding(16)
         .glassCard(cornerRadius: DarkTheme.cardRadius)
         .task(id: job.companyName) {
             guard job.companyLogoImageData == nil else { return }
             let trimmed = job.companyName.trimmingCharacters(in: .whitespaces)
             guard trimmed.count >= 2 else { return }
+            
+            // Fetch logo
             if let data = await LogoFetcher.fetchLogoData(for: trimmed) {
                 await MainActor.run {
                     withAnimation(.appSmooth) {
                         job.companyLogoImageData = data
                     }
                 }
+            }
+        }
+        .onChange(of: job.status) { old, new in
+            if new == .offer && old != .offer {
+                AppHaptics.shared.success()
             }
         }
     }
@@ -198,17 +247,20 @@ struct DarkJobCardView: View {
         if let data = job.companyLogoImageData, let ui = UIImage(data: data) {
             Image(uiImage: ui)
                 .resizable()
-                .scaledToFill()
+                .scaledToFit()
+                .padding(6) // Internal padding to keep logo off the edges
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.white.opacity(0.05))
         } else {
             Text(initial)
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(DarkTheme.avatarGradient(for: job.companyName))
         }
         #else
         Text(initial)
-            .font(.system(size: 18, weight: .bold))
+            .font(.system(size: 20, weight: .bold))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(DarkTheme.avatarGradient(for: job.companyName))
@@ -216,29 +268,13 @@ struct DarkJobCardView: View {
     }
 }
 
-// MARK: - Previews
-
 #Preview {
-    ScrollView {
-        VStack(spacing: 16) {
-            HStack(spacing: 8) {
-                ForEach(ApplicationStatus.allCases, id: \.self) { DarkStatusPill(status: $0) }
-            }
-
-            HStack(spacing: 8) {
-                DarkTypeTag(text: "Internship", icon: "graduationcap.fill")
-                DarkTypeTag(text: "Full Time",  icon: "briefcase.fill")
-            }
-
-            HStack(spacing: 10) {
-                StatChip(status: .applied,   number: 12)
-                StatChip(status: .interview, number: 3)
-                StatChip(status: .offer,     number: 1)
-            }
-
+    ZStack {
+        AmbientBackground()
+        VStack {
             DarkJobCardView(job: JobApplication(
                 companyName: "Google",
-                position: "Software Engineering Intern",
+                position: "Product Design Intern",
                 jobType: .internship,
                 status: .applied,
                 season: .summer,
