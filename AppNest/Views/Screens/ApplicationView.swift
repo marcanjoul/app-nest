@@ -43,7 +43,6 @@ struct ApplicationView: View {
     @State private var csvFileURL: URL? = nil
     @State private var isShowingShareSheet = false
     @State private var importErrorMessage: String?
-    @State private var isShowingCSVGuide = false
 
     // Cycle-filtered base (before search/status)
     private var cycleFiltered: [JobApplication] {
@@ -438,9 +437,6 @@ struct ApplicationView: View {
         .sheet(isPresented: $isShowingShareSheet) {
             if let url = csvFileURL { ShareSheet(activityItems: [url]) }
         }
-        .sheet(isPresented: $isShowingCSVGuide) {
-            CSVFormatGuideSheet()
-        }
         .alert("Import CSV", isPresented: $isShowingImportConfirmation) {
             Button("Select File") { isImportingCSV = true }
             Button("Cancel", role: .cancel) {}
@@ -516,7 +512,6 @@ struct ApplicationView: View {
         let _ = url.startAccessingSecurityScopedResource()
         defer { url.stopAccessingSecurityScopedResource() }
         do {
-            isShowingCSVGuide = true // Pop up guide on import
             let raw = try String(contentsOf: url, encoding: .utf8)
             let rows = CSVImporter.parse(raw)
             guard !rows.isEmpty else {
@@ -531,7 +526,6 @@ struct ApplicationView: View {
     }
 
     private func exportCSV() {
-        isShowingCSVGuide = true // Pop up guide on export
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let exportable = cycleFiltered.sorted { $0.dateApplied > $1.dateApplied }
@@ -721,23 +715,6 @@ struct ApplicationView: View {
                                     .fill(.ultraThinMaterial)
                                     .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
                                     .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
-                            }
-                    }
-                    .buttonStyle(PressScaleButtonStyle())
-
-                    // Guide button
-                    Button {
-                        isShowingCSVGuide = true
-                        AppHaptics.shared.light()
-                    } label: {
-                        Image(systemName: "questionmark.circle")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(Color.accentColor)
-                            .frame(width: 44, height: 44)
-                            .background {
-                                Circle()
-                                    .fill(Color.accentColor.opacity(0.1))
-                                    .overlay(Circle().strokeBorder(Color.accentColor.opacity(0.2), lineWidth: 1))
                             }
                     }
                     .buttonStyle(PressScaleButtonStyle())

@@ -158,20 +158,19 @@ struct EmailParser {
 
     private func extractPosition(from text: String) -> String? {
         let patterns = [
-            // "applying for the AI Engineering Intern position" — title ends at "position/role"
-            #"(?:application|applied|applying)\s+(?:for|to)\s+(?:the\s+)?(.+?)\s+(?:position|role)\b"#,
+            // "apply/application/applied/applying for the AI Engineering Intern position" — title ends at "position/role"
+            #"(?:\bapply\b|application|applied|applying)\s+(?:for|to)\s+(?:the\s+)?(.+?)\s+(?:position|role)\b"#,
             // "application/applied/applying for [POSITION] at Company" — requires company context
             #"(?:application|applied|applying)\s+for\s+(?:the\s+)?(.+?)\s+(?:at|with|@)\s+"#,
             // "vacancy/opening for [the/our/a] [POSITION] role/position"
-            // e.g. "filled the vacancy for our AI Engineering Intern position"
             #"(?:vacancy|opening)\s+for\s+(?:the\s+|our\s+|a\s+|an\s+)?(.+?)\s+(?:role|position)"#,
-            // "interviewing you for [the] [POSITION]" — requires "you" to avoid "interview for a new career"
+            // "interviewing you for [the] [POSITION]"
             #"interview(?:ing)?\s+you\s+for\s+(?:the\s+)?(.+?)(?:\s+(?:at|with|@)\s+|,|\.\s|\n|$)"#,
             // "role/position of [POSITION]"
             #"(?:role|position)\s+of\s+(?:the\s+)?(.+?)(?:\s+(?:at|with|@)\s+|,|\.\s|\n|$)"#,
             // "offer you [the] [POSITION] role/position"
             #"offer\s+(?:you\s+)?(?:the\s+)?(.+?)\s+(?:role|position)"#,
-            // "the/our [POSITION] role/position" — skip non-title nouns like "vacancy", "opening", "job", "posting"
+            // "the/our [POSITION] role/position"
             #"(?:the|our)\s+(?!vacancy\b|opening\b|job\b|posting\b)(.+?)\s+(?:role|position|opening|opportunity)"#,
             // Label-style "Role: X" / "Position: X"
             #"(?:role|position|title)\s*:\s*(.+?)(?:\n|$)"#,
@@ -183,7 +182,7 @@ struct EmailParser {
             if let match = text.range(of: pattern, options: [.regularExpression, .caseInsensitive]) {
                 let matched = String(text[match])
                 if let raw = extractCaptureGroup(from: matched, pattern: pattern) {
-                    let cleaned = cleanupPosition(raw)
+                    let cleaned = cleanupPosition(cleaned: raw)
                     if !cleaned.isEmpty && cleaned.count < 100 {
                         return cleaned
                     }
@@ -194,12 +193,12 @@ struct EmailParser {
         return nil
     }
 
-    private func cleanupPosition(_ raw: String) -> String {
+    private func cleanupPosition(cleaned raw: String) -> String {
         var s = raw
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .trimmingCharacters(in: CharacterSet(charactersIn: ".,;:"))
 
-        // Strip leading noise that may have leaked into the capture group
+        // Strip leading noise
         let leadingNoise = ["role of the ", "position of the ", "role of ", "position of ",
                             "for the ", "for a ", "for an ",
                             "the ", "our ", "a ", "an "]
@@ -211,7 +210,7 @@ struct EmailParser {
             }
         }
 
-        // Strip trailing "role"/"position" if it leaked in (e.g. from interview-for pattern)
+        // Strip trailing "role"/"position"
         let trailingSuffixes = [" role", " position"]
         for suffix in trailingSuffixes {
             if s.lowercased().hasSuffix(suffix) {
@@ -221,9 +220,22 @@ struct EmailParser {
             }
         }
 
-        // Strip job requisition IDs in parentheses e.g. "(JOB212131)", "(REQ-4892)"
-        if let idRange = s.range(of: #"\s*\([A-Z]{2,}[-]?\d+\)"#, options: .regularExpression) {
-            s = String(s[..<idRange.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        // Strip job requisition IDs (e.g. "(JOB212131)", "(REQ-4892)", or standing alone like "R160469")
+        let idPatterns = [
+            #"\s*\([A-Z]{2,}[-]?\d+\)"#,      // (REQ-123)
+            #"^[A-Z]\d{5,}\s+"#,              // R160469 at start
+            #"\s+-\s+[A-Z]\d{5,}"#,           // - R160469 at end
+            #"^\d{4,}\s+"#                    // 2026 or similar years/IDs at start
+        ]
+        
+        for pattern in idPatterns {
+            if let range = s.range(of: pattern, options: .regularExpression) {
+                if pattern.hasPrefix("^") {
+                    s = String(s[range.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                } else {
+                    s = String(s[..<range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+            }
         }
 
         return s

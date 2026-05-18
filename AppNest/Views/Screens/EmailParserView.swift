@@ -266,7 +266,7 @@ struct EmailParserView: View {
                 .scaleEffect(isButtonPressed ? AppAnimations.pressScale : 1.0)
                 .disabled(isParseDisabled)
                 .padding(.top, 12)
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .padding(18)
@@ -378,8 +378,8 @@ struct EmailParserView: View {
                     CompensationSection(
                         kind: $editCompensationKind,
                         amount: compensationAmountBinding,
-                        currency: compensationCurrencyBinding,
-                        salaryPeriod: salaryPeriodBinding
+                        currency: editCompensationCurrency ?? .usd,
+                        salaryPeriod: editSalaryPeriod ?? .yearly
                     )
                     
                     resumeSection
@@ -392,28 +392,45 @@ struct EmailParserView: View {
 
             Divider().opacity(0.4)
 
-            Button { saveApplication() } label: {
-                Label(
-                    saveSuccess ? "Added!" : "Add to Applications",
-                    systemImage: saveSuccess ? "checkmark.circle.fill" : "plus.circle.fill"
-                )
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background {
-                    let c: Color = isSaveDisabled ? .secondary.opacity(0.3)
-                                 : saveSuccess    ? Color.green
-                                 : Color.accentColor
-                    Capsule()
-                        .fill(c)
-                        .shadow(color: isSaveDisabled ? .clear : c.opacity(0.27), radius: 10, y: 3)
+            HStack(spacing: 12) {
+                Button { resetParser() } label: {
+                    Text("Cancel")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(DarkTheme.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background {
+                            Capsule()
+                                .fill(Color.primary.opacity(0.06))
+                                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.1), lineWidth: 1))
+                        }
                 }
-                .animation(.appSmooth, value: saveSuccess)
+                .buttonStyle(PressScaleButtonStyle())
+
+                Button { saveApplication() } label: {
+                    Label(
+                        saveSuccess ? "Added!" : "Add to Applications",
+                        systemImage: saveSuccess ? "checkmark.circle.fill" : "plus.circle.fill"
+                    )
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background {
+                        let c: Color = isSaveDisabled ? .secondary.opacity(0.3)
+                                     : saveSuccess    ? Color.green
+                                     : Color.accentColor
+                        Capsule()
+                            .fill(c)
+                            .shadow(color: isSaveDisabled ? .clear : c.opacity(0.27), radius: 10, y: 3)
+                    }
+                    .animation(.appSmooth, value: saveSuccess)
+                }
+                .buttonStyle(PressScaleButtonStyle())
+                .scaleEffect(saveSuccess ? 1.02 : 1.0)
+                .animation(.appBouncy, value: saveSuccess)
+                .disabled(isSaveDisabled || saveSuccess)
             }
-            .scaleEffect(saveSuccess ? 1.02 : 1.0)
-            .animation(.appBouncy, value: saveSuccess)
-            .disabled(isSaveDisabled || saveSuccess)
         }
         .padding(18)
         .glassCard()
@@ -454,14 +471,31 @@ struct EmailParserView: View {
         )
     }
 
-    private var salaryPeriodBinding: Binding<SalaryPeriod> {
-        Binding(
-            get: { editSalaryPeriod ?? .yearly },
-            set: { editSalaryPeriod = $0 }
-        )
-    }
-
     // MARK: - Actions
+
+    private func resetParser() {
+        AppHaptics.shared.light()
+        withAnimation(.appSmooth) {
+            emailText       = ""
+            hasResult       = false
+            editCompany     = ""
+            editPosition    = ""
+            editJobType     = nil
+            editStatus      = .applied
+            editSeason      = nil
+            editDate        = Date()
+            editCompensationKind = nil
+            editCompensationAmount = nil
+            editNotes       = ""
+            editAttachedResume = nil
+            isEmailExpanded = true
+            fetchedLogoData     = nil
+            isFetchingLogo      = false
+            highlights          = []
+            isHighlightExpanded = false
+            saveSuccess = false
+        }
+    }
 
     private func parseEmail() {
         #if canImport(UIKit)
