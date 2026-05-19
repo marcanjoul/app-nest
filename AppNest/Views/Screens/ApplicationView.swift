@@ -895,8 +895,16 @@ struct ApplicationView: View {
                 searchText = ""
                 AppHaptics.shared.light()
             }
-            .font(.system(size: 14, weight: .bold))
+            .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(Color.accentColor)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
+            .background(
+                Capsule()
+                    .fill(Color.accentColor.opacity(0.10))
+                    .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1))
+            )
+            .buttonStyle(PressScaleButtonStyle())
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 60)

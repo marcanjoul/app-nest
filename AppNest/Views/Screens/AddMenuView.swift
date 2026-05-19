@@ -194,7 +194,7 @@ struct AddMenuView: View {
                     icon: "envelope.open.fill",
                     iconColor: .orange,
                     title: "Parse Email",
-                    subtitle: "Extract details from a confirmation email."
+                    subtitle: "Extract details from an email."
                 ) {
                     Image(systemName: "chevron.down")
                         .font(.system(size: 14, weight: .semibold))

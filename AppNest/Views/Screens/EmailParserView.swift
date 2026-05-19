@@ -142,7 +142,15 @@ struct EmailParserView: View {
                                 .font(.caption.weight(.semibold))
                         }
                         .foregroundStyle(Color.accentColor)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            Capsule()
+                                .fill(Color.accentColor.opacity(0.10))
+                                .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1))
+                        )
                     }
+                    .buttonStyle(PressScaleButtonStyle())
                 } else if !emailText.isEmpty {
                     Button {
                         withAnimation(.appCrisp) {

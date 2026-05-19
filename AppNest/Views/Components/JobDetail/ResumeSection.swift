@@ -103,8 +103,15 @@ struct ResumeSection: View {
                             Label("Select Another", systemImage: "tray.full")
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundStyle(Color.accentColor)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.accentColor.opacity(0.10))
+                                        .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1))
+                                )
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(PressScaleButtonStyle())
                     }
 
                     HStack(spacing: 8) {

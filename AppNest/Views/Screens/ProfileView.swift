@@ -418,19 +418,30 @@ struct ProfileView: View {
                             Label("Add Resume", systemImage: "plus")
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundStyle(Color.accentColor)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.accentColor.opacity(0.10))
+                                        .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1))
+                                )
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(PressScaleButtonStyle())
 
                         if resumes.count > 5 {
-                            Text("·")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(Theme.textTertiary)
                             Button { isShowingResumeManager = true } label: {
                                 Label("View All", systemImage: "tray.full")
                                     .font(.system(size: 13, weight: .semibold))
                                     .foregroundStyle(Color.accentColor)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        Capsule()
+                                            .fill(Color.accentColor.opacity(0.10))
+                                            .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1))
+                                    )
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(PressScaleButtonStyle())
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
