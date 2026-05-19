@@ -49,6 +49,7 @@ struct AddMenuView: View {
     @State private var editNotes     = ""
     @State private var editAttachedResume: ResumeDocument? = nil
 
+    @State private var cardsVisible     = false
     @State private var parseCount      = 0
     @State private var saveSuccess     = false
     @State private var fetchedLogoData: Data? = nil
@@ -76,46 +77,54 @@ struct AddMenuView: View {
             AmbientBackground()
             
             ScrollView {
-                VStack(spacing: 32) {
-                    header
-                    
-                    VStack(spacing: 16) {
-                        pasteLinkCard
-                        emailParseCard
-                            .padding(.horizontal, isShowingEmailParse ? -16 : 0)
-                            .animation(.appSmooth, value: isShowingEmailParse)
+                VStack(spacing: 16) {
+                    pasteLinkCard
+                        .opacity(cardsVisible ? 1 : 0)
+                        .offset(y: cardsVisible ? 0 : 12)
+                        .animation(.appSmooth.delay(0.0), value: cardsVisible)
 
-                        actionCard(
-                            title: "Import CSV",
-                            subtitle: "Bulk upload applications.",
-                            icon: "square.and.arrow.down.fill",
-                            color: Color.blue
-                        ) {
-                            AppHaptics.shared.light()
-                            isSelectingCSVFile = true
-                        }
-                        
-                        actionCard(
-                            title: "Add Manually",
-                            subtitle: "Enter details from scratch.",
-                            icon: "square.and.pencil",
-                            color: Color.accentColor
-                        ) {
-                            AppHaptics.shared.light()
-                            isPresentingManualAdd = true
-                        }
+                    emailParseCard
+                        .padding(.horizontal, isShowingEmailParse ? -16 : 0)
+                        .animation(.appSmooth, value: isShowingEmailParse)
+                        .opacity(cardsVisible ? 1 : 0)
+                        .offset(y: cardsVisible ? 0 : 12)
+                        .animation(.appSmooth.delay(0.05), value: cardsVisible)
+
+                    actionCard(
+                        title: "Import CSV",
+                        subtitle: "Bulk upload applications.",
+                        icon: "square.and.arrow.down.fill",
+                        color: Color.blue
+                    ) {
+                        AppHaptics.shared.light()
+                        isSelectingCSVFile = true
                     }
+                    .opacity(cardsVisible ? 1 : 0)
+                    .offset(y: cardsVisible ? 0 : 12)
+                    .animation(.appSmooth.delay(0.10), value: cardsVisible)
+
+                    actionCard(
+                        title: "Add Manually",
+                        subtitle: "Enter details from scratch.",
+                        icon: "square.and.pencil",
+                        color: Color.accentColor
+                    ) {
+                        AppHaptics.shared.light()
+                        isPresentingManualAdd = true
+                    }
+                    .opacity(cardsVisible ? 1 : 0)
+                    .offset(y: cardsVisible ? 0 : 12)
+                    .animation(.appSmooth.delay(0.15), value: cardsVisible)
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 60)
+                .padding(.top, 16)
                 .padding(.bottom, 40)
+                .onAppear { cardsVisible = true }
             }
             .scrollBounceBehavior(.basedOnSize)
         }
         .navigationTitle("Add Job")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Color(UIColor.systemBackground), for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.large)
         .sheet(isPresented: Binding(
             get: { isPresentingManualAdd },
             set: { isPresentingManualAdd = $0; appState.isPresentingSheet = $0 }
@@ -164,19 +173,6 @@ struct AddMenuView: View {
             withAnimation(.appFastOut) { isFetchingLogo = true }
             fetchedLogoData = await LogoFetcher.fetchLogoData(for: trimmed, darkMode: colorScheme == .dark)
             withAnimation(.appFastOut) { isFetchingLogo = false }
-        }
-    }
-    
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Track a Job")
-                .font(.system(size: 34, weight: .bold, design: .rounded))
-                .foregroundStyle(Theme.textPrimary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            Text("Choose how you want to add a new application.")
-                .font(.subheadline)
-                .foregroundStyle(Theme.textSecondary)
         }
     }
     
