@@ -471,7 +471,7 @@ private struct TopCompanyRow: View {
 
     private var initialAvatar: some View {
         ZStack {
-            Theme.avatarGradient(for: name)
+            Theme.avatarFill(for: name)
             Text(initial)
                 .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(.white)

@@ -34,26 +34,9 @@ extension View {
 // MARK: - Ambient Background
 
 struct AmbientBackground: View {
-    @Environment(\.colorScheme) private var colorScheme
-
     var body: some View {
-        ZStack {
-            Color(UIColor.systemBackground)
-
-            GeometryReader { geo in
-                let size = max(geo.size.width, geo.size.height) * 1.4
-                RadialGradient(
-                    colors: [
-                        Color.accentColor.opacity(colorScheme == .dark ? 0.09 : 0.06),
-                        Color.accentColor.opacity(0)
-                    ],
-                    center: UnitPoint(x: 0.9, y: 0.0),
-                    startRadius: 0,
-                    endRadius: size
-                )
-            }
-        }
-        .ignoresSafeArea()
+        Color(UIColor.systemBackground)
+            .ignoresSafeArea()
     }
 }
 

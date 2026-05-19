@@ -189,7 +189,6 @@ struct AddMenuView: View {
                                         .lineLimit(3)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .foregroundStyle(Theme.textSecondary)
-                                        .mask(LinearGradient(colors: [.black, .black, .clear], startPoint: .top, endPoint: .bottom))
                                 }
 
                                 Button {
@@ -259,7 +258,6 @@ struct AddMenuView: View {
                                 .background {
                                     Capsule()
                                         .fill(vm.isParseDisabled ? Color.secondary.opacity(0.3) : Color.orange)
-                                        .shadow(color: vm.isParseDisabled ? .clear : Color.orange.opacity(0.27), radius: 10, y: 3)
                                 }
                             }
                             .scaleEffect(vm.isButtonPressed ? AppAnimations.pressScale : 1.0)

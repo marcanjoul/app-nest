@@ -132,8 +132,7 @@ struct CycleListView: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 11)
-                    .background(Capsule().fill(Color.accentColor)
-                        .shadow(color: Color.accentColor.opacity(0.28), radius: 8, y: 3))
+                    .background(Capsule().fill(Color.accentColor))
             }
             .buttonStyle(.plain)
             .padding(.top, 4)

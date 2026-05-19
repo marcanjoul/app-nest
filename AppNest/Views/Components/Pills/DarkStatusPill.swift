@@ -119,7 +119,6 @@ struct StatChip: View {
                             lineWidth: isSelected ? 0 : 0.8
                         )
                     )
-                    .shadow(color: isSelected ? style.tintColor.opacity(0.28) : .clear, radius: 8, y: 3)
             )
         }
         .buttonStyle(PressScaleButtonStyle())
@@ -264,14 +263,14 @@ struct DarkJobCardView: View {
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Theme.avatarGradient(for: job.companyName))
+                .background(Theme.avatarFill(for: job.companyName))
         }
         #else
         Text(initial)
             .font(.system(size: 20, weight: .bold))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Theme.avatarGradient(for: job.companyName))
+            .background(Theme.avatarFill(for: job.companyName))
         #endif
     }
 }

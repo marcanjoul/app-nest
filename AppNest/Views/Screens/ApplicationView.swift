@@ -679,7 +679,6 @@ struct ApplicationView: View {
                                 Circle()
                                     .fill(.ultraThinMaterial)
                                     .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-                                    .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
                             }
                     }
                     .buttonStyle(PressScaleButtonStyle())
@@ -700,7 +699,6 @@ struct ApplicationView: View {
                                 if isEditMode {
                                     Capsule()
                                         .fill(Color.accentColor)
-                                        .shadow(color: Color.accentColor.opacity(0.3), radius: 8, y: 3)
                                 } else {
                                     Circle()
                                         .fill(.ultraThinMaterial)

@@ -246,7 +246,7 @@ struct ProfileView: View {
     @ViewBuilder
     private var initialAvatar: some View {
         ZStack {
-            Theme.avatarGradient(for: avatarGradientKey)
+            Theme.avatarFill(for: avatarGradientKey)
             if profileInitial.isEmpty {
                 Image(systemName: "person.fill")
                     .font(.system(size: 34, weight: .bold))

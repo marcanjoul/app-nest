@@ -208,7 +208,6 @@ struct CSVImportPreviewSheet: View {
                         Capsule().strokeBorder(isSelected ? Color.clear : Color.primary.opacity(0.12), lineWidth: 1)
                     }
             }
-            .shadow(color: isSelected ? color.opacity(0.25) : .clear, radius: 8, y: 3)
         }
         .buttonStyle(PressScaleButtonStyle())
     }
@@ -267,7 +266,6 @@ struct CSVImportPreviewSheet: View {
                 .background {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .fill(readyRows.isEmpty ? Color.gray.opacity(0.3) : Color.accentColor)
-                        .shadow(color: readyRows.isEmpty ? .clear : Color.accentColor.opacity(0.3), radius: 10, y: 4)
                 }
         }
         .buttonStyle(PressScaleButtonStyle())

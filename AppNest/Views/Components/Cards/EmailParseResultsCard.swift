@@ -73,7 +73,7 @@ struct EmailParseResultsCard: View {
             PhotosPicker(selection: $vm.pickerItem, matching: .images) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Theme.avatarGradient(for: vm.editCompany.isEmpty ? "?" : vm.editCompany))
+                        .fill(Theme.avatarFill(for: vm.editCompany.isEmpty ? "?" : vm.editCompany))
                     let initial = vm.editCompany.trimmingCharacters(in: .whitespaces).first.map { String($0).uppercased() } ?? "?"
                     Text(initial)
                         .font(.system(size: 24, weight: .bold, design: .rounded))
@@ -172,7 +172,6 @@ struct EmailParseResultsCard: View {
                                  : Color.accentColor
                     Capsule()
                         .fill(c)
-                        .shadow(color: vm.isSaveDisabled ? .clear : c.opacity(0.25), radius: 10, y: 3)
                 }
                 .animation(.appSmooth, value: vm.saveSuccess)
             }
@@ -190,7 +189,6 @@ struct EmailParseResultsCard: View {
                     .background {
                         Capsule()
                             .fill(Theme.destructive)
-                            .shadow(color: Theme.destructive.opacity(0.2), radius: 8, y: 3)
                     }
             }
             .buttonStyle(PressScaleButtonStyle())

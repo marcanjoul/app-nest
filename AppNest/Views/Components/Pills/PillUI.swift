@@ -42,7 +42,6 @@ struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == 
                         )
                     )
             )
-            .shadow(color: isSelected ? color.opacity(0.21) : .clear, radius: 6, y: 2)
         }
         .buttonStyle(PressScaleButtonStyle())
         .animation(.appCrisp, value: isSelected)
@@ -147,7 +146,6 @@ struct ResumePill: View {
                     .fill(isSelected ? tint : tint.opacity(style == .deleted ? 0.12 : 0.14))
                     .overlay(Capsule().strokeBorder(isSelected ? tint.opacity(0.0) : tint.opacity(style == .deleted ? 0.20 : 0.25), lineWidth: 0.8))
             )
-            .shadow(color: isSelected && showsGlow ? tint.opacity(0.21) : .clear, radius: 6, y: 2)
             .opacity(pillOpacity)
         }
         .buttonStyle(PressScaleButtonStyle())

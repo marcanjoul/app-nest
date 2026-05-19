@@ -128,7 +128,6 @@ struct JobDetailView: View {
                         .background {
                             Capsule()
                                 .fill(isSaveDisabled ? Color.secondary.opacity(0.3) : Color.accentColor)
-                                .shadow(color: isSaveDisabled ? .clear : Color.accentColor.opacity(0.27), radius: 10, y: 3)
                         }
                 }
                 .buttonStyle(PressScaleButtonStyle())

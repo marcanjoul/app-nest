@@ -110,7 +110,6 @@ struct EditImportRowView: View {
                         .background {
                             Capsule()
                                 .fill(Color.accentColor)
-                                .shadow(color: Color.accentColor.opacity(0.27), radius: 10, y: 3)
                         }
                 }
                 .buttonStyle(PressScaleButtonStyle())

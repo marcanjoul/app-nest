@@ -147,10 +147,9 @@ enum Theme {
         Color(red: 0.96, green: 0.52, blue: 0.62),
     ]
 
-    static func avatarGradient(for name: String) -> LinearGradient {
+    static func avatarFill(for name: String) -> Color {
         let hash = abs(name.hashValue)
-        let color = avatarColors[hash % avatarColors.count]
-        return LinearGradient(colors: [color.opacity(0.85), color], startPoint: .topLeading, endPoint: .bottomTrailing)
+        return avatarColors[hash % avatarColors.count]
     }
 
     // MARK: - Avatar Palette (light-mode)

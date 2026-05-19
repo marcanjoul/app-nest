@@ -87,7 +87,6 @@ struct OnboardingView: View {
                         .background {
                             Capsule()
                                 .fill(pages[currentPage].color)
-                                .shadow(color: pages[currentPage].color.opacity(0.30), radius: 14, y: 5)
                         }
                 }
                 .buttonStyle(PressScaleButtonStyle())
