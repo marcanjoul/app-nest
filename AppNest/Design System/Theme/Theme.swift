@@ -15,6 +15,10 @@ enum Theme {
     static let accentLight = Color(red: 0.92, green: 0.95, blue: 0.87)
     static let accentDark  = Color(red: 0.15, green: 0.31, blue: 0.04)
 
+    // MARK: - Destructive
+
+    static let destructive = Color(red: 0.93, green: 0.33, blue: 0.40)
+
     // MARK: - Background
 
     static let background = Color(UIColor.systemBackground)

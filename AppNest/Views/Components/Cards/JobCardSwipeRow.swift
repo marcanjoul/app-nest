@@ -105,7 +105,7 @@ struct JobCardSwipeRow: View {
             .opacity(min(1.0, dragOffset / advanceThresholds[0]))
             .animation(.appSmooth, value: target)
         } else if dragOffset < -5 {
-            let c = Color(red: 0.93, green: 0.33, blue: 0.40) // Softened red
+            let c = Theme.destructive
             HStack(spacing: 10) {
                 Image(systemName: "trash.fill").font(.system(size: 18, weight: .bold))
                 Text("Delete").font(.system(size: 14, weight: .bold))

@@ -111,7 +111,7 @@ struct ProfileView: View {
                 Spacer()
                 Button {
                     #if canImport(UIKit)
-                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    UIApplication.shared.dismissKeyboard()
                     #endif
                 } label: {
                     Image(systemName: "chevron.down")
@@ -404,9 +404,9 @@ struct ProfileView: View {
                             } label: {
                                 Image(systemName: "trash")
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(Color(red: 0.93, green: 0.33, blue: 0.40))
+                                    .foregroundStyle(Theme.destructive)
                                     .frame(width: 34, height: 34)
-                                    .background(Circle().fill(Color(red: 0.93, green: 0.33, blue: 0.40).opacity(0.10)))
+                                    .background(Circle().fill(Theme.destructive.opacity(0.10)))
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("Delete resume")
@@ -493,7 +493,7 @@ struct ProfileView: View {
                 } label: {
                     Label("Reset All Data", systemImage: "trash.fill")
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Color(red: 0.93, green: 0.33, blue: 0.40))
+                        .foregroundStyle(Theme.destructive)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 12)
@@ -735,9 +735,9 @@ private struct ResumeManagerSheet: View {
             Button(role: .destructive) { onRequestDelete(resume) } label: {
                 Image(systemName: "trash")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color(red: 0.93, green: 0.33, blue: 0.40))
+                    .foregroundStyle(Theme.destructive)
                     .frame(width: 34, height: 34)
-                    .background(Circle().fill(Color(red: 0.93, green: 0.33, blue: 0.40).opacity(0.10)))
+                    .background(Circle().fill(Theme.destructive.opacity(0.10)))
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Delete resume")

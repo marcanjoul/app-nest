@@ -56,3 +56,13 @@ struct AmbientBackground: View {
         .ignoresSafeArea()
     }
 }
+
+// MARK: - Keyboard Dismiss
+
+#if canImport(UIKit)
+extension UIApplication {
+    func dismissKeyboard() {
+        sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+#endif

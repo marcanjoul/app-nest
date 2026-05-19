@@ -228,7 +228,7 @@ struct ApplicationView: View {
                                 Text("Delete")
                             }
                         }
-                        .foregroundStyle(Color(red: 0.93, green: 0.33, blue: 0.40))
+                        .foregroundStyle(Theme.destructive)
                         .frame(maxWidth: .infinity)
 
                         Button {
