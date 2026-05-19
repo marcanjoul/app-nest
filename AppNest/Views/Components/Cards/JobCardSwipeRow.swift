@@ -88,7 +88,7 @@ struct JobCardSwipeRow: View {
         if dragOffset > 5, !pipeline.isEmpty {
             let idx = max(0, min(currentStage - 1, pipeline.count - 1))
             let target = pipeline[idx]
-            let style = DarkTheme.statusStyle(for: target)
+            let style = Theme.statusStyle(for: target)
             HStack(spacing: 10) {
                 Image(systemName: style.iconName).font(.system(size: 18, weight: .bold))
                 Text(target.rawValue).font(.system(size: 14, weight: .bold))
@@ -97,9 +97,9 @@ struct JobCardSwipeRow: View {
             .padding(.leading, 24)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
                     .fill(style.fillColor)
-                    .overlay(RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                    .overlay(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
                         .strokeBorder(style.borderColor, lineWidth: 1.5))
             )
             .opacity(min(1.0, dragOffset / advanceThresholds[0]))
@@ -114,9 +114,9 @@ struct JobCardSwipeRow: View {
             .padding(.trailing, 24)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
             .background(
-                RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
                     .fill(c.opacity(0.12))
-                    .overlay(RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                    .overlay(RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
                         .strokeBorder(c.opacity(0.18), lineWidth: 1.5))
             )
             .opacity(min(1.0, abs(dragOffset) / deleteThreshold))

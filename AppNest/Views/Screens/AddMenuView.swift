@@ -87,7 +87,7 @@ struct AddMenuView: View {
 
                         actionCard(
                             title: "Import CSV",
-                            subtitle: "Bulk upload your job history.",
+                            subtitle: "Bulk upload applications.",
                             icon: "square.and.arrow.down.fill",
                             color: Color.blue
                         ) {
@@ -97,7 +97,7 @@ struct AddMenuView: View {
                         
                         actionCard(
                             title: "Add Manually",
-                            subtitle: "Enter application details from scratch.",
+                            subtitle: "Enter details from scratch.",
                             icon: "square.and.pencil",
                             color: Color.accentColor
                         ) {
@@ -171,12 +171,12 @@ struct AddMenuView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Track a Job")
                 .font(.system(size: 34, weight: .bold, design: .rounded))
-                .foregroundStyle(DarkTheme.textPrimary)
+                .foregroundStyle(Theme.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             Text("Choose how you want to add a new application.")
                 .font(.subheadline)
-                .foregroundStyle(DarkTheme.textSecondary)
+                .foregroundStyle(Theme.textSecondary)
         }
     }
     
@@ -190,33 +190,17 @@ struct AddMenuView: View {
                     if !isShowingEmailParse { resetParser() }
                 }
             } label: {
-                HStack(spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.orange.opacity(0.15))
-                            .frame(width: 48, height: 48)
-                        Image(systemName: "envelope.open.fill")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(Color.orange)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Parse Email")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(DarkTheme.textPrimary)
-                        Text("Extract job details from a confirmation email.")
-                            .font(.system(size: 14))
-                            .foregroundStyle(DarkTheme.textSecondary)
-                            .lineLimit(1)
-                    }
-                    Spacer()
+                CardRowHeader(
+                    icon: "envelope.open.fill",
+                    iconColor: .orange,
+                    title: "Parse Email",
+                    subtitle: "Extract details from a confirmation email."
+                ) {
                     Image(systemName: "chevron.down")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(DarkTheme.textSecondary.opacity(0.6))
+                        .foregroundStyle(Theme.textSecondary.opacity(0.6))
                         .rotationEffect(.degrees(isShowingEmailParse ? -180 : 0))
                 }
-                .padding(20)
-                .contentShape(Rectangle())
             }
             .buttonStyle(PressScaleButtonStyle())
             
@@ -231,13 +215,13 @@ struct AddMenuView: View {
                                     Text(buildHighlightedString(emailText, spans: highlights))
                                         .font(.system(size: 13))
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                        .foregroundStyle(DarkTheme.textSecondary)
+                                        .foregroundStyle(Theme.textSecondary)
                                 } else {
                                     Text(buildHighlightedString(emailText, spans: highlights))
                                         .font(.system(size: 13))
                                         .lineLimit(3)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                        .foregroundStyle(DarkTheme.textSecondary)
+                                        .foregroundStyle(Theme.textSecondary)
                                         .mask(LinearGradient(colors: [.black, .black, .clear], startPoint: .top, endPoint: .bottom))
                                 }
 
@@ -338,7 +322,7 @@ struct AddMenuView: View {
                                  } label: {
                                      Text("Parse New Email")
                                          .font(.system(size: 14, weight: .semibold))
-                                         .foregroundStyle(DarkTheme.textPrimary)
+                                         .foregroundStyle(Theme.textPrimary)
                                          .frame(maxWidth: .infinity)
                                          .frame(height: 44)
                                          .background(Color.primary.opacity(0.06))
@@ -353,7 +337,7 @@ struct AddMenuView: View {
                                  } label: {
                                      Text("Done")
                                          .font(.system(size: 14, weight: .semibold))
-                                         .foregroundStyle(DarkTheme.textPrimary)
+                                         .foregroundStyle(Theme.textPrimary)
                                          .frame(maxWidth: .infinity)
                                          .frame(height: 44)
                                          .background(Color.primary.opacity(0.06))
@@ -372,9 +356,9 @@ struct AddMenuView: View {
                 ))
             }
         }
-        .glassCard(cornerRadius: DarkTheme.cardRadius)
+        .glassCard(cornerRadius: Theme.cardRadius)
         .overlay(
-            RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
                 .strokeBorder(Color.primary.opacity(isShowingEmailParse ? 0.15 : 0.0), lineWidth: 1)
         )
         .animation(.appSmooth, value: isShowingEmailParse)
@@ -397,32 +381,17 @@ struct AddMenuView: View {
                     }
                 }
             } label: {
-                HStack(spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.purple.opacity(0.15))
-                            .frame(width: 48, height: 48)
-                        Image(systemName: "link")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(Color.purple)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Paste Job Link")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(DarkTheme.textPrimary)
-                        Text("Auto-extract company and role.")
-                            .font(.system(size: 14))
-                            .foregroundStyle(DarkTheme.textSecondary)
-                            .lineLimit(1)
-                    }
-                    Spacer()
-                    Image(systemName: isShowingPasteLink ? "chevron.up" : "chevron.down")
+                CardRowHeader(
+                    icon: "link",
+                    iconColor: .purple,
+                    title: "Paste Job Link",
+                    subtitle: "Auto-extract company and role."
+                ) {
+                    Image(systemName: "chevron.down")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(DarkTheme.textSecondary.opacity(0.6))
+                        .foregroundStyle(Theme.textSecondary.opacity(0.6))
+                        .rotationEffect(.degrees(isShowingPasteLink ? -180 : 0))
                 }
-                .padding(20)
-                .contentShape(Rectangle())
             }
             .buttonStyle(PressScaleButtonStyle())
             
@@ -434,7 +403,7 @@ struct AddMenuView: View {
                         TextField("https://...", text: $pasteLinkURL)
                             .focused($isTextFieldFocused)
                             .font(.system(size: 15))
-                            .foregroundStyle(DarkTheme.textPrimary)
+                            .foregroundStyle(Theme.textPrimary)
                             .padding(12)
                             .background(Color.primary.opacity(0.04))
                             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -479,10 +448,10 @@ struct AddMenuView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("LinkedIn Links Not Supported")
                                     .font(.system(size: 13, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(DarkTheme.textPrimary)
+                                    .foregroundStyle(Theme.textPrimary)
                                 Text("LinkedIn obscures job details in their URLs. Please open the actual application link or add manually.")
                                     .font(.system(size: 12))
-                                    .foregroundStyle(DarkTheme.textSecondary)
+                                    .foregroundStyle(Theme.textSecondary)
                                     .lineSpacing(2)
                             }
                         }
@@ -502,9 +471,9 @@ struct AddMenuView: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .glassCard(cornerRadius: DarkTheme.cardRadius)
+        .glassCard(cornerRadius: Theme.cardRadius)
         .overlay(
-            RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
                 .strokeBorder(Color.primary.opacity(isShowingPasteLink ? 0.15 : 0.0), lineWidth: 1)
         )
         .animation(.appSmooth, value: isShowingPasteLink)
@@ -567,25 +536,12 @@ struct AddMenuView: View {
 
     private func actionCard(title: String, subtitle: String, icon: String, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(color.opacity(0.15))
-                        .frame(width: 48, height: 48)
-                    Image(systemName: icon)
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(color)
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title).font(.system(size: 17, weight: .semibold)).foregroundStyle(DarkTheme.textPrimary)
-                    Text(subtitle).font(.system(size: 14)).foregroundStyle(DarkTheme.textSecondary).lineLimit(1)
-                }
-                Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold)).foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
+            CardRowHeader(icon: icon, iconColor: color, title: title, subtitle: subtitle) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Theme.textSecondary.opacity(0.4))
             }
-            .padding(20)
-            .contentShape(Rectangle())
-            .glassCard(cornerRadius: DarkTheme.cardRadius)
+            .glassCard(cornerRadius: Theme.cardRadius)
         }
         .buttonStyle(PressScaleButtonStyle())
     }
@@ -597,7 +553,7 @@ struct AddMenuView: View {
             HStack {
                 Label("Review & Edit", systemImage: "square.and.pencil")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
 
                 Spacer()
 
@@ -616,7 +572,7 @@ struct AddMenuView: View {
                 PhotosPicker(selection: $pickerItem, matching: .images) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(DarkTheme.avatarGradient(for: editCompany.isEmpty ? "?" : editCompany))
+                            .fill(Theme.avatarGradient(for: editCompany.isEmpty ? "?" : editCompany))
                         let initial = editCompany.trimmingCharacters(in: .whitespaces).first.map { String($0).uppercased() } ?? "?"
                         Text(initial)
                             .font(.system(size: 24, weight: .bold, design: .rounded))
@@ -904,11 +860,11 @@ private struct EditableFieldRow: View {
             HStack(spacing: 6) {
                 Image(systemName: icon)
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(isEmpty ? .orange : DarkTheme.textSecondary)
+                    .foregroundStyle(isEmpty ? .orange : Theme.textSecondary)
                     .frame(width: 14)
                 Text(label)
                     .font(.caption)
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
                 if isEmpty {
                     Text("· Fill in")
                         .font(.caption2)
@@ -918,7 +874,7 @@ private struct EditableFieldRow: View {
 
             TextField(placeholder.isEmpty ? label : placeholder, text: $text)
                 .font(.subheadline.weight(.medium))
-                .foregroundStyle(DarkTheme.textPrimary)
+                .foregroundStyle(Theme.textPrimary)
                 .focused($isFocused)
         }
         .padding(.horizontal, 12)
@@ -967,11 +923,11 @@ private struct JobTypePickerRow: View {
             HStack(spacing: 6) {
                 Image(systemName: "list.bullet")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
                     .frame(width: 14)
                 Text("Job Type")
                     .font(.caption)
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -1019,11 +975,11 @@ private struct StatusPickerRow: View {
             HStack(spacing: 6) {
                 Image(systemName: "rectangle.and.hand.point.up.left.fill")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
                     .frame(width: 14)
                 Text("Status")
                     .font(.caption)
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -1072,11 +1028,11 @@ private struct SeasonPickerRow: View {
             HStack(spacing: 6) {
                 Image(systemName: "sun.snow.fill")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
                     .frame(width: 14)
                 Text("Season")
                     .font(.caption)
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -1120,12 +1076,12 @@ private struct DatePickerRow: View {
             HStack(spacing: 6) {
                 Image(systemName: "calendar")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
                     .frame(width: 14)
                 Text("DATE APPLIED")
                     .font(.system(size: 11, weight: .bold))
-                    .tracking(DarkTheme.sectionLabelSpacing)
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .tracking(Theme.sectionLabelSpacing)
+                    .foregroundStyle(Theme.textSecondary)
             }
 
             HStack {

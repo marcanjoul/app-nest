@@ -40,11 +40,11 @@ struct OnboardingView: View {
                                 Text(page.title)
                                     .font(.title2.weight(.bold))
                                     .multilineTextAlignment(.center)
-                                    .foregroundStyle(DarkTheme.textPrimary)
+                                    .foregroundStyle(Theme.textPrimary)
 
                                 Text(page.subtitle)
                                     .font(.body)
-                                    .foregroundStyle(DarkTheme.textSecondary)
+                                    .foregroundStyle(Theme.textSecondary)
                                     .multilineTextAlignment(.center)
                                     .padding(.horizontal, 36)
                             }
@@ -100,7 +100,7 @@ struct OnboardingView: View {
                         hasCompletedOnboarding = true
                     }
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 11)
                     .background(

@@ -7,9 +7,6 @@ import UIKit
 #endif
 
 struct ProfileView: View {
-    private static let displayNameStorageKey = "profile.displayName"
-    private static let avatarStorageKey      = "profile.avatarDataBase64"
-    private static let hapticsEnabledKey     = "settings.hapticsEnabled"
 
     @Environment(\.modelContext) private var modelContext
     @Environment(AppState.self) private var appState
@@ -17,9 +14,10 @@ struct ProfileView: View {
     @Query(sort: \ResumeDocument.createdAt, order: .reverse) private var resumes: [ResumeDocument]
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
 
-    @AppStorage(Self.displayNameStorageKey) private var profileDisplayName: String = ""
-    @AppStorage(Self.avatarStorageKey)      private var profileAvatarDataBase64: String = ""
-    @AppStorage(Self.hapticsEnabledKey)      private var hapticsEnabled: Bool = true
+    @AppStorage(AppStorageKeys.displayName)    private var profileDisplayName: String = ""
+    @AppStorage(AppStorageKeys.avatarData)     private var profileAvatarDataBase64: String = ""
+    @AppStorage(AppStorageKeys.hapticsEnabled) private var hapticsEnabled: Bool = true
+    @AppStorage(AppStorageKeys.hideRejected)   private var hideRejected: Bool = false
 
     @State private var avatarSelection: PhotosPickerItem?
     @State private var isShowingDocumentPicker = false
@@ -204,11 +202,11 @@ struct ProfileView: View {
                 TextField(
                     "",
                     text: $profileDisplayName,
-                    prompt: Text("Your Name").foregroundColor(DarkTheme.textSecondary)
+                    prompt: Text("Your Name").foregroundColor(Theme.textSecondary)
                 )
                 .font(.system(size: 26, weight: .bold))
                 .multilineTextAlignment(.center)
-                .foregroundStyle(DarkTheme.textPrimary)
+                .foregroundStyle(Theme.textPrimary)
                 .tint(.accentColor)
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
@@ -221,7 +219,7 @@ struct ProfileView: View {
 
                 Text("\(totalCount) application\(totalCount == 1 ? "" : "s")")
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(DarkTheme.textTertiary)
+                    .foregroundStyle(Theme.textTertiary)
             }
         }
         .frame(maxWidth: .infinity)
@@ -248,7 +246,7 @@ struct ProfileView: View {
     @ViewBuilder
     private var initialAvatar: some View {
         ZStack {
-            DarkTheme.avatarGradient(for: avatarGradientKey)
+            Theme.avatarGradient(for: avatarGradientKey)
             if profileInitial.isEmpty {
                 Image(systemName: "person.fill")
                     .font(.system(size: 34, weight: .bold))
@@ -281,7 +279,7 @@ struct ProfileView: View {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 9, weight: .bold))
             }
-            .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : DarkTheme.textSecondary)
+            .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : Theme.textSecondary)
             .padding(.horizontal, 11)
             .padding(.vertical, 6)
             .background(
@@ -307,7 +305,7 @@ struct ProfileView: View {
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(DarkTheme.textSecondary.opacity(0.6))
+                        .foregroundStyle(Theme.textSecondary.opacity(0.6))
                 }
 
                 PipelineSegmentedBar(segments: pipelineSegments, total: totalCount)
@@ -316,21 +314,21 @@ struct ProfileView: View {
                     ForEach(pipelineStatuses.indices, id: \.self) { i in
                         let status = pipelineStatuses[i]
                         let c = count(for: status)
-                        let style = DarkTheme.statusStyle(for: status)
+                        let style = Theme.statusStyle(for: status)
                         
                         VStack(spacing: 4) {
                             Image(systemName: style.iconName)
                                 .font(.system(size: 10, weight: .black))
-                                .foregroundStyle(c > 0 ? style.tintColor : DarkTheme.textTertiary.opacity(0.6))
+                                .foregroundStyle(c > 0 ? style.tintColor : Theme.textTertiary.opacity(0.6))
                             
                             Text("\(c)")
                                 .font(.system(size: 20, weight: .bold, design: .rounded))
-                                .foregroundStyle(c > 0 ? DarkTheme.textPrimary : DarkTheme.textTertiary)
+                                .foregroundStyle(c > 0 ? Theme.textPrimary : Theme.textTertiary)
                                 .contentTransition(.numericText())
                             
                             Text(pipelineLabel(for: status))
                                 .font(.system(size: 8, weight: .black))
-                                .foregroundStyle(c > 0 ? DarkTheme.textSecondary : DarkTheme.textTertiary.opacity(0.8))
+                                .foregroundStyle(c > 0 ? Theme.textSecondary : Theme.textTertiary.opacity(0.8))
                                 .textCase(.uppercase)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.7)
@@ -394,7 +392,7 @@ struct ProfileView: View {
                             } label: {
                                 Image(systemName: resume.isDefault ? "star.fill" : "star")
                                     .font(.system(size: 16, weight: .semibold))
-                                    .foregroundStyle(resume.isDefault ? Color.yellow : DarkTheme.textTertiary)
+                                    .foregroundStyle(resume.isDefault ? Color.yellow : Theme.textTertiary)
                                     .frame(width: 34, height: 34)
                                     .background(Circle().fill(Color.primary.opacity(0.06)))
                             }
@@ -426,7 +424,7 @@ struct ProfileView: View {
                         if resumes.count > 5 {
                             Text("·")
                                 .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(DarkTheme.textTertiary)
+                                .foregroundStyle(Theme.textTertiary)
                             Button { isShowingResumeManager = true } label: {
                                 Label("View All", systemImage: "tray.full")
                                     .font(.system(size: 13, weight: .semibold))
@@ -461,16 +459,24 @@ struct ProfileView: View {
     private var settingsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             SectionLabel(icon: "gearshape.fill", title: "Settings")
-            
+
             VStack(spacing: 0) {
                 Toggle(isOn: $hapticsEnabled) {
                     Label("Haptic Feedback", systemImage: "waveform")
                         .font(.system(size: 15, weight: .medium))
                 }
                 .padding(.vertical, 12)
-                
+
                 Divider().opacity(0.4)
-                
+
+                Toggle(isOn: $hideRejected) {
+                    Label("Hide Rejected", systemImage: "xmark.circle")
+                        .font(.system(size: 15, weight: .medium))
+                }
+                .padding(.vertical, 12)
+
+                Divider().opacity(0.4)
+
                 Button(role: .destructive) {
                     isShowingResetConfirmation = true
                 } label: {
@@ -481,6 +487,14 @@ struct ProfileView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 12)
             }
+
+            let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+            let build   = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
+            Text("AppNest \(version) (\(build))")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Theme.textTertiary)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 4)
         }
         .padding(18)
         .glassCard()
@@ -583,7 +597,7 @@ private struct ActivityHeatmapView: View {
             HStack {
                 Text("Last 90 days")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(DarkTheme.textTertiary)
+                    .foregroundStyle(Theme.textTertiary)
                 Spacer()
                 HStack(spacing: 4) {
                     Text("Less").font(.system(size: 8))
@@ -593,7 +607,7 @@ private struct ActivityHeatmapView: View {
                     Rectangle().fill(heatmapColor(for: 3)).frame(width: 8, height: 8).cornerRadius(1)
                     Text("More").font(.system(size: 8))
                 }
-                .foregroundStyle(DarkTheme.textTertiary)
+                .foregroundStyle(Theme.textTertiary)
             }
         }
     }
@@ -613,7 +627,7 @@ private struct PipelineSegmentedBar: View {
     struct Segment: Identifiable {
         let id: ApplicationStatus
         let count: Int
-        var color: Color { DarkTheme.statusStyle(for: id).tintColor }
+        var color: Color { Theme.statusStyle(for: id).tintColor }
     }
 
     let segments: [Segment]
@@ -699,7 +713,7 @@ private struct ResumeManagerSheet: View {
             Button { onSetDefault(resume) } label: {
                 Image(systemName: resume.isDefault ? "star.fill" : "star")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(resume.isDefault ? Color.yellow : DarkTheme.textTertiary)
+                    .foregroundStyle(resume.isDefault ? Color.yellow : Theme.textTertiary)
                     .frame(width: 34, height: 34)
                     .background(Circle().fill(Color.primary.opacity(0.06)))
             }

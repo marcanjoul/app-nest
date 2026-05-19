@@ -3,7 +3,7 @@ import SwiftData
 
 @main
 struct AppNestApp: App {
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @AppStorage(AppStorageKeys.hasCompletedOnboarding) private var hasCompletedOnboarding = false
     @State private var appState = AppState()
     @Environment(\.scenePhase) private var scenePhase
 

@@ -100,7 +100,7 @@ struct ProfileStatsView: View {
             HStack {
                 Label("Summary", systemImage: "chart.bar.xaxis")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
                 Spacer()
             }
 
@@ -145,7 +145,7 @@ struct ProfileStatsView: View {
             HStack {
                 Label("Status Breakdown", systemImage: "list.bullet.rectangle")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
                 Spacer()
             }
 
@@ -173,7 +173,7 @@ struct ProfileStatsView: View {
             HStack {
                 Label("Conversion Funnel", systemImage: "arrow.down.right.circle")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
                 Spacer()
             }
 
@@ -222,7 +222,7 @@ struct ProfileStatsView: View {
             HStack {
                 Label("Top Companies", systemImage: "building.2.fill")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
                 Spacer()
             }
 
@@ -247,13 +247,13 @@ struct ProfileStatsView: View {
         VStack(spacing: 14) {
             Image(systemName: "chart.bar.xaxis")
                 .font(.system(size: 44, weight: .semibold))
-                .foregroundStyle(DarkTheme.textSecondary.opacity(0.5))
+                .foregroundStyle(Theme.textSecondary.opacity(0.5))
             Text("No insights yet")
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(DarkTheme.textPrimary)
+                .foregroundStyle(Theme.textPrimary)
             Text("Track a few applications to see your status breakdown, conversion funnel, and top companies here.")
                 .font(.subheadline)
-                .foregroundStyle(DarkTheme.textSecondary)
+                .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
@@ -287,7 +287,7 @@ private struct StatsKPITile: View {
 
             Text(value)
                 .font(.system(size: 26, weight: .bold, design: .rounded))
-                .foregroundStyle(DarkTheme.textPrimary)
+                .foregroundStyle(Theme.textPrimary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
@@ -315,11 +315,11 @@ private struct StatusBreakdownRow: View {
             HStack {
                 Text(status.rawValue)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
                 Spacer()
                 Text("\(count)")
                     .font(.system(size: 13, weight: .bold, design: .rounded))
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
             }
 
             GeometryReader { geo in
@@ -377,11 +377,11 @@ private struct FunnelRow: View {
                 HStack {
                     Text(title)
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(DarkTheme.textPrimary)
+                        .foregroundStyle(Theme.textPrimary)
                     Spacer()
                     Text("\(count)")
                         .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundStyle(DarkTheme.textSecondary)
+                        .foregroundStyle(Theme.textSecondary)
                 }
 
                 GeometryReader { geo in
@@ -433,7 +433,7 @@ private struct TopCompanyRow: View {
         HStack(spacing: 12) {
             Text("\(rank)")
                 .font(.system(size: 12, weight: .bold, design: .rounded))
-                .foregroundStyle(DarkTheme.textTertiary)
+                .foregroundStyle(Theme.textTertiary)
                 .frame(width: 14)
 
             avatar
@@ -442,14 +442,14 @@ private struct TopCompanyRow: View {
 
             Text(name)
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(DarkTheme.textPrimary)
+                .foregroundStyle(Theme.textPrimary)
                 .lineLimit(1)
 
             Spacer()
 
             Text("\(count) app\(count == 1 ? "" : "s")")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(DarkTheme.textSecondary)
+                .foregroundStyle(Theme.textSecondary)
                 .padding(.horizontal, 9)
                 .padding(.vertical, 4)
                 .background(Capsule().fill(Color.primary.opacity(0.07)))
@@ -471,7 +471,7 @@ private struct TopCompanyRow: View {
 
     private var initialAvatar: some View {
         ZStack {
-            DarkTheme.avatarGradient(for: name)
+            Theme.avatarGradient(for: name)
             Text(initial)
                 .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(.white)

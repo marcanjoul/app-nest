@@ -114,13 +114,13 @@ struct CycleListView: View {
         VStack(spacing: 14) {
             Image(systemName: "tray.2.fill")
                 .font(.system(size: 44))
-                .foregroundStyle(DarkTheme.textSecondary.opacity(0.45))
+                .foregroundStyle(Theme.textSecondary.opacity(0.45))
             Text("No cycles yet")
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(DarkTheme.textPrimary)
+                .foregroundStyle(Theme.textPrimary)
             Text("Create a cycle to group your applications by season or search.")
                 .font(.subheadline)
-                .foregroundStyle(DarkTheme.textSecondary)
+                .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 30)
             Button {
@@ -191,11 +191,11 @@ struct CycleRow: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(cycle.name)
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(isActive ? Color.accentColor : DarkTheme.textPrimary)
+                        .foregroundStyle(isActive ? Color.accentColor : Theme.textPrimary)
                         .animation(.appCrisp, value: isActive)
                     Text("\(cycle.applications.count) application\(cycle.applications.count == 1 ? "" : "s")")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(DarkTheme.textSecondary)
+                        .foregroundStyle(Theme.textSecondary)
                 }
                 Spacer()
                 Image(systemName: "checkmark")
@@ -208,12 +208,12 @@ struct CycleRow: View {
             .padding(.horizontal, 18)
             .padding(.vertical, 15)
             .background {
-                RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
-                    .fill(DarkTheme.cardFill)
+                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                    .fill(Theme.cardFill)
                     .overlay(
-                        RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
+                        RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
                             .strokeBorder(
-                                isActive ? Color.accentColor.opacity(0.45) : DarkTheme.cardBorder,
+                                isActive ? Color.accentColor.opacity(0.45) : Theme.cardBorder,
                                 lineWidth: isActive ? 1.5 : 1
                             )
                     )

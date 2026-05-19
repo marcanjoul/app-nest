@@ -321,7 +321,7 @@ struct JobDetailView: View {
             } label: {
                 Image(systemName: isNewApplication ? "xmark" : "chevron.left")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
                     .frame(width: 40, height: 40)
                     .background {
                         Circle()
@@ -338,11 +338,11 @@ struct JobDetailView: View {
                 Button { isShowingLogoAttribution.toggle() } label: {
                     Image(systemName: "info.circle")
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(DarkTheme.textSecondary)
+                        .foregroundStyle(Theme.textSecondary)
                         .frame(width: 40, height: 40)
                         .background {
                             Circle()
-                                .fill(DarkTheme.cardFill)
+                                .fill(Theme.cardFill)
                                 .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
                         }
                 }

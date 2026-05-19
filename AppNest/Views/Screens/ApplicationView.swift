@@ -34,6 +34,8 @@ struct ApplicationView: View {
     @State private var isEditMode = false
     @State private var isConfirmingBulkDelete = false
 
+    @AppStorage(AppStorageKeys.hideRejected) private var hideRejected: Bool = false
+
     // Import / Export
     @State private var csvImportPreview: [CSVImportRow]? = nil
     @State private var isShowingImportPreview = false
@@ -66,6 +68,10 @@ struct ApplicationView: View {
     private var filteredAndSorted: [JobApplication] {
         var result = searchFiltered
 
+        if hideRejected {
+            result = result.filter { $0.status != .rejected }
+        }
+
         if !selectedStatuses.isEmpty {
             result = result.filter { job in
                 job.status.map { selectedStatuses.contains($0) } ?? false
@@ -94,7 +100,7 @@ struct ApplicationView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("App Nest")
                                 .font(.system(size: 40, weight: .bold))
-                                .foregroundStyle(DarkTheme.textPrimary)
+                                .foregroundStyle(Theme.textPrimary)
                             
                             if !searchText.isEmpty {
                                 Text("\(filteredAndSorted.count) results")
@@ -194,7 +200,7 @@ struct ApplicationView: View {
                 VStack(spacing: 4) {
                     Text("Logos provided by Logo.dev")
                         .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(DarkTheme.textTertiary.opacity(0.6))
+                        .foregroundStyle(Theme.textTertiary.opacity(0.6))
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 40)
@@ -441,7 +447,7 @@ struct ApplicationView: View {
         HStack(spacing: 8) {
             Text("\(selectedJobIDs.count) selected")
                 .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(DarkTheme.textPrimary)
+                .foregroundStyle(Theme.textPrimary)
             
             Spacer()
             
@@ -591,11 +597,11 @@ struct ApplicationView: View {
             // Glass search bar
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
-                    .foregroundStyle(isSearchFocused ? Color.accentColor : DarkTheme.textSecondary)
+                    .foregroundStyle(isSearchFocused ? Color.accentColor : Theme.textSecondary)
                     .font(.system(size: 15, weight: .medium))
 
                 TextField(isSearchFocused ? "Search company, position..." : "Search...", text: $searchText)
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
                     .tint(.accentColor)
                     .focused($isSearchFocused)
 
@@ -609,7 +615,7 @@ struct ApplicationView: View {
                         AppHaptics.shared.light()
                     } label: {
                         Image(systemName: isSearchFocused && searchText.isEmpty ? "xmark" : "xmark.circle.fill")
-                            .foregroundStyle(DarkTheme.textSecondary)
+                            .foregroundStyle(Theme.textSecondary)
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     }
@@ -643,7 +649,7 @@ struct ApplicationView: View {
                         ZStack(alignment: .topTrailing) {
                             Image(systemName: "line.3.horizontal.decrease.circle")
                                 .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(sortOption == .dateNewest ? DarkTheme.textPrimary : Color.accentColor)
+                                .foregroundStyle(sortOption == .dateNewest ? Theme.textPrimary : Color.accentColor)
                                 .frame(width: 44, height: 44)
                                 .background(.ultraThinMaterial)
                                 .clipShape(Circle())
@@ -667,7 +673,7 @@ struct ApplicationView: View {
                     } label: {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(DarkTheme.textPrimary)
+                            .foregroundStyle(Theme.textPrimary)
                             .frame(width: 44, height: 44)
                             .background {
                                 Circle()
@@ -792,12 +798,12 @@ struct ApplicationView: View {
                     .font(.system(size: 10, weight: .black))
                     .opacity(0.5)
             }
-            .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : DarkTheme.textSecondary)
+            .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : Theme.textSecondary)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
             .background {
                 Capsule()
-                    .fill(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.12) : DarkTheme.cardFill)
+                    .fill(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.12) : Theme.cardFill)
                     .overlay(Capsule().strokeBorder(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.28) : Color.primary.opacity(0.08), lineWidth: 1))
             }
         }
@@ -819,15 +825,15 @@ struct ApplicationView: View {
         VStack(spacing: 20) {
             Image(systemName: "tray.fill")
                 .font(.system(size: 52))
-                .foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
+                .foregroundStyle(Theme.textSecondary.opacity(0.4))
             
             VStack(spacing: 8) {
                 Text("No applications yet")
                     .font(.title3.weight(.bold))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
                 Text("Track your first job manually, paste a link, or import from a CSV.")
                     .font(.subheadline)
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
                     .multilineTextAlignment(.center)
             }
             .padding(.horizontal, 40)
@@ -842,15 +848,15 @@ struct ApplicationView: View {
         VStack(spacing: 20) {
             Image(systemName: "folder.badge.questionmark")
                 .font(.system(size: 52))
-                .foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
+                .foregroundStyle(Theme.textSecondary.opacity(0.4))
             
             VStack(spacing: 8) {
                 Text("No apps in this cycle")
                     .font(.title3.weight(.bold))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
                 Text("You haven't added any jobs to this search cycle yet.")
                     .font(.subheadline)
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
                     .multilineTextAlignment(.center)
             }
             .padding(.horizontal, 40)
@@ -881,10 +887,10 @@ struct ApplicationView: View {
         VStack(spacing: 14) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 40))
-                .foregroundStyle(DarkTheme.textSecondary.opacity(0.5))
+                .foregroundStyle(Theme.textSecondary.opacity(0.5))
             Text("No results for \"\(searchText)\"")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(DarkTheme.textPrimary)
+                .foregroundStyle(Theme.textPrimary)
             Button("Clear Search") {
                 searchText = ""
                 AppHaptics.shared.light()

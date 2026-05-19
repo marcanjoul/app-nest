@@ -125,7 +125,7 @@ struct EmailParserView: View {
             HStack(alignment: .center) {
                 Label("Paste Email", systemImage: "envelope.open.fill")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
 
                 Spacer()
 
@@ -151,7 +151,7 @@ struct EmailParserView: View {
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 18))
-                            .foregroundStyle(DarkTheme.textSecondary)
+                            .foregroundStyle(Theme.textSecondary)
                     }
                 }
             }
@@ -162,13 +162,13 @@ struct EmailParserView: View {
                         Text(buildHighlightedString(emailText, spans: highlights))
                             .font(.system(size: 13))
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .foregroundStyle(DarkTheme.textSecondary)
+                            .foregroundStyle(Theme.textSecondary)
                     } else {
                         Text(buildHighlightedString(emailText, spans: highlights))
                             .font(.system(size: 13))
                             .lineLimit(3)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .foregroundStyle(DarkTheme.textSecondary)
+                            .foregroundStyle(Theme.textSecondary)
                             .mask(
                                 LinearGradient(
                                     colors: [.black, .black, .clear],
@@ -200,7 +200,7 @@ struct EmailParserView: View {
                 if emailText.isEmpty {
                     Text("Paste a job application email to extract its details.")
                         .font(.subheadline)
-                        .foregroundStyle(DarkTheme.textSecondary)
+                        .foregroundStyle(Theme.textSecondary)
                         .padding(.top, 10)
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
@@ -289,7 +289,7 @@ struct EmailParserView: View {
             HStack {
                 Label("Review & Edit", systemImage: "square.and.pencil")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
 
                 Spacer()
 
@@ -308,7 +308,7 @@ struct EmailParserView: View {
                 PhotosPicker(selection: $pickerItem, matching: .images) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(DarkTheme.avatarGradient(for: editCompany.isEmpty ? "?" : editCompany))
+                            .fill(Theme.avatarGradient(for: editCompany.isEmpty ? "?" : editCompany))
                         let initial = editCompany.trimmingCharacters(in: .whitespaces).first.map { String($0).uppercased() } ?? "?"
                         Text(initial)
                             .font(.system(size: 24, weight: .bold, design: .rounded))
@@ -641,11 +641,11 @@ private struct EditableFieldRow: View {
             HStack(spacing: 6) {
                 Image(systemName: icon)
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(isEmpty ? .orange : DarkTheme.textSecondary)
+                    .foregroundStyle(isEmpty ? .orange : Theme.textSecondary)
                     .frame(width: 14)
                 Text(label)
                     .font(.caption)
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
                 if isEmpty {
                     Text("· Fill in")
                         .font(.caption2)
@@ -655,7 +655,7 @@ private struct EditableFieldRow: View {
 
             TextField(placeholder.isEmpty ? label : placeholder, text: $text)
                 .font(.subheadline.weight(.medium))
-                .foregroundStyle(DarkTheme.textPrimary)
+                .foregroundStyle(Theme.textPrimary)
                 .focused($isFocused)
         }
         .padding(.horizontal, 12)
@@ -707,11 +707,11 @@ private struct JobTypePickerRow: View {
             HStack(spacing: 6) {
                 Image(systemName: "list.bullet")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
                     .frame(width: 14)
                 Text("Job Type")
                     .font(.caption)
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -762,11 +762,11 @@ private struct StatusPickerRow: View {
             HStack(spacing: 6) {
                 Image(systemName: "rectangle.and.hand.point.up.left.fill")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
                     .frame(width: 14)
                 Text("Status")
                     .font(.caption)
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -818,11 +818,11 @@ private struct SeasonPickerRow: View {
             HStack(spacing: 6) {
                 Image(systemName: "sun.snow.fill")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
                     .frame(width: 14)
                 Text("Season")
                     .font(.caption)
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -869,12 +869,12 @@ private struct DatePickerRow: View {
             HStack(spacing: 6) {
                 Image(systemName: "calendar")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
                     .frame(width: 14)
                 Text("DATE APPLIED")
                     .font(.system(size: 11, weight: .bold))
-                    .tracking(DarkTheme.sectionLabelSpacing)
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .tracking(Theme.sectionLabelSpacing)
+                    .foregroundStyle(Theme.textSecondary)
             }
 
             HStack {

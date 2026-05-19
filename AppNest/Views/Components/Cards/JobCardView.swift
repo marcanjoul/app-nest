@@ -61,11 +61,11 @@ struct JobCardView: View {
 
                 HStack(spacing: 4) {
                     if let status = job.status {
-                        let style = Theme.style(for: status)
+                        let style = Theme.tagStyle(for: status)
                         StatusPill(text: status.rawValue, background: style.background, foreground: style.foreground)
                     }
                     if let season = job.season {
-                        let style = Theme.style(for: season)
+                        let style = Theme.tagStyle(for: season)
                         StatusPill(text: season.rawValue, background: style.background, foreground: style.foreground)
                     }
                 }

@@ -164,14 +164,14 @@ struct ResumeLibrarySheet: View {
                                 HStack(spacing: 12) {
                                     Image(systemName: resume.isDefault ? "star.fill" : "doc.text.fill")
                                         .font(.system(size: 14, weight: .semibold))
-                                        .foregroundStyle(resume.isDefault ? Color(red: 0.96, green: 0.73, blue: 0.28) : DarkTheme.textSecondary)
+                                        .foregroundStyle(resume.isDefault ? Color(red: 0.96, green: 0.73, blue: 0.28) : Theme.textSecondary)
                                         .frame(width: 30, height: 30)
                                         .background(Circle().fill(Color.primary.opacity(0.06)))
 
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(resume.fileName)
                                             .font(.subheadline.weight(.semibold))
-                                            .foregroundStyle(DarkTheme.textPrimary)
+                                            .foregroundStyle(Theme.textPrimary)
                                             .lineLimit(2)
                                             .multilineTextAlignment(.leading)
 
@@ -262,11 +262,11 @@ struct ResumePreview: View {
                 .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .lineLimit(1)
                 .truncationMode(.middle)
-                .foregroundStyle(DarkTheme.textPrimary)
+                .foregroundStyle(Theme.textPrimary)
             Spacer(minLength: 0)
             Image(systemName: "arrow.up.left.and.arrow.down.right")
                 .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(DarkTheme.textSecondary)
+                .foregroundStyle(Theme.textSecondary)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -282,7 +282,7 @@ struct ResumePreview: View {
         VStack(spacing: 12) {
             Image(systemName: "doc.text")
                 .font(.system(size: 36, weight: .semibold))
-                .foregroundStyle(DarkTheme.textSecondary)
+                .foregroundStyle(Theme.textSecondary)
             Text("Unable to load preview")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -325,7 +325,7 @@ struct FullscreenResumeViewer: View {
                     VStack(spacing: 12) {
                         Image(systemName: "doc.text")
                             .font(.system(size: 44, weight: .semibold))
-                            .foregroundStyle(DarkTheme.textSecondary)
+                            .foregroundStyle(Theme.textSecondary)
                         Text("Unable to load this resume")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
