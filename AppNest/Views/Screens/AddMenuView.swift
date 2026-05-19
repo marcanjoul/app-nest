@@ -1,8 +1,17 @@
 import SwiftUI
+import SwiftData
+import PhotosUI
+import UniformTypeIdentifiers
 
 struct AddMenuView: View {
     @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     
+    @Query(sort: \ResumeDocument.createdAt, order: .reverse) private var resumes: [ResumeDocument]
+    @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
+    
+    // UI Navigation State
     @State private var isShowingPasteLink = false
     @State private var pasteLinkURL = ""
     @State private var isParsing = false
@@ -12,16 +21,20 @@ struct AddMenuView: View {
     // Presentation States
     @State private var isPresentingManualAdd = false
     @State private var isPresentingParsedJob = false
-    @State private var isPresentingEmailParsedJob = false
+    @State private var isSelectingCSVFile = false
+    @State private var csvImportRows: [CSVImportRow] = []
     @State private var isPresentingImport = false
     @State private var isShowingEmailParse = false
     @State private var showLinkedInError = false
     
     // Email Parse State
-    @State private var emailText = ""
-    @State private var isEmailParsing = false
-@State private var isEmailExpanded  = true
-    @State private var isButtonPressed  = false
+    @State private var emailText        = ""
+    @State private var isEmailParsing   = false
+    @State private var isEmailExpanded    = true
+    @State private var isButtonPressed    = false
+    @FocusState private var isEmailEditorFocused: Bool
+
+    // Editable extracted fields
     @State private var hasResult     = false
     @State private var editCompany   = ""
     @State private var editPosition  = ""
@@ -35,24 +48,29 @@ struct AddMenuView: View {
     @State private var editSalaryPeriod: SalaryPeriod? = .yearly
     @State private var editNotes     = ""
     @State private var editAttachedResume: ResumeDocument? = nil
+
     @State private var parseCount      = 0
     @State private var saveSuccess     = false
-    @State private var scrollToResults = false
     @State private var fetchedLogoData: Data? = nil
     @State private var isFetchingLogo       = false
     @State private var highlights: [HighlightSpan] = []
     @State private var isHighlightExpanded  = false
     @State private var pickerItem: PhotosPickerItem? = nil
-    @State private var appeared = false
-    @State private var appeared = false
-    @State private var appeared = false
-    @State private var appeared = false
-    @State private var appeared = false
-    @FocusState private var isEmailEditorFocused: Bool
-    
+
     private let linkParser = LinkParser()
     private let emailParser = EmailParser()
-    
+
+    private var defaultResume: ResumeDocument? { resumes.first(where: \.isDefault) }
+
+    private var isParseDisabled: Bool {
+        emailText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isEmailParsing
+    }
+
+    private var isSaveDisabled: Bool {
+        editCompany.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        editPosition.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     var body: some View {
         ZStack {
             AmbientBackground()
@@ -62,13 +80,11 @@ struct AddMenuView: View {
                     header
                     
                     VStack(spacing: 16) {
-                        // 1. Paste Link Card
                         pasteLinkCard
-                        
-                        // 2. Parse Email Card
                         emailParseCard
-                        
-                        // 3. Import CSV Card
+                            .padding(.horizontal, isShowingEmailParse ? -16 : 0)
+                            .animation(.appSmooth, value: isShowingEmailParse)
+
                         actionCard(
                             title: "Import CSV",
                             subtitle: "Bulk upload your job history.",
@@ -76,10 +92,9 @@ struct AddMenuView: View {
                             color: Color.blue
                         ) {
                             AppHaptics.shared.light()
-                            isPresentingImport = true
+                            isSelectingCSVFile = true
                         }
                         
-                        // 3. Add Manually Card
                         actionCard(
                             title: "Add Manually",
                             subtitle: "Enter application details from scratch.",
@@ -124,21 +139,31 @@ struct AddMenuView: View {
             get: { isPresentingImport },
             set: { isPresentingImport = $0; appState.isPresentingSheet = $0 }
         )) {
-            CSVImportPreviewSheet(initialRows: [])
+            CSVImportPreviewSheet(initialRows: csvImportRows)
         }
-        .sheet(isPresented: Binding(
-            get: { isPresentingEmailParsedJob },
-            set: { isPresentingEmailParsedJob = $0; appState.isPresentingSheet = $0 }
-        )) {
-            NavigationStack {
-                JobDetailView(
-                    job: nil,
-                    prefillCompany: emailParsedResult?.companyName ?? "",
-                    prefillPosition: emailParsedResult?.position ?? "",
-                    prefillType: emailParsedResult?.jobType,
-                    prefillStatus: emailParsedResult?.status
-                )
-            }
+        .fileImporter(
+            isPresented: $isSelectingCSVFile,
+            allowedContentTypes: [.commaSeparatedText, .text],
+            allowsMultipleSelection: false
+        ) { result in
+            guard let url = try? result.get().first else { return }
+            guard url.startAccessingSecurityScopedResource() else { return }
+            defer { url.stopAccessingSecurityScopedResource() }
+            guard let content = try? String(contentsOf: url, encoding: .utf8) else { return }
+            csvImportRows = CSVImporter.parse(content)
+            isPresentingImport = true
+            appState.isPresentingSheet = true
+        }
+        .task(id: editCompany) {
+            fetchedLogoData = nil
+            isFetchingLogo  = false
+            let trimmed = editCompany.trimmingCharacters(in: .whitespaces)
+            guard trimmed.count >= 2 else { return }
+            do { try await Task.sleep(for: .milliseconds(600)) } catch { return }
+            guard !Task.isCancelled else { return }
+            withAnimation(.appFastOut) { isFetchingLogo = true }
+            fetchedLogoData = await LogoFetcher.fetchLogoData(for: trimmed, darkMode: colorScheme == .dark)
+            withAnimation(.appFastOut) { isFetchingLogo = false }
         }
     }
     
@@ -162,12 +187,7 @@ struct AddMenuView: View {
                 AppHaptics.shared.light()
                 withAnimation(.appSmooth) {
                     isShowingEmailParse.toggle()
-                    if isShowingEmailParse {
-                        isEmailEditorFocused = true
-                    } else {
-                        resetParser()
-                        isShowingEmailParse = false
-                    }
+                    if !isShowingEmailParse { resetParser() }
                 }
             } label: {
                 HStack(spacing: 16) {
@@ -190,9 +210,10 @@ struct AddMenuView: View {
                             .lineLimit(1)
                     }
                     Spacer()
-                    Image(systemName: isShowingEmailParse ? "chevron.up" : "chevron.down")
+                    Image(systemName: "chevron.down")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(DarkTheme.textSecondary.opacity(0.6))
+                        .rotationEffect(.degrees(isShowingEmailParse ? -180 : 0))
                 }
                 .padding(20)
                 .contentShape(Rectangle())
@@ -203,7 +224,6 @@ struct AddMenuView: View {
                 VStack(spacing: 16) {
                     Divider().opacity(0.4)
                     
-                    // The original EmailParser inputCard content (simplified to fit inline)
                     VStack(alignment: .leading, spacing: 0) {
                         if !isEmailExpanded && !emailText.isEmpty && !highlights.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
@@ -264,6 +284,10 @@ struct AddMenuView: View {
                             .padding(.bottom, 12)
 
                             Button {
+                                withAnimation(.appFastOut) { isButtonPressed = true }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                                    withAnimation(.appFastOut) { isButtonPressed = false }
+                                }
                                 parseEmail()
                             } label: {
                                 HStack(spacing: 8) {
@@ -280,13 +304,13 @@ struct AddMenuView: View {
                                 .padding(.vertical, 14)
                                 .background {
                                     Capsule()
-                                        .fill(emailText.isEmpty || isEmailParsing ? Color.secondary.opacity(0.3) : Color.orange)
-                                        .shadow(color: emailText.isEmpty || isEmailParsing ? .clear : Color.orange.opacity(0.27), radius: 10, y: 3)
+                                        .fill(isParseDisabled ? Color.secondary.opacity(0.3) : Color.orange)
+                                        .shadow(color: isParseDisabled ? .clear : Color.orange.opacity(0.27), radius: 10, y: 3)
                                 }
                             }
-                            .disabled(emailText.isEmpty || isEmailParsing)
+                            .scaleEffect(isButtonPressed ? AppAnimations.pressScale : 1.0)
+                            .disabled(isParseDisabled)
                         } else if hasResult {
-                            // Collapse/Edit button when minimized
                             Button {
                                 withAnimation(.appCrisp) { isEmailExpanded = true }
                             } label: {
@@ -342,7 +366,10 @@ struct AddMenuView: View {
                          .transition(.opacity.combined(with: .move(edge: .bottom)))
                     }
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .move(edge: .top)),
+                    removal: .opacity
+                ))
             }
         }
         .glassCard(cornerRadius: DarkTheme.cardRadius)
@@ -353,217 +380,8 @@ struct AddMenuView: View {
         .animation(.appSmooth, value: isShowingEmailParse)
         .animation(.appSmooth, value: hasResult)
         .animation(.appSmooth, value: isEmailExpanded)
-        .task(id: editCompany) {
-            fetchedLogoData = nil
-            isFetchingLogo  = false
-            let trimmed = editCompany.trimmingCharacters(in: .whitespaces)
-            guard trimmed.count >= 2 else { return }
-            do { try await Task.sleep(for: .milliseconds(600)) } catch { return }
-            guard !Task.isCancelled else { return }
-            withAnimation(.appFastOut) { isFetchingLogo = true }
-            fetchedLogoData = await LogoFetcher.fetchLogoData(for: trimmed, darkMode: true) // Assuming dark mode for now or read env
-            withAnimation(.appFastOut) { isFetchingLogo = false }
-        }
     }
- else {
-                        isEmailEditorFocused = false
-                        emailText = ""
-                        emailParsedResult = nil
-                    }
-                }
-            } label: {
-                HStack(spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.orange.opacity(0.15))
-                            .frame(width: 48, height: 48)
-                        Image(systemName: "envelope.open.fill")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundStyle(Color.orange)
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Parse Email")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(DarkTheme.textPrimary)
-                        Text("Extract job details from a confirmation email.")
-                            .font(.system(size: 14))
-                            .foregroundStyle(DarkTheme.textSecondary)
-                            .lineLimit(1)
-                    }
-                    Spacer()
-                    Image(systemName: isShowingEmailParse ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(DarkTheme.textSecondary.opacity(0.6))
-                }
-                .padding(20)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(PressScaleButtonStyle())
-            
-            if isShowingEmailParse {
-                VStack(spacing: 12) {
-                    Divider().opacity(0.4)
-                    
-                    if emailParsedResult == nil {
-                        VStack(spacing: 16) {
-                            TextEditor(text: $emailText)
-                                .focused($isEmailEditorFocused)
-                                .font(.system(size: 14))
-                                .padding(12)
-                                .frame(minHeight: 180)
-                                .background(Color.primary.opacity(0.04))
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .strokeBorder(isEmailEditorFocused ? Color.orange.opacity(0.5) : Color.primary.opacity(0.08), lineWidth: 1)
-                                )
-                                .overlay(alignment: .topLeading) {
-                                    if emailText.isEmpty {
-                                        Text("Paste the job application or confirmation email here...")
-                                            .font(.system(size: 14))
-                                            .foregroundStyle(DarkTheme.textSecondary.opacity(0.6))
-                                            .padding(.horizontal, 16)
-                                            .padding(.top, 20)
-                                            .allowsHitTesting(false)
-                                    }
-                                }
-                            
-                            Button {
-                                parseEmail()
-                            } label: {
-                                Group {
-                                    if isEmailParsing {
-                                        ProgressView().tint(.white)
-                                    } else {
-                                        Text("Parse Email")
-                                    }
-                                }
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 48)
-                                .background(emailText.isEmpty ? Color.secondary.opacity(0.3) : Color.orange)
-                                .clipShape(Capsule())
-                            }
-                            .disabled(emailText.isEmpty || isEmailParsing)
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 20)
-                        .padding(.top, 12)
-                    } else {
-                        // Result UI (Simplified)
-                        VStack(spacing: 20) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(Color.green)
-                                Text("Email Parsed Successfully")
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundStyle(DarkTheme.textPrimary)
-                            }
-                            .padding(.top, 8)
-                            
-                            // Show the extracted info or buttons to continue
-                            VStack(spacing: 12) {
-                                Button {
-                                    isPresentingEmailParsedJob = true
-                                } label: {
-                                    Text("Review & Add Job")
-                                        .font(.system(size: 15, weight: .bold))
-                                        .foregroundStyle(.white)
-                                        .frame(maxWidth: .infinity)
-                                        .frame(height: 48)
-                                        .background(Color.accentColor)
-                                        .clipShape(Capsule())
-                                }
-                                .buttonStyle(PressScaleButtonStyle())
-                                
-                                HStack(spacing: 12) {
-                                    Button {
-                                        withAnimation(.appSmooth) {
-                                            emailParsedResult = nil
-                                            emailText = ""
-                                            isEmailEditorFocused = true
-                                        }
-                                    } label: {
-                                        Text("Parse New Email")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundStyle(DarkTheme.textPrimary)
-                                            .frame(maxWidth: .infinity)
-                                            .frame(height: 44)
-                                            .background(Color.primary.opacity(0.06))
-                                            .clipShape(Capsule())
-                                    }
-                                    
-                                    Button {
-                                        withAnimation(.appSmooth) {
-                                            isShowingEmailParse = false
-                                            emailParsedResult = nil
-                                            emailText = ""
-                                        }
-                                    } label: {
-                                        Text("Done")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundStyle(DarkTheme.textPrimary)
-                                            .frame(maxWidth: .infinity)
-                                            .frame(height: 44)
-                                            .background(Color.primary.opacity(0.06))
-                                            .clipShape(Capsule())
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 20)
-                        .padding(.top, 12)
-                        .transition(.opacity.combined(with: .move(edge: .bottom)))
-                    }
-                }
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
-        .glassCard(cornerRadius: DarkTheme.cardRadius)
-        .overlay(
-            RoundedRectangle(cornerRadius: DarkTheme.cardRadius, style: .continuous)
-                .strokeBorder(Color.primary.opacity(isShowingEmailParse ? 0.15 : 0.0), lineWidth: 1)
-        )
-        .animation(.appSmooth, value: isShowingEmailParse)
-        .animation(.appSmooth, value: emailParsedResult == nil)
-    }
-    
-    private func actionCard(title: String, subtitle: String, icon: String, color: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(color.opacity(0.15))
-                        .frame(width: 48, height: 48)
-                    Image(systemName: icon)
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(color)
-                }
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(DarkTheme.textPrimary)
-                    Text(subtitle)
-                        .font(.system(size: 14))
-                        .foregroundStyle(DarkTheme.textSecondary)
-                        .lineLimit(1)
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
-            }
-            .padding(20)
-            .contentShape(Rectangle())
-            .glassCard(cornerRadius: DarkTheme.cardRadius)
-        }
-        .buttonStyle(PressScaleButtonStyle())
-    }
-    
+
     @ViewBuilder
     private var pasteLinkCard: some View {
         VStack(spacing: 0) {
@@ -697,24 +515,17 @@ struct AddMenuView: View {
         #if canImport(UIKit)
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         #endif
-        
         AppHaptics.shared.medium()
-        withAnimation(.appFastOut) {
-            isParsing = true
-        }
-        
+        withAnimation(.appFastOut) { isParsing = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             let result = linkParser.parse(pasteLinkURL)
             withAnimation(.appSmooth) {
                 isParsing = false
-                
                 if result.isLinkedIn {
                     showLinkedInError = true
                 } else {
                     parsedData = result
                     isPresentingParsedJob = true
-                    
-                    // Reset states after presenting
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         pasteLinkURL = ""
                         isShowingPasteLink = false
@@ -725,25 +536,61 @@ struct AddMenuView: View {
     }
 
     private func parseEmail() {
-        guard !emailText.isEmpty else { return }
+        guard !emailText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         #if canImport(UIKit)
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         #endif
-        
         AppHaptics.shared.medium()
-        withAnimation(.appFastOut) {
-            isEmailParsing = true
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+        withAnimation(.appSmooth) { isEmailParsing = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             let result = emailParser.parse(emailText)
             withAnimation(.appSmooth) {
-                isEmailParsing = false
-                emailParsedResult = result
+                editCompany     = result.companyName ?? ""
+                editPosition    = result.position    ?? ""
+                editJobType     = result.jobType
+                editStatus      = result.status      ?? .applied
+                editSeason      = nil
+                editDate        = result.dateApplied ?? Date()
+                editCompensationKind = nil
+                editCompensationAmount = nil
+                editNotes       = ""
+                editAttachedResume = defaultResume
+                isEmailParsing  = false
+                hasResult       = true
+                isEmailExpanded = false
+                parseCount     += 1
+                highlights      = result.highlights
+                isHighlightExpanded = false
             }
         }
     }
-private var resultsCard: some View {
+
+    private func actionCard(title: String, subtitle: String, icon: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                ZStack {
+                    Circle()
+                        .fill(color.opacity(0.15))
+                        .frame(width: 48, height: 48)
+                    Image(systemName: icon)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(color)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title).font(.system(size: 17, weight: .semibold)).foregroundStyle(DarkTheme.textPrimary)
+                    Text(subtitle).font(.system(size: 14)).foregroundStyle(DarkTheme.textSecondary).lineLimit(1)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold)).foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
+            }
+            .padding(20)
+            .contentShape(Rectangle())
+            .glassCard(cornerRadius: DarkTheme.cardRadius)
+        }
+        .buttonStyle(PressScaleButtonStyle())
+    }
+
+    private var resultsCard: some View {
         VStack(alignment: .leading, spacing: 16) {
 
             // Header
@@ -904,7 +751,7 @@ private var resultsCard: some View {
             removal: .opacity
         ))
     }
-private var resumeSection: some View {
+    private var resumeSection: some View {
         ResumeSection(
             resumes: resumes,
             attachedResume: editAttachedResume,
@@ -916,7 +763,7 @@ private var resumeSection: some View {
             onClear: { editAttachedResume = nil }
         )
     }
-private var compensationAmountBinding: Binding<String> {
+    private var compensationAmountBinding: Binding<String> {
         Binding(
             get: {
                 guard let v = editCompensationAmount else { return "" }
@@ -926,19 +773,19 @@ private var compensationAmountBinding: Binding<String> {
             set: { editCompensationAmount = Double($0) }
         )
     }
-private var compensationCurrencyBinding: Binding<Currency> {
+    private var compensationCurrencyBinding: Binding<Currency> {
         Binding(
             get: { editCompensationCurrency ?? .usd },
             set: { editCompensationCurrency = $0 }
         )
     }
-private var salaryPeriodBinding: Binding<SalaryPeriod> {
+    private var salaryPeriodBinding: Binding<SalaryPeriod> {
         Binding(
             get: { editSalaryPeriod ?? .yearly },
             set: { editSalaryPeriod = $0 }
         )
     }
-private func resetParser() {
+    private func resetParser() {
         AppHaptics.shared.light()
         withAnimation(.appSmooth) {
             emailText       = ""
@@ -961,7 +808,7 @@ private func resetParser() {
             saveSuccess = false
         }
     }
-private func saveApplication() {
+    private func saveApplication() {
         let attached = editAttachedResume
         let selectedCycle = appState.selectedCycleID.flatMap { id in cycles.first { $0.id == id } }
         modelContext.insert(JobApplication(
@@ -1005,11 +852,11 @@ private func saveApplication() {
                 isFetchingLogo      = false
                 highlights          = []
                 isHighlightExpanded = false
-                dismiss()
+                isShowingEmailParse = false
             }
         }
     }
-private func highlightColor(for field: HighlightField) -> Color {
+    private func highlightColor(for field: HighlightField) -> Color {
         switch field {
         case .company:  return Color.accentColor
         case .position: return Color(red: 0.96, green: 0.73, blue: 0.28)
@@ -1017,7 +864,7 @@ private func highlightColor(for field: HighlightField) -> Color {
         case .date:     return Color(red: 0.62, green: 0.52, blue: 0.96)
         }
     }
-private func buildHighlightedString(_ raw: String, spans: [HighlightSpan]) -> AttributedString {
+    private func buildHighlightedString(_ raw: String, spans: [HighlightSpan]) -> AttributedString {
         var result = AttributedString(raw)
         let nsRaw = raw as NSString
         for span in spans {
@@ -1038,6 +885,8 @@ private func buildHighlightedString(_ raw: String, spans: [HighlightSpan]) -> At
         }
         return result
     }
+}
+
 private struct EditableFieldRow: View {
     let icon: String
     let label: String
@@ -1307,5 +1156,4 @@ private struct DatePickerRow: View {
             }
         }
     }
-}
 }
