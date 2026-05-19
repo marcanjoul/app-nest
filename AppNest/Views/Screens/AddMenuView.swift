@@ -187,7 +187,12 @@ struct AddMenuView: View {
                 AppHaptics.shared.light()
                 withAnimation(.appSmooth) {
                     isShowingEmailParse.toggle()
-                    if !isShowingEmailParse { resetParser() }
+                    if isShowingEmailParse {
+                        isEmailEditorFocused = true
+                    } else {
+                        isEmailEditorFocused = false
+                        resetParser()
+                    }
                 }
             } label: {
                 CardRowHeader(
@@ -294,6 +299,7 @@ struct AddMenuView: View {
                             }
                             .scaleEffect(isButtonPressed ? AppAnimations.pressScale : 1.0)
                             .disabled(isParseDisabled)
+                            .padding(.bottom, 20)
                         } else if hasResult {
                             Button {
                                 withAnimation(.appCrisp) { isEmailExpanded = true }
