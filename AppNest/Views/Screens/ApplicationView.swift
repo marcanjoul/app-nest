@@ -34,6 +34,8 @@ struct ApplicationView: View {
     @State private var isEditMode = false
     @State private var isConfirmingBulkDelete = false
 
+    @AppStorage(AppStorageKeys.hideRejected) private var hideRejected: Bool = false
+
     // Import / Export
     @State private var csvImportPreview: [CSVImportRow]? = nil
     @State private var isShowingImportPreview = false
@@ -66,6 +68,10 @@ struct ApplicationView: View {
     private var filteredAndSorted: [JobApplication] {
         var result = searchFiltered
 
+        if hideRejected {
+            result = result.filter { $0.status != .rejected }
+        }
+
         if !selectedStatuses.isEmpty {
             result = result.filter { job in
                 job.status.map { selectedStatuses.contains($0) } ?? false
@@ -94,7 +100,7 @@ struct ApplicationView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("App Nest")
                                 .font(.system(size: 40, weight: .bold))
-                                .foregroundStyle(DarkTheme.textPrimary)
+                                .foregroundStyle(Theme.textPrimary)
                             
                             if !searchText.isEmpty {
                                 Text("\(filteredAndSorted.count) results")
@@ -194,7 +200,7 @@ struct ApplicationView: View {
                 VStack(spacing: 4) {
                     Text("Logos provided by Logo.dev")
                         .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(DarkTheme.textTertiary.opacity(0.6))
+                        .foregroundStyle(Theme.textTertiary.opacity(0.6))
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 40)
@@ -209,36 +215,6 @@ struct ApplicationView: View {
             .scrollDismissesKeyboard(.interactively)
             .environment(\.editMode, .constant(isEditMode ? .active : .inactive))
 
-            // Pill FAB
-            if !isEditMode && !filteredAndSorted.isEmpty {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Button {
-                            isPresentingNewApplication = true
-                        } label: {
-                            Label("New", systemImage: "plus")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 22)
-                                .padding(.vertical, 15)
-                                .background {
-                                    Capsule()
-                                        .fill(Color.accentColor)
-                                        .shadow(color: Color.accentColor.opacity(0.30), radius: 14, y: 5)
-                                }
-                        }
-                        .buttonStyle(FABStyle())
-                        .scaleEffect(contentAppeared ? 1 : 0.75)
-                        .opacity(contentAppeared ? 1 : 0)
-                        .animation(.appSmooth.delay(0.18), value: contentAppeared)
-                        .padding(.trailing, 20)
-                        .padding(.bottom, 20)
-                    }
-                }
-            }
-
             // Bulk Actions Bar
             if isEditMode && !selectedJobIDs.isEmpty {
                 VStack {
@@ -252,7 +228,7 @@ struct ApplicationView: View {
                                 Text("Delete")
                             }
                         }
-                        .foregroundStyle(Color(red: 0.93, green: 0.33, blue: 0.40))
+                        .foregroundStyle(Theme.destructive)
                         .frame(maxWidth: .infinity)
 
                         Button {
@@ -365,22 +341,12 @@ struct ApplicationView: View {
             contentAppeared = true
         }
         .sheet(isPresented: Binding(
-            get: { isPresentingNewApplication },
-            set: { 
-                isPresentingNewApplication = $0 
-                appState.isPresentingSheet = $0
-            }
-        )) {
-            NavigationStack { JobDetailView(job: nil) }
-        }
-        .sheet(isPresented: Binding(
             get: { isShowingCyclePicker },
-            set: { 
-                isShowingCyclePicker = $0 
+            set: {
+                isShowingCyclePicker = $0
                 appState.isPresentingSheet = $0
             }
-        )) {
-            NavigationStack { CyclePickerSheet(isPresented: $isShowingCyclePicker) }
+        )) {            NavigationStack { CyclePickerSheet(isPresented: $isShowingCyclePicker) }
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
         }
@@ -481,7 +447,7 @@ struct ApplicationView: View {
         HStack(spacing: 8) {
             Text("\(selectedJobIDs.count) selected")
                 .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(DarkTheme.textPrimary)
+                .foregroundStyle(Theme.textPrimary)
             
             Spacer()
             
@@ -631,11 +597,11 @@ struct ApplicationView: View {
             // Glass search bar
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
-                    .foregroundStyle(isSearchFocused ? Color.accentColor : DarkTheme.textSecondary)
+                    .foregroundStyle(isSearchFocused ? Color.accentColor : Theme.textSecondary)
                     .font(.system(size: 15, weight: .medium))
 
                 TextField(isSearchFocused ? "Search company, position..." : "Search...", text: $searchText)
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
                     .tint(.accentColor)
                     .focused($isSearchFocused)
 
@@ -649,7 +615,7 @@ struct ApplicationView: View {
                         AppHaptics.shared.light()
                     } label: {
                         Image(systemName: isSearchFocused && searchText.isEmpty ? "xmark" : "xmark.circle.fill")
-                            .foregroundStyle(DarkTheme.textSecondary)
+                            .foregroundStyle(Theme.textSecondary)
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     }
@@ -683,7 +649,7 @@ struct ApplicationView: View {
                         ZStack(alignment: .topTrailing) {
                             Image(systemName: "line.3.horizontal.decrease.circle")
                                 .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(sortOption == .dateNewest ? DarkTheme.textPrimary : Color.accentColor)
+                                .foregroundStyle(sortOption == .dateNewest ? Theme.textPrimary : Color.accentColor)
                                 .frame(width: 44, height: 44)
                                 .background(.ultraThinMaterial)
                                 .clipShape(Circle())
@@ -700,23 +666,6 @@ struct ApplicationView: View {
                     }
                     .buttonStyle(PressScaleButtonStyle())
                     
-                    // Import button
-                    Button {
-                        isShowingImportConfirmation = true
-                        AppHaptics.shared.light()
-                    } label: {
-                        Image(systemName: "square.and.arrow.down")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(DarkTheme.textPrimary)
-                            .frame(width: 44, height: 44)
-                            .background {
-                                Circle()
-                                    .fill(.ultraThinMaterial)
-                                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-                            }
-                    }
-                    .buttonStyle(PressScaleButtonStyle())
-
                     // Export button
                     Button {
                         isShowingExportConfirmation = true
@@ -724,13 +673,12 @@ struct ApplicationView: View {
                     } label: {
                         Image(systemName: "square.and.arrow.up")
                             .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(DarkTheme.textPrimary)
+                            .foregroundStyle(Theme.textPrimary)
                             .frame(width: 44, height: 44)
                             .background {
                                 Circle()
                                     .fill(.ultraThinMaterial)
                                     .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-                                    .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
                             }
                     }
                     .buttonStyle(PressScaleButtonStyle())
@@ -751,7 +699,6 @@ struct ApplicationView: View {
                                 if isEditMode {
                                     Capsule()
                                         .fill(Color.accentColor)
-                                        .shadow(color: Color.accentColor.opacity(0.3), radius: 8, y: 3)
                                 } else {
                                     Circle()
                                         .fill(.ultraThinMaterial)
@@ -849,12 +796,12 @@ struct ApplicationView: View {
                     .font(.system(size: 10, weight: .black))
                     .opacity(0.5)
             }
-            .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : DarkTheme.textSecondary)
+            .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : Theme.textSecondary)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
             .background {
                 Capsule()
-                    .fill(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.12) : DarkTheme.cardFill)
+                    .fill(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.12) : Theme.cardFill)
                     .overlay(Capsule().strokeBorder(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.28) : Color.primary.opacity(0.08), lineWidth: 1))
             }
         }
@@ -876,124 +823,86 @@ struct ApplicationView: View {
         VStack(spacing: 20) {
             Image(systemName: "tray.fill")
                 .font(.system(size: 52))
-                .foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
+                .foregroundStyle(Theme.textSecondary.opacity(0.4))
             
             VStack(spacing: 8) {
                 Text("No applications yet")
                     .font(.title3.weight(.bold))
-                    .foregroundStyle(DarkTheme.textPrimary)
-                Text("Track your first job manually or import from a CSV file.")
+                    .foregroundStyle(Theme.textPrimary)
+                Text("Track your first job manually, paste a link, or import from a CSV.")
                     .font(.subheadline)
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
                     .multilineTextAlignment(.center)
             }
             .padding(.horizontal, 40)
 
-            HStack(spacing: 12) {
-                Button {
-                    isPresentingNewApplication = true
-                    AppHaptics.shared.light()
-                } label: {
-                    Label("Add Job", systemImage: "plus")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background(Capsule().fill(Color.accentColor))
-                }
-                .buttonStyle(PressScaleButtonStyle())
-
-                Button {
-                    isShowingImportConfirmation = true
-                    AppHaptics.shared.light()
-                } label: {
-                    Label("Import CSV", systemImage: "square.and.arrow.down")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(DarkTheme.textPrimary)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background {
-                            Capsule()
-                                .fill(.ultraThinMaterial)
-                                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-                        }
-                }
-                .buttonStyle(PressScaleButtonStyle())
-            }
-            .padding(.top, 10)
+            emptyStateActions
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 80)
+        .padding(.vertical, 60)
     }
 
     private var emptyCycleState: some View {
         VStack(spacing: 20) {
             Image(systemName: "folder.badge.questionmark")
                 .font(.system(size: 52))
-                .foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
+                .foregroundStyle(Theme.textSecondary.opacity(0.4))
             
             VStack(spacing: 8) {
                 Text("No apps in this cycle")
                     .font(.title3.weight(.bold))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
                 Text("You haven't added any jobs to this search cycle yet.")
                     .font(.subheadline)
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
                     .multilineTextAlignment(.center)
             }
             .padding(.horizontal, 40)
 
-            HStack(spacing: 12) {
-                Button {
-                    isPresentingNewApplication = true
-                    AppHaptics.shared.light()
-                } label: {
-                    Label("Add to Cycle", systemImage: "plus")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background(Capsule().fill(Color.accentColor))
-                }
-                .buttonStyle(PressScaleButtonStyle())
-
-                Button {
-                    isShowingImportConfirmation = true
-                    AppHaptics.shared.light()
-                } label: {
-                    Label("Import CSV", systemImage: "square.and.arrow.down")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(DarkTheme.textPrimary)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background {
-                            Capsule()
-                                .fill(.ultraThinMaterial)
-                                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-                        }
-                }
-                .buttonStyle(PressScaleButtonStyle())
-            }
-            .padding(.top, 10)
+            emptyStateActions
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 80)
+        .padding(.vertical, 60)
+    }
+    
+    private var emptyStateActions: some View {
+        Button {
+            AppHaptics.shared.light()
+            appState.selectedTab = 1 // Navigate to Add tab
+        } label: {
+            Label("Add Job", systemImage: "plus")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 22)
+                .padding(.vertical, 14)
+                .background(Capsule().fill(Color.accentColor))
+        }
+        .buttonStyle(PressScaleButtonStyle())
+        .padding(.top, 10)
     }
 
     private var noResultsState: some View {
         VStack(spacing: 14) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 40))
-                .foregroundStyle(DarkTheme.textSecondary.opacity(0.5))
+                .foregroundStyle(Theme.textSecondary.opacity(0.5))
             Text("No results for \"\(searchText)\"")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(DarkTheme.textPrimary)
+                .foregroundStyle(Theme.textPrimary)
             Button("Clear Search") {
                 searchText = ""
                 AppHaptics.shared.light()
             }
-            .font(.system(size: 14, weight: .bold))
+            .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(Color.accentColor)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
+            .background(
+                Capsule()
+                    .fill(Color.accentColor.opacity(0.10))
+                    .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1))
+            )
+            .buttonStyle(PressScaleButtonStyle())
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 60)
@@ -1033,36 +942,11 @@ struct ApplicationView: View {
     }
 }
 
-private struct FABStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? AppAnimations.pressScale : 1.0)
-            .animation(.appFastOut, value: configuration.isPressed)
-    }
-}
-
 #Preview {
     let container = try! ModelContainer(
         for: JobApplication.self, ResumeDocument.self, JobCycle.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
-    let ctx = container.mainContext
-    let samples: [(String, String, ApplicationType, ApplicationStatus, ApplicationSeason, Int)] = [
-        ("Meta",      "Software Engineering Intern",  .internship, .applied,   .summer, 5),
-        ("Uber",      "iOS Engineer Intern",          .internship, .interview, .summer, 8),
-        ("JPMorgan",  "Software Engineer Intern",     .internship, .applied,   .summer, 10),
-        ("Honeywell", "Embedded Systems Intern",      .internship, .rejected,  .summer, 12),
-        ("Google",    "SWE Intern – iOS",             .internship, .offer,     .summer, 20),
-        ("Amazon",    "SDE Intern",                   .internship, .applied,   .summer, 22),
-        ("Netflix",   "Mobile Engineering Intern",    .internship, .toApply,   .summer, 24),
-    ]
-    for (company, position, type, status, season, days) in samples {
-        ctx.insert(JobApplication(
-            companyName: company, position: position,
-            jobType: type, status: status, season: season,
-            dateApplied: Date().addingTimeInterval(-86_400 * Double(days))
-        ))
-    }
     return NavigationStack { ApplicationView() }
         .environment(AppState())
         .modelContainer(container)

@@ -57,10 +57,10 @@ struct DateAppliedSection: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Remind me to apply")
                                     .font(.system(size: 14, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(DarkTheme.textPrimary)
+                                    .foregroundStyle(Theme.textPrimary)
                                 Text("We'll send a notification on this date so you don't forget.")
                                     .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(DarkTheme.textSecondary)
+                                    .foregroundStyle(Theme.textSecondary)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
@@ -74,7 +74,7 @@ struct DateAppliedSection: View {
                                 .foregroundStyle(Color.orange)
                             Text("Enable notifications in Settings to receive reminders.")
                                 .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(DarkTheme.textSecondary)
+                                .foregroundStyle(Theme.textSecondary)
                         }
                     }
                 }

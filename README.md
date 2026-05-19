@@ -20,12 +20,20 @@ An iOS app for tracking job and internship applications, built with SwiftUI.
 | **Cycles** | Group applications by search period (e.g. "Summer 2026", "Full-Time 2027") |
 | **Bulk actions** | Edit Mode for mass delete or move-to-cycle |
 
-### Import
+### Import & Adding
 | | |
 |---|---|
+| **Central Add Hub** | Unified "Add Job" tab featuring inline ATS link parsing, email parsing, CSV import, and manual entry |
+| **ATS Link Parsing** | Paste Greenhouse, Lever, Ashby, or Workday links to auto-extract company and position |
 | **Share Extension** | Share any job URL from Safari — auto-parses company, position, job type, and season |
 | **CSV Import** | Flexible mapper handles any column naming; preview and edit before committing |
-| **Email parsing** | Paste a confirmation email — on-device AI extracts company, position, and status |
+| **Email Parsing** | Paste a confirmation email — on-device AI extracts company, position, status, and compensation |
+
+### Per-Application Tools
+| | |
+|---|---|
+| **Interview Kit** | Per-application Company Research and Interview Prep note editors inside the job detail view |
+| **Application Reminders** | Schedule local push notifications to follow up on any application |
 
 ### Discovery
 | | |
@@ -45,23 +53,24 @@ An iOS app for tracking job and internship applications, built with SwiftUI.
 | Persistence | SwiftData (SQLite) |
 | NLP / Parsing | Apple NaturalLanguage (NLTagger) + Regex + NSDataDetector |
 | Logo Lookup | Logo.dev API |
-| Architecture | Modern SwiftData MVVM (Direct @Query) |
-| Design System | Custom Dark Theme + Emil-motion principles |
+| Architecture | Hybrid: `@Query` for reactive data + `@Observable` ViewModel for complex form state |
+| Design System | Adaptive light/dark theme — flat design, no gradients, no button shadows; Emil-motion principles |
 
 ---
 
 ## Architecture
 
-AppNest uses **SwiftData** as its persistence layer. Views query the database directly using `@Query`, eliminating the need for boilerplate ViewModel classes. Data updates are reactive and instantaneous across all views.
+AppNest uses a hybrid architecture. Views query the database directly via `@Query` for reactive data that updates automatically across all views. For complex multi-step form state (e.g. email parsing), an `@Observable` ViewModel class owns ephemeral UI state and business logic, keeping views declarative.
 
 ```
 AppNest/
 ├── Core/                 # Entry point, AppState, and API Config
-├── Design System/        # Theme (Glassmorphism), Motion, and Haptics
-├── Models/               # SwiftData @Models (JobApplication, JobCycle, Resume)
+├── Design System/        # Adaptive theme, motion curves, and haptics
+├── Models/               # SwiftData @Models + NotificationManager + PendingJobImport
+├── ViewModels/           # @Observable classes for complex form state (EmailParseViewModel)
 ├── Views/
 │   ├── Screens/          # Main application screens (Application, Profile, etc.)
-│   └── Components/       # Atomic UI elements (Pills, Cards, Modular Form Sections)
+│   └── Components/       # Atomic UI elements (Pills, Cards, Forms, Modular Form Sections)
 └── Assets.xcassets       # Static assets, branding, and color tokens
 
 AppNestShare/

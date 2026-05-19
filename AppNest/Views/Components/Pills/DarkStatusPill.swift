@@ -9,7 +9,7 @@ import UIKit
 struct DarkStatusPill: View {
     let status: ApplicationStatus
 
-    private var style: DarkTheme.StatusStyle { DarkTheme.statusStyle(for: status) }
+    private var style: Theme.StatusStyle { Theme.statusStyle(for: status) }
 
     private var displayText: String {
         switch status {
@@ -44,7 +44,7 @@ struct DarkStatusPill: View {
 struct DarkTypeTag: View {
     let text: String
     var icon: String? = nil
-    var color: Color = DarkTheme.textSecondary
+    var color: Color = Theme.textSecondary
 
     var body: some View {
         HStack(spacing: 4) {
@@ -77,7 +77,7 @@ struct StatChip: View {
     var isSelected: Bool = false
     var action: (() -> Void)? = nil
 
-    private var style: DarkTheme.StatusStyle { DarkTheme.statusStyle(for: status) }
+    private var style: Theme.StatusStyle { Theme.statusStyle(for: status) }
 
     private var label: String {
         switch status {
@@ -101,11 +101,11 @@ struct StatChip: View {
 
                 Text("\(number)")
                     .font(.system(size: 16, weight: .bold, design: .rounded))
-                    .foregroundStyle(isSelected ? Color.white : DarkTheme.textPrimary)
+                    .foregroundStyle(isSelected ? Color.white : Theme.textPrimary)
 
                 Text(label)
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(isSelected ? Color.white.opacity(0.88) : DarkTheme.textSecondary)
+                    .foregroundStyle(isSelected ? Color.white.opacity(0.88) : Theme.textSecondary)
                     .lineLimit(1)
             }
             .padding(.horizontal, 11)
@@ -119,7 +119,6 @@ struct StatChip: View {
                             lineWidth: isSelected ? 0 : 0.8
                         )
                     )
-                    .shadow(color: isSelected ? style.tintColor.opacity(0.28) : .clear, radius: 8, y: 3)
             )
         }
         .buttonStyle(PressScaleButtonStyle())
@@ -195,13 +194,13 @@ struct DarkJobCardView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(job.position)
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
 
                 Text(job.companyName)
                     .font(.system(size: 14))
-                    .foregroundStyle(DarkTheme.textSecondary)
+                    .foregroundStyle(Theme.textSecondary)
                     .lineLimit(1)
 
                 HStack(spacing: 6) {
@@ -227,7 +226,7 @@ struct DarkJobCardView: View {
             }
         }
         .padding(16)
-        .glassCard(cornerRadius: DarkTheme.cardRadius)
+        .glassCard(cornerRadius: Theme.cardRadius)
         .task(id: job.companyName) {
             guard job.companyLogoImageData == nil else { return }
             let trimmed = job.companyName.trimmingCharacters(in: .whitespaces)
@@ -264,14 +263,14 @@ struct DarkJobCardView: View {
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(DarkTheme.avatarGradient(for: job.companyName))
+                .background(Theme.avatarFill(for: job.companyName))
         }
         #else
         Text(initial)
             .font(.system(size: 20, weight: .bold))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(DarkTheme.avatarGradient(for: job.companyName))
+            .background(Theme.avatarFill(for: job.companyName))
         #endif
     }
 }

@@ -75,7 +75,7 @@ struct EditImportRowView: View {
             Button { dismiss() } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
                     .frame(width: 40, height: 40)
                     .background {
                         Circle()
@@ -110,7 +110,6 @@ struct EditImportRowView: View {
                         .background {
                             Capsule()
                                 .fill(Color.accentColor)
-                                .shadow(color: Color.accentColor.opacity(0.27), radius: 10, y: 3)
                         }
                 }
                 .buttonStyle(PressScaleButtonStyle())
@@ -150,7 +149,7 @@ struct EditImportRowView: View {
         } label: {
             Text(name)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(isSelected ? Color.accentColor : DarkTheme.textSecondary)
+                .foregroundStyle(isSelected ? Color.accentColor : Theme.textSecondary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
                 .background {

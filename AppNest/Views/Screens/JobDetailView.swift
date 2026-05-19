@@ -128,7 +128,6 @@ struct JobDetailView: View {
                         .background {
                             Capsule()
                                 .fill(isSaveDisabled ? Color.secondary.opacity(0.3) : Color.accentColor)
-                                .shadow(color: isSaveDisabled ? .clear : Color.accentColor.opacity(0.27), radius: 10, y: 3)
                         }
                 }
                 .buttonStyle(PressScaleButtonStyle())
@@ -277,7 +276,7 @@ struct JobDetailView: View {
                 Spacer()
                 Button {
                     #if canImport(UIKit)
-                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    UIApplication.shared.dismissKeyboard()
                     #endif
                 } label: {
                     Image(systemName: "chevron.down")
@@ -321,7 +320,7 @@ struct JobDetailView: View {
             } label: {
                 Image(systemName: isNewApplication ? "xmark" : "chevron.left")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(DarkTheme.textPrimary)
+                    .foregroundStyle(Theme.textPrimary)
                     .frame(width: 40, height: 40)
                     .background {
                         Circle()
@@ -338,11 +337,11 @@ struct JobDetailView: View {
                 Button { isShowingLogoAttribution.toggle() } label: {
                     Image(systemName: "info.circle")
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(DarkTheme.textSecondary)
+                        .foregroundStyle(Theme.textSecondary)
                         .frame(width: 40, height: 40)
                         .background {
                             Circle()
-                                .fill(DarkTheme.cardFill)
+                                .fill(Theme.cardFill)
                                 .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
                         }
                 }
@@ -363,12 +362,12 @@ struct JobDetailView: View {
                     Button { isShowingDeleteConfirmation = true } label: {
                         Image(systemName: "trash")
                             .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(Color(red: 0.93, green: 0.33, blue: 0.40))
+                            .foregroundStyle(Theme.destructive)
                             .frame(width: 40, height: 40)
                             .background {
                                 Circle()
-                                    .fill(Color(red: 0.93, green: 0.33, blue: 0.40).opacity(0.10))
-                                    .overlay(Circle().strokeBorder(Color(red: 0.93, green: 0.33, blue: 0.40).opacity(0.18), lineWidth: 1))
+                                    .fill(Theme.destructive.opacity(0.10))
+                                    .overlay(Circle().strokeBorder(Theme.destructive.opacity(0.18), lineWidth: 1))
                             }
                     }
                     .buttonStyle(PressScaleButtonStyle())

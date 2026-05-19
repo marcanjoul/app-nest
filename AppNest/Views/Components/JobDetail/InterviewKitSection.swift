@@ -35,10 +35,10 @@ struct InterviewKitSection: View {
         HStack(spacing: 5) {
             Image(systemName: icon)
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(DarkTheme.textSecondary)
+                .foregroundStyle(Theme.textSecondary)
             Text(title)
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(DarkTheme.textSecondary)
+                .foregroundStyle(Theme.textSecondary)
         }
     }
 

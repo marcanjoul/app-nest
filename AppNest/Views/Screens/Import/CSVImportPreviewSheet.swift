@@ -99,7 +99,7 @@ struct CSVImportPreviewSheet: View {
                         Button(role: .destructive) { isConfirmingDelete = true } label: {
                             Label("Delete", systemImage: "trash")
                         }
-                        .foregroundStyle(Color(red: 0.93, green: 0.33, blue: 0.40))
+                        .foregroundStyle(Theme.destructive)
                         
                         Spacer()
                         
@@ -170,7 +170,7 @@ struct CSVImportPreviewSheet: View {
                 HStack {
                     Text("\(selectedRows.count) selected")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(DarkTheme.textSecondary)
+                        .foregroundStyle(Theme.textSecondary)
                     Spacer()
                 }
                 .padding(.horizontal, 24)
@@ -193,22 +193,21 @@ struct CSVImportPreviewSheet: View {
                 
                 Text("\(count)")
                     .font(.system(size: 16, weight: .bold, design: .rounded))
-                    .foregroundStyle(isSelected ? .white : DarkTheme.textPrimary)
+                    .foregroundStyle(isSelected ? .white : Theme.textPrimary)
                 
                 Text(filter.rawValue)
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(isSelected ? .white.opacity(0.9) : DarkTheme.textSecondary)
+                    .foregroundStyle(isSelected ? .white.opacity(0.9) : Theme.textSecondary)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background {
                 Capsule()
-                    .fill(isSelected ? AnyShapeStyle(color) : AnyShapeStyle(DarkTheme.cardFill))
+                    .fill(isSelected ? AnyShapeStyle(color) : AnyShapeStyle(Theme.cardFill))
                     .overlay {
                         Capsule().strokeBorder(isSelected ? Color.clear : Color.primary.opacity(0.12), lineWidth: 1)
                     }
             }
-            .shadow(color: isSelected ? color.opacity(0.25) : .clear, radius: 8, y: 3)
         }
         .buttonStyle(PressScaleButtonStyle())
     }
@@ -217,13 +216,13 @@ struct CSVImportPreviewSheet: View {
         VStack(spacing: 14) {
             Image(systemName: "doc.text.magnifyingglass")
                 .font(.system(size: 44))
-                .foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
+                .foregroundStyle(Theme.textSecondary.opacity(0.4))
             Text("No rows found")
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(DarkTheme.textPrimary)
+                .foregroundStyle(Theme.textPrimary)
             Text("The file didn't contain any readable data rows.")
                 .font(.subheadline)
-                .foregroundStyle(DarkTheme.textSecondary)
+                .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 30)
         }
@@ -234,15 +233,23 @@ struct CSVImportPreviewSheet: View {
         VStack(spacing: 12) {
             Image(systemName: activeFilter == .ready ? "checkmark.circle" : "sparkles")
                 .font(.system(size: 32))
-                .foregroundStyle(DarkTheme.textSecondary.opacity(0.4))
+                .foregroundStyle(Theme.textSecondary.opacity(0.4))
             Text(activeFilter == .ready ? "Nothing to import" : "All rows are ready")
                 .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(DarkTheme.textSecondary)
+                .foregroundStyle(Theme.textSecondary)
             Button("Show All") {
                 withAnimation(.appSmooth) { activeFilter = .all }
             }
-            .font(.system(size: 14, weight: .bold))
+            .font(.system(size: 14, weight: .semibold))
             .foregroundStyle(Color.accentColor)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
+            .background(
+                Capsule()
+                    .fill(Color.accentColor.opacity(0.10))
+                    .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1))
+            )
+            .buttonStyle(PressScaleButtonStyle())
         }
         .frame(maxHeight: .infinity)
     }
@@ -259,7 +266,6 @@ struct CSVImportPreviewSheet: View {
                 .background {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .fill(readyRows.isEmpty ? Color.gray.opacity(0.3) : Color.accentColor)
-                        .shadow(color: readyRows.isEmpty ? .clear : Color.accentColor.opacity(0.3), radius: 10, y: 4)
                 }
         }
         .buttonStyle(PressScaleButtonStyle())
@@ -282,7 +288,7 @@ struct CSVImportPreviewSheet: View {
             } label: {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 22))
-                    .foregroundStyle(isSelected ? Color.accentColor : DarkTheme.textTertiary)
+                    .foregroundStyle(isSelected ? Color.accentColor : Theme.textTertiary)
             }
             .buttonStyle(.plain)
 
@@ -315,11 +321,11 @@ struct CSVImportPreviewSheet: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(r.position.isEmpty ? "Missing Position" : r.position)
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(r.position.isEmpty ? .orange : DarkTheme.textPrimary)
+                            .foregroundStyle(r.position.isEmpty ? .orange : Theme.textPrimary)
                             .lineLimit(1)
                         Text(r.companyName.isEmpty ? "Missing Company" : r.companyName)
                             .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(r.companyName.isEmpty ? .orange : DarkTheme.textSecondary)
+                            .foregroundStyle(r.companyName.isEmpty ? .orange : Theme.textSecondary)
                             .lineLimit(1)
                         
                         HStack(spacing: 5) {
@@ -340,7 +346,7 @@ struct CSVImportPreviewSheet: View {
                     
                     Image(systemName: "chevron.right")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(DarkTheme.textTertiary.opacity(0.6))
+                        .foregroundStyle(Theme.textTertiary.opacity(0.6))
                 }
             }
             .buttonStyle(.plain)
@@ -349,7 +355,7 @@ struct CSVImportPreviewSheet: View {
         .padding(.vertical, 14)
         .background {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(DarkTheme.cardFill)
+                .fill(Theme.cardFill)
                 .overlay {
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .strokeBorder(isSelected ? Color.accentColor.opacity(0.4) : Color.primary.opacity(0.08), lineWidth: isSelected ? 1.5 : 1)

@@ -106,7 +106,7 @@ struct CyclePickerSheet: View {
         } label: {
             pickerRowContent(
                 icon: isActive ? "checkmark" : "tray.2.fill",
-                iconColor: isActive ? Color.accentColor : DarkTheme.textSecondary,
+                iconColor: isActive ? Color.accentColor : Theme.textSecondary,
                 circleFill: isActive ? Color.accentColor : Color.primary.opacity(0.08),
                 title: "All Applications",
                 subtitle: "\(totalCount) app\(totalCount == 1 ? "" : "s")",
@@ -126,7 +126,7 @@ struct CyclePickerSheet: View {
         } label: {
             pickerRowContent(
                 icon: isActive ? "checkmark" : "tray.fill",
-                iconColor: isActive ? Color.accentColor : DarkTheme.textSecondary,
+                iconColor: isActive ? Color.accentColor : Theme.textSecondary,
                 circleFill: isActive ? Color.accentColor : Color.primary.opacity(0.08),
                 title: cycle.name,
                 subtitle: "\(cycle.applications.count) app\(cycle.applications.count == 1 ? "" : "s")",
@@ -183,7 +183,7 @@ struct CyclePickerSheet: View {
         circleFill: Color,
         title: String,
         subtitle: String?,
-        titleColor: Color = DarkTheme.textPrimary,
+        titleColor: Color = Theme.textPrimary,
         isActive: Bool
     ) -> some View {
         HStack(spacing: 14) {
@@ -203,7 +203,7 @@ struct CyclePickerSheet: View {
                 if let subtitle {
                     Text(subtitle)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(DarkTheme.textSecondary)
+                        .foregroundStyle(Theme.textSecondary)
                 }
             }
 
@@ -213,11 +213,11 @@ struct CyclePickerSheet: View {
         .padding(.vertical, 12)
         .background {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(DarkTheme.cardFill)
+                .fill(Theme.cardFill)
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .strokeBorder(
-                            isActive ? Color.accentColor.opacity(0.4) : DarkTheme.cardBorder,
+                            isActive ? Color.accentColor.opacity(0.4) : Theme.cardBorder,
                             lineWidth: isActive ? 1.5 : 1
                         )
                 )
