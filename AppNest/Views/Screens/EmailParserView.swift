@@ -10,6 +10,8 @@ struct EmailParserView: View {
     @Query(sort: \ResumeDocument.createdAt, order: .reverse) private var resumes: [ResumeDocument]
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
 
+    var initialText: String? = nil
+
     @State private var vm = EmailParseViewModel()
     @State private var cardAppeared = false
     @State private var scrollToResults = false
@@ -77,6 +79,12 @@ struct EmailParserView: View {
         }
         .onAppear {
             withAnimation(.appSmooth.delay(0.1)) { cardAppeared = true }
+            if let text = initialText, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                vm.emailText = text
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    vm.parseEmail(defaultResume: defaultResume) { scrollToResults = true }
+                }
+            }
         }
         .task(id: vm.editCompany) {
             await vm.fetchLogo(isDark: colorScheme == .dark)

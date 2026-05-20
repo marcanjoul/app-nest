@@ -36,6 +36,8 @@ struct ApplicationView: View {
 
     @AppStorage(AppStorageKeys.hideRejected) private var hideRejected: Bool = false
 
+    @State private var isShowingEmailParseSheet = false
+
     // Import / Export
     @State private var csvImportPreview: [CSVImportRow]? = nil
     @State private var isShowingImportPreview = false
@@ -402,6 +404,17 @@ struct ApplicationView: View {
         }
         .sheet(isPresented: $isShowingShareSheet) {
             if let url = csvFileURL { ShareSheet(activityItems: [url]) }
+        }
+        .sheet(isPresented: $isShowingEmailParseSheet, onDismiss: {
+            appState.pendingEmailText = nil
+        }) {
+            NavigationStack {
+                EmailParserView(initialText: appState.pendingEmailText)
+            }
+        }
+        .onChange(of: appState.pendingEmailText) { _, text in
+            guard text != nil else { return }
+            isShowingEmailParseSheet = true
         }
         .onChange(of: appState.pendingJobImport) { _, pending in
             guard let pending else { return }

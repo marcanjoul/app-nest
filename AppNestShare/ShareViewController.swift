@@ -106,6 +106,7 @@ struct SharePendingImport: Codable {
     var status: String?
     var season: String?
     var notes: String?
+    var rawEmailText: String?
 }
 
 // MARK: - View controller
@@ -114,28 +115,42 @@ class ShareViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        extractJobInfo { [weak self] pending, rawURL in
+        let scheme: ColorScheme = traitCollection.userInterfaceStyle == .dark ? .dark : .light
+        extractJobInfo { [weak self] pending, rawURL, emailText in
             guard let self else { return }
-            let model = ShareViewModel(initial: pending, rawURL: rawURL)
-            let scheme: ColorScheme = self.traitCollection.userInterfaceStyle == .dark ? .dark : .light
-            let rootView = ShareView(
-                model: model,
-                onSave: { [weak self] saved in self?.saveAndDismiss(saved) },
-                onCancel: { [weak self] in
-                    self?.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
-                }
-            )
-            .preferredColorScheme(scheme)
+            let rootView: AnyView
+            if let emailText {
+                rootView = AnyView(EmailShareConfirmView(
+                    emailText: emailText,
+                    onConfirm: { [weak self] in
+                        self?.saveAndDismiss(SharePendingImport(
+                            companyName: "", position: "", rawEmailText: emailText
+                        ))
+                    },
+                    onCancel: { [weak self] in
+                        self?.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
+                    }
+                ).preferredColorScheme(scheme))
+            } else {
+                let model = ShareViewModel(initial: pending, rawURL: rawURL)
+                rootView = AnyView(ShareView(
+                    model: model,
+                    onSave: { [weak self] saved in self?.saveAndDismiss(saved) },
+                    onCancel: { [weak self] in
+                        self?.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
+                    }
+                ).preferredColorScheme(scheme))
+            }
             let host = UIHostingController(rootView: rootView)
             host.view.backgroundColor = .clear
-            addChild(host)
+            self.addChild(host)
             host.view.translatesAutoresizingMaskIntoConstraints = false
-            view.addSubview(host.view)
+            self.view.addSubview(host.view)
             NSLayoutConstraint.activate([
-                host.view.topAnchor.constraint(equalTo: view.topAnchor),
-                host.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                host.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-                host.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+                host.view.topAnchor.constraint(equalTo: self.view.topAnchor),
+                host.view.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
+                host.view.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
+                host.view.bottomAnchor.constraint(equalTo: self.view.bottomAnchor),
             ])
             host.didMove(toParent: self)
         }
@@ -143,13 +158,14 @@ class ShareViewController: UIViewController {
 
     // MARK: - Extraction
 
-    private func extractJobInfo(completion: @escaping (SharePendingImport, URL?) -> Void) {
+    private func extractJobInfo(completion: @escaping (SharePendingImport, URL?, String?) -> Void) {
         guard let items = extensionContext?.inputItems as? [NSExtensionItem] else {
-            completion(SharePendingImport(companyName: "", position: "", sourceURL: nil), nil)
+            completion(SharePendingImport(companyName: "", position: "", sourceURL: nil), nil, nil)
             return
         }
 
         var foundURL: URL?
+        var foundEmailText: String?
         var pageTitle: String?
         let group = DispatchGroup()
 
@@ -176,6 +192,9 @@ class ShareViewController: UIViewController {
                         if let str = data as? String {
                             if str.hasPrefix("http"), let url = URL(string: str.components(separatedBy: .whitespacesAndNewlines).first ?? "") {
                                 foundURL = foundURL ?? url
+                            } else if str.contains("\n") || str.count > 200 {
+                                // Multi-line or long text is an email body, not a page title
+                                foundEmailText = foundEmailText ?? str
                             } else if pageTitle == nil {
                                 pageTitle = str
                             }
@@ -186,8 +205,13 @@ class ShareViewController: UIViewController {
         }
 
         group.notify(queue: .main) {
-            let parsed = Self.parseJobInfo(title: pageTitle, url: foundURL)
-            completion(parsed, foundURL)
+            // Email text takes priority over URL when both are present
+            if let emailText = foundEmailText, foundURL == nil {
+                completion(SharePendingImport(companyName: "", position: ""), nil, emailText)
+            } else {
+                let parsed = Self.parseJobInfo(title: pageTitle, url: foundURL)
+                completion(parsed, foundURL, nil)
+            }
         }
     }
 
@@ -347,6 +371,23 @@ private func htmlDecode(_ str: String) -> String {
        .replacingOccurrences(of: "&lt;",   with: "<")
        .replacingOccurrences(of: "&gt;",   with: ">")
        .replacingOccurrences(of: "&nbsp;", with: " ")
+}
+
+// UIImage(named:in:) crashes from extensions — use contentsOfFile instead.
+private func loadShareExtensionAppIcon(displayScale: CGFloat) -> UIImage? {
+    var appURL = Bundle.main.bundleURL
+    for _ in 0..<4 {
+        appURL = appURL.deletingLastPathComponent()
+        if appURL.pathExtension == "app" { break }
+    }
+    guard appURL.pathExtension == "app" else { return nil }
+    let scale = Int(displayScale)
+    let candidates = ["AppIcon60@\(scale)x", "AppIcon60@2x", "AppIcon76@\(scale)x", "AppIcon76@2x", "AppIcon"]
+    for name in candidates {
+        let path = appURL.appendingPathComponent("\(name).png").path
+        if let img = UIImage(contentsOfFile: path) { return img }
+    }
+    return nil
 }
 
 // MARK: - View model
@@ -639,27 +680,7 @@ private struct ShareView: View {
     }
 
     private func loadContainerAppIcon() -> UIImage? {
-        // UIImage(named:in:) crashes from extensions — use contentsOfFile instead.
-        var appURL = Bundle.main.bundleURL
-        for _ in 0..<4 {
-            appURL = appURL.deletingLastPathComponent()
-            if appURL.pathExtension == "app" { break }
-        }
-        guard appURL.pathExtension == "app" else { return nil }
-
-        let scale = Int(displayScale)
-        let candidates = [
-            "AppIcon60@\(scale)x",
-            "AppIcon60@2x",
-            "AppIcon76@\(scale)x",
-            "AppIcon76@2x",
-            "AppIcon",
-        ]
-        for name in candidates {
-            let path = appURL.appendingPathComponent("\(name).png").path
-            if let img = UIImage(contentsOfFile: path) { return img }
-        }
-        return nil
+        loadShareExtensionAppIcon(displayScale: displayScale)
     }
 
     // MARK: - Scanning Banner
@@ -1016,5 +1037,143 @@ private struct ShareView: View {
         let hash  = name.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
         let color = colors[abs(hash) % colors.count]
         return LinearGradient(colors: [color.opacity(0.85), color], startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
+}
+
+// MARK: - Email Share Confirm View
+
+private struct EmailShareConfirmView: View {
+    @Environment(\.displayScale) private var displayScale
+    let emailText: String
+    let onConfirm: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color(uiColor: .systemBackground).ignoresSafeArea()
+            RadialGradient(
+                colors: [Color.orange.opacity(0.08), .clear],
+                center: UnitPoint(x: 1.2, y: -0.1),
+                startRadius: 0,
+                endRadius: 340
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                Capsule()
+                    .fill(Color.primary.opacity(0.15))
+                    .frame(width: 32, height: 4)
+                    .padding(.top, 10)
+                    .padding(.bottom, 6)
+
+                HStack {
+                    Button(action: onCancel) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.primary)
+                            .frame(width: 40, height: 40)
+                            .background {
+                                Circle()
+                                    .fill(.ultraThinMaterial)
+                                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                            }
+                    }
+                    Spacer()
+                    HStack(spacing: 7) {
+                        appIconView
+                            .frame(width: 24, height: 24)
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        Text("App Nest")
+                            .font(.system(size: 16, weight: .semibold))
+                    }
+                    .foregroundStyle(.primary)
+                    Spacer()
+                    Color.clear.frame(width: 40, height: 40)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+
+                Divider().opacity(0.10)
+
+                ScrollView {
+                    VStack(spacing: 20) {
+                        VStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.orange.opacity(0.12))
+                                    .frame(width: 80, height: 80)
+                                Image(systemName: "envelope.open.fill")
+                                    .font(.system(size: 34))
+                                    .foregroundStyle(Color.orange)
+                            }
+                            Text("Email Detected")
+                                .font(.system(size: 22, weight: .bold, design: .rounded))
+                            Text("App Nest will parse this email to extract the company, position, and application status.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 8)
+                        }
+                        .padding(.top, 16)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Label("Email Preview", systemImage: "envelope")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            Text(emailText)
+                                .font(.system(size: 13))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(6)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .padding(14)
+                        .background {
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(.ultraThinMaterial)
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .strokeBorder(Color.primary.opacity(0.07), lineWidth: 1)
+                                }
+                        }
+                        .shadow(color: .black.opacity(0.06), radius: 8, y: 3)
+                    }
+                    .padding()
+                }
+
+                VStack(spacing: 10) {
+                    Button(action: onConfirm) {
+                        Text("Parse in App Nest")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 15)
+                            .background {
+                                Capsule()
+                                    .fill(Color.orange)
+                                    .shadow(color: Color.orange.opacity(0.30), radius: 12, y: 4)
+                            }
+                    }
+                    Button(action: onCancel) {
+                        Text("Cancel")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .padding(.vertical, 8)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 28)
+                .padding(.top, 8)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var appIconView: some View {
+        if let icon = loadShareExtensionAppIcon(displayScale: displayScale) {
+            Image(uiImage: icon).resizable().scaledToFill()
+        } else {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(Color(red: 0.73, green: 0.97, blue: 0.91))
+        }
     }
 }
