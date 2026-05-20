@@ -11,6 +11,7 @@ struct EditImportRowView: View {
 
     @State private var pickerItem: PhotosPickerItem? = nil
     @State private var reminderEnabled = false
+    @State private var reminderTime: Date = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: Date()) ?? Date()
 
     private var isSeasonAllowed: Bool {
         let allowed: [ApplicationType] = [.partTime, .internship, .temporary, .Co_op]
@@ -41,7 +42,8 @@ struct EditImportRowView: View {
                     DateAppliedSection(
                         dateApplied: $row.dateApplied,
                         status: row.status,
-                        reminderEnabled: $reminderEnabled
+                        reminderEnabled: $reminderEnabled,
+                        reminderTime: $reminderTime
                     )
                     CompensationSection(
                         kind: $row.compensationKind,
