@@ -7,36 +7,31 @@ struct RootView: View {
     var body: some View {
         @Bindable var bindableAppState = appState
         
-        TabView(selection: $bindableAppState.selectedTab) {
-            NavigationStack {
-                ApplicationView()
-            }
-            .toolbarBackground(Color(UIColor.systemBackground), for: .tabBar)
-            .toolbarBackground(.visible, for: .tabBar)
-            .tabItem {
-                Label("Applications", systemImage: "briefcase.fill")
-            }
-            .tag(0)
+        ZStack(alignment: .bottom) {
+            TabView(selection: $bindableAppState.selectedTab) {
+                NavigationStack {
+                    ApplicationView()
+                }
+                .toolbar(.hidden, for: .tabBar)
+                .tag(0)
 
-            NavigationStack {
-                AddMenuView()
-            }
-            .toolbarBackground(Color(UIColor.systemBackground), for: .tabBar)
-            .toolbarBackground(.visible, for: .tabBar)
-            .tabItem {
-                Label("Add Job", systemImage: "plus.circle.fill")
-            }
-            .tag(1)
+                NavigationStack {
+                    AddMenuView()
+                }
+                .toolbar(.hidden, for: .tabBar)
+                .tag(1)
 
-            NavigationStack {
-                ProfileView()
+                NavigationStack {
+                    ProfileView()
+                }
+                .toolbar(.hidden, for: .tabBar)
+                .tag(2)
             }
-            .toolbarBackground(Color(UIColor.systemBackground), for: .tabBar)
-            .toolbarBackground(.visible, for: .tabBar)
-            .tabItem {
-                Label("Profile", systemImage: "person.crop.circle.fill")
+            
+            if !appState.isPresentingSheet {
+                NavigationDock(selectedTab: $bindableAppState.selectedTab)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-            .tag(2)
         }
         .tint(.accentColor)
         .scaleEffect(appState.isPresentingSheet ? 0.95 : 1.0)
@@ -47,7 +42,7 @@ struct RootView: View {
                     .ignoresSafeArea()
             }
         }
-        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: appState.isPresentingSheet)
+        .animation(.appSmooth, value: appState.isPresentingSheet)
     }
 }
 
