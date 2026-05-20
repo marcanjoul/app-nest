@@ -61,11 +61,11 @@ struct OnboardingView: View {
                     ForEach(0..<pages.count, id: \.self) { index in
                         Capsule()
                             .fill(index == currentPage ? pages[currentPage].color : Color.primary.opacity(0.15))
-                            .frame(width: index == currentPage ? 20 : 8, height: 8)
-                            .animation(.appCrisp, value: currentPage)
+                            .frame(width: index == currentPage ? 22 : 8, height: 8)
                     }
                 }
                 .padding(.bottom, 36)
+                .animation(.spring(response: 0.4, dampingFraction: 0.7), value: currentPage)
 
                 // CTA button
                 Button {

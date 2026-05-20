@@ -28,6 +28,8 @@ struct JobCardView: View {
         job.dateApplied <= Date() ? .orange : Color.accentColor
     }
 
+    @State private var isFetchingLogo = false
+
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
             // Company avatar — image or letter fallback
@@ -54,6 +56,8 @@ struct JobCardView: View {
             }
             .frame(width: 60, height: 60)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .blur(radius: isFetchingLogo ? 2 : 0)
+            .opacity(isFetchingLogo ? 0.7 : 1.0)
             .overlay(alignment: .bottomTrailing) {
                 if showReminderBadge {
                     ZStack {
@@ -117,17 +121,22 @@ struct JobCardView: View {
                 .stroke(Color(.separator).opacity(0.3), lineWidth: 0.5)
         )
         .animation(.appCrisp, value: showReminderBadge)
+        .animation(.appSmooth, value: isFetchingLogo)
         .task(id: job.companyName) {
             guard job.companyLogoImageData == nil else { return }
             let trimmed = job.companyName.trimmingCharacters(in: .whitespaces)
             guard trimmed.count >= 2 else { return }
             
+            isFetchingLogo = true
             if let data = await LogoFetcher.fetchLogoData(for: trimmed) {
                 await MainActor.run {
                     withAnimation(.appSmooth) {
                         job.companyLogoImageData = data
+                        isFetchingLogo = false
                     }
                 }
+            } else {
+                isFetchingLogo = false
             }
         }
     }

@@ -207,7 +207,7 @@ struct CycleRow: View {
                     .foregroundStyle(Color.accentColor)
                     .opacity(isActive ? 1 : 0)
                     .scaleEffect(isActive ? 1 : 0.9)
-                    .animation(.appCrisp, value: isActive)
+                    .animation(.appBouncy, value: isActive)
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 15)

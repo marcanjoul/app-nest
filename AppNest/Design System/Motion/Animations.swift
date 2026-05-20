@@ -59,6 +59,11 @@ struct PressScaleButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? AppAnimations.pressScale : 1.0)
+            .shadow(
+                color: .black.opacity(configuration.isPressed ? 0.05 : 0.12),
+                radius: configuration.isPressed ? 2 : 8,
+                y: configuration.isPressed ? 1 : 4
+            )
             .animation(.interactiveSpring(response: 0.2, dampingFraction: 0.8), value: configuration.isPressed)
     }
 }
