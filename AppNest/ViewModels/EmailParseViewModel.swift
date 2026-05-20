@@ -76,6 +76,8 @@ final class EmailParseViewModel {
         editDate = Date()
         editCompensationKind = nil
         editCompensationAmount = nil
+        editCompensationCurrency = .usd
+        editSalaryPeriod = .yearly
         editNotes = ""
         editAttachedResume = nil
         editReminderEnabled = false

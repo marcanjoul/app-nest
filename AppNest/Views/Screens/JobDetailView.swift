@@ -9,7 +9,6 @@ import UIKit
 struct JobDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss)      private var dismiss
-    @Environment(\.openURL)      private var openURL
     @Environment(AppState.self)  private var appState
     @Query(sort: \ResumeDocument.createdAt, order: .reverse) private var resumes: [ResumeDocument]
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
@@ -53,8 +52,44 @@ struct JobDetailView: View {
 
     private var isNewApplication: Bool { job == nil }
 
+    private var hasChanges: Bool {
+        guard let job else { return true }
+        let wantsReminder = status == .toApply && reminderEnabled
+        let originalWantsReminder = job.reminderEnabled
+        let reminderTimeChanged: Bool = {
+            guard wantsReminder && originalWantsReminder else { return wantsReminder != originalWantsReminder }
+            let cal = Calendar.current
+            let orig = cal.dateComponents([.hour, .minute], from: job.reminderTime ?? Self.defaultReminderTime)
+            let cur  = cal.dateComponents([.hour, .minute], from: reminderTime)
+            return orig.hour != cur.hour || orig.minute != cur.minute
+        }()
+        return companyName          != job.companyName
+            || companyLogoImageData != job.companyLogoImageData
+            || position             != job.position
+            || type                 != job.jobType
+            || status               != job.status
+            || season               != job.season
+            || dateApplied          != job.dateApplied
+            || jobURL.trimmingCharacters(in: .whitespaces) != (job.jobURL ?? "")
+            || jobNotes             != (job.jobNotes ?? "")
+            || resumeID             != job.resumeID
+            || compensationKind     != job.compensationKind
+            || parsedCompensationAmount != job.compensationAmount
+            || compensationCurrency != (job.compensationCurrency ?? .usd)
+            || salaryPeriod         != (job.salaryPeriod ?? .yearly)
+            || reminderTimeChanged
+            || companyResearch      != (job.companyResearch ?? "")
+            || interviewNotes       != (job.interviewNotes ?? "")
+    }
+
     private var isSaveDisabled: Bool {
-        !missingFields.isEmpty
+        !missingFields.isEmpty || (!isNewApplication && !hasChanges)
+    }
+
+    private var saveButtonLabel: String {
+        if isNewApplication { return "Add Application" }
+        if !missingFields.isEmpty { return "Save Changes" }
+        return hasChanges ? "Save Changes" : "No Changes"
     }
 
     private var missingFields: [String] {
@@ -118,15 +153,15 @@ struct JobDetailView: View {
             Divider().opacity(0.4)
             HStack {
                 Button {
-                    if isSaveDisabled {
+                    if !missingFields.isEmpty {
                         handleInvalidSaveTap()
-                    } else {
+                    } else if hasChanges {
                         AppHaptics.shared.medium()
                         save()
                         dismiss()
                     }
                 } label: {
-                    Text(isNewApplication ? "Add Application" : "Save Changes")
+                    Text(saveButtonLabel)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
