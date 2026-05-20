@@ -56,8 +56,14 @@ struct JobCardView: View {
             }
             .frame(width: 60, height: 60)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .blur(radius: isFetchingLogo ? 2 : 0)
-            .opacity(isFetchingLogo ? 0.7 : 1.0)
+            .background {
+                if isFetchingLogo {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color.primary.opacity(0.12))
+                        .shimmer()
+                }
+            }
+            .opacity(isFetchingLogo ? 0.8 : 1.0)
             .overlay(alignment: .bottomTrailing) {
                 if showReminderBadge {
                     ZStack {

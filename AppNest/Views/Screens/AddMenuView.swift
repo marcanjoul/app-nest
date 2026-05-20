@@ -254,12 +254,8 @@ struct AddMenuView: View {
                                 vm.parseEmail(defaultResume: defaultResume)
                             } label: {
                                 HStack(spacing: 8) {
-                                    if vm.isParsing {
-                                        ProgressView().tint(.white)
-                                    } else {
-                                        Image(systemName: vm.hasResult ? "arrow.clockwise.circle.fill" : "sparkles")
-                                    }
-                                    Text(vm.isParsing ? "Parsing…" : vm.hasResult ? "Re-parse" : "Parse Email")
+                                    Image(systemName: vm.hasResult ? "arrow.clockwise.circle.fill" : "sparkles")
+                                    Text(vm.hasResult ? "Re-parse" : "Parse Email")
                                         .font(.system(size: 16, weight: .semibold))
                                 }
                                 .foregroundStyle(.white)
@@ -276,6 +272,12 @@ struct AddMenuView: View {
                         }
                     }
                     .padding(.horizontal, 20)
+
+                    if vm.isParsing {
+                        ResultsCardSkeleton()
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 20)
+                    }
 
                     if vm.hasResult {
                         EmailParseResultsCard(

@@ -53,6 +53,46 @@ struct ShakeEffect: GeometryEffect {
     }
 }
 
+// MARK: - Shimmer Effect
+
+struct ShimmerModifier: ViewModifier {
+    @State private var phase: CGFloat = 0
+    
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                GeometryReader { proxy in
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: .white.opacity(0.3), location: 0.3),
+                            .init(color: .white.opacity(0.5), location: 0.5),
+                            .init(color: .white.opacity(0.3), location: 0.7),
+                            .init(color: .clear, location: 1)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: proxy.size.width * 2)
+                    .offset(x: -proxy.size.width + (proxy.size.width * 2 * phase))
+                }
+            )
+            .mask(content)
+            .onAppear {
+                withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                    phase = 1
+                }
+            }
+    }
+}
+
+extension View {
+    /// Adds a shimmering effect, typically used for skeleton loading.
+    func shimmer() -> some View {
+        modifier(ShimmerModifier())
+    }
+}
+
 // MARK: - Global Button Styles
 
 struct PressScaleButtonStyle: ButtonStyle {

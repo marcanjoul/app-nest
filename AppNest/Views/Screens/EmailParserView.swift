@@ -27,6 +27,13 @@ struct EmailParserView: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         inputCard
+                        if vm.isParsing {
+                            ResultsCardSkeleton()
+                                .transition(.asymmetric(
+                                    insertion: .move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.95)),
+                                    removal: .opacity
+                                ))
+                        }
                         if vm.hasResult {
                             EmailParseResultsCard(
                                 vm: vm,
@@ -220,14 +227,9 @@ struct EmailParserView: View {
                     vm.parseEmail(defaultResume: defaultResume) { scrollToResults = true }
                 } label: {
                     HStack(spacing: 8) {
-                        if vm.isParsing {
-                            ProgressView().tint(.white)
-                                .transition(.scale.combined(with: .opacity))
-                        } else {
-                            Image(systemName: vm.hasResult ? "arrow.clockwise.circle.fill" : "sparkles")
-                                .transition(.scale.combined(with: .opacity))
-                        }
-                        Text(vm.isParsing ? "Parsing…" : vm.hasResult ? "Re-parse" : "Parse Email")
+                        Image(systemName: vm.hasResult ? "arrow.clockwise.circle.fill" : "sparkles")
+                            .transition(.scale.combined(with: .opacity))
+                        Text(vm.hasResult ? "Re-parse" : "Parse Email")
                             .font(.system(size: 16, weight: .semibold))
                             .animation(.none, value: vm.isParsing)
                     }

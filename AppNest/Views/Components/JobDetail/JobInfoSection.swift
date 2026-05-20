@@ -93,21 +93,19 @@ struct JobInfoSection: View {
                 }
                 .frame(width: 100, height: 100)
                 .clipShape(Circle())
+                .background {
+                    if isFetchingLogo {
+                        Circle()
+                            .fill(Color.primary.opacity(0.12))
+                            .shimmer()
+                    }
+                }
                 .overlay(
                     Circle()
                         .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
                 )
                 .shadow(color: .black.opacity(0.20), radius: 10, y: 5)
-                // Loading veil — fades + scales in quickly, out just as fast
-                .overlay {
-                    Circle()
-                        .fill(.ultraThinMaterial)
-                        .opacity(isFetchingLogo ? 1 : 0)
-                    ProgressView()
-                        .tint(.white)
-                        .scaleEffect(isFetchingLogo ? 1 : 0.7)
-                        .opacity(isFetchingLogo ? 1 : 0)
-                }
+                .opacity(isFetchingLogo ? 0.8 : 1.0)
                 .animation(.appFastOut, value: isFetchingLogo)
                 .overlay(alignment: .bottomTrailing) {
                     ZStack {

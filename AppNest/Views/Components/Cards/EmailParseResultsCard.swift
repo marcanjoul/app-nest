@@ -93,8 +93,14 @@ struct EmailParseResultsCard: View {
                 }
                 .frame(width: 60, height: 60)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .blur(radius: vm.isFetchingLogo ? 2 : 0)
-                .opacity(vm.isFetchingLogo ? 0.7 : 1.0)
+                .background {
+                    if vm.isFetchingLogo {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color.primary.opacity(0.12))
+                            .shimmer()
+                    }
+                }
+                .opacity(vm.isFetchingLogo ? 0.8 : 1.0)
                 .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
                 .overlay(alignment: .bottomTrailing) {
                     ZStack {
