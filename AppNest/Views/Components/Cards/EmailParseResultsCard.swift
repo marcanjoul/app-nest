@@ -122,14 +122,39 @@ struct EmailParseResultsCard: View {
         }
     }
 
+    private var isSeasonAllowed: Bool {
+        let allowed: [ApplicationType] = [.partTime, .internship, .temporary, .Co_op]
+        return vm.editJobType.map { allowed.contains($0) } ?? false
+    }
+
+    private var isInterviewStage: Bool {
+        vm.editStatus == .interview || vm.editStatus == .offer
+    }
+
     private var formFields: some View {
         VStack(spacing: 12) {
             EditableFieldRow(icon: "building.2", label: "Company", text: $vm.editCompany, placeholder: "Company name", index: 0)
             EditableFieldRow(icon: "briefcase", label: "Position / Role", text: $vm.editPosition, placeholder: "Job title", index: 1)
-            JobTypePickerRow(jobType: $vm.editJobType, index: 2)
-            StatusPickerRow(status: $vm.editStatus, index: 3)
-            SeasonPickerRow(season: $vm.editSeason, index: 4)
-            DatePickerRow(date: $vm.editDate, index: 5)
+            TypePickerSection(type: $vm.editJobType, isEmbedded: true)
+            StatusPickerSection(
+                status: Binding(get: { vm.editStatus }, set: { vm.editStatus = $0 ?? .applied }),
+                isEmbedded: true
+            )
+            if isSeasonAllowed {
+                SeasonPickerSection(season: $vm.editSeason, isEmbedded: true)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)),
+                        removal: .opacity
+                    ))
+            }
+            DateAppliedSection(
+                dateApplied: $vm.editDate,
+                status: vm.editStatus,
+                reminderEnabled: $vm.editReminderEnabled,
+                reminderTime: $vm.editReminderTime,
+                isEmbedded: true
+            )
+            JobLinkSection(jobURL: $vm.editJobURL, isEmbedded: true)
 
             Group {
                 CompensationSection(
@@ -149,8 +174,24 @@ struct EmailParseResultsCard: View {
                     onClear: { vm.editAttachedResume = nil }
                 )
                 JobNotesSection(jobNotes: $vm.editNotes)
+                if isInterviewStage {
+                    InterviewKitSection(
+                        companyResearch: $vm.editCompanyResearch,
+                        interviewNotes: $vm.editInterviewNotes,
+                        isEmbedded: true
+                    )
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .bottom)).combined(with: .scale(scale: 0.96, anchor: .top)),
+                        removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .top))
+                    ))
+                }
             }
             .padding(.top, 4)
+        }
+        .animation(.appSmooth, value: isSeasonAllowed)
+        .animation(.appSmooth, value: isInterviewStage)
+        .onChange(of: vm.editJobType) { _, _ in
+            if !isSeasonAllowed { vm.editSeason = nil }
         }
         .id(vm.parseCount)
     }

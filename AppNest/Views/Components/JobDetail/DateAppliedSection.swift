@@ -5,6 +5,9 @@ struct DateAppliedSection: View {
     var status: ApplicationStatus?
     @Binding var reminderEnabled: Bool
     @Binding var reminderTime: Date
+    /// When true, renders with a compact row background instead of a standalone glass card.
+    /// Use this when embedding inside another card (e.g. EmailParseResultsCard).
+    var isEmbedded: Bool = false
 
     @State private var permissionDenied: Bool = false
 
@@ -16,6 +19,41 @@ struct DateAppliedSection: View {
     }
 
     var body: some View {
+        Group {
+            if isEmbedded {
+                contentStack
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.primary.opacity(0.04))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .strokeBorder(Color.primary.opacity(0.07), lineWidth: 1)
+                            }
+                    }
+            } else {
+                contentStack
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .glassCard()
+            }
+        }
+        .animation(.appSmooth, value: isToApply)
+        .animation(.appSmooth, value: reminderEnabled)
+        .animation(.appFastOut, value: permissionDenied)
+        .task(id: isToApply) {
+            guard isToApply else { return }
+            let denied = await NotificationManager.isDenied()
+            await MainActor.run {
+                permissionDenied = denied
+                if denied { reminderEnabled = false }
+            }
+        }
+    }
+
+    private var contentStack: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionLabel(icon: "calendar", title: sectionTitle)
 
@@ -112,20 +150,6 @@ struct DateAppliedSection: View {
                         }
                     }
                 }
-            }
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .glassCard()
-        .animation(.appSmooth, value: isToApply)
-        .animation(.appSmooth, value: reminderEnabled)
-        .animation(.appFastOut, value: permissionDenied)
-        .task(id: isToApply) {
-            guard isToApply else { return }
-            let denied = await NotificationManager.isDenied()
-            await MainActor.run {
-                permissionDenied = denied
-                if denied { reminderEnabled = false }
             }
         }
     }

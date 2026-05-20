@@ -79,15 +79,7 @@ struct EmailParserView: View {
             withAnimation(.appSmooth.delay(0.1)) { cardAppeared = true }
         }
         .task(id: vm.editCompany) {
-            vm.fetchedLogoData = nil
-            vm.isFetchingLogo = false
-            let trimmed = vm.editCompany.trimmingCharacters(in: .whitespaces)
-            guard trimmed.count >= 2 else { return }
-            do { try await Task.sleep(for: .milliseconds(600)) } catch { return }
-            guard !Task.isCancelled else { return }
-            withAnimation(.appFastOut) { vm.isFetchingLogo = true }
-            vm.fetchedLogoData = await LogoFetcher.fetchLogoData(for: trimmed, darkMode: colorScheme == .dark)
-            withAnimation(.appFastOut) { vm.isFetchingLogo = false }
+            await vm.fetchLogo(isDark: colorScheme == .dark)
         }
     }
 

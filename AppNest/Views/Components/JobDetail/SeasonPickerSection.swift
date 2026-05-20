@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SeasonPickerSection: View {
     @Binding var season: ApplicationSeason?
+    var isEmbedded: Bool = false
 
     private var orderedOptions: [ApplicationSeason] {
         if let selected = season {
@@ -11,6 +12,29 @@ struct SeasonPickerSection: View {
     }
 
     var body: some View {
+        Group {
+            if isEmbedded {
+                contentStack
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.primary.opacity(0.04))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .strokeBorder(Color.primary.opacity(0.07), lineWidth: 1)
+                            }
+                    }
+            } else {
+                contentStack
+                    .padding(16)
+                    .glassCard()
+            }
+        }
+    }
+
+    private var contentStack: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionLabel(icon: "sun.snow.fill", title: "Season")
 
@@ -43,7 +67,5 @@ struct SeasonPickerSection: View {
                 }
             }
         }
-        .padding(16)
-        .glassCard()
     }
 }

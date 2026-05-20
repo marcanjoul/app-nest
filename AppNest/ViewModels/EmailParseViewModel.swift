@@ -27,6 +27,11 @@ final class EmailParseViewModel {
     var editSalaryPeriod: SalaryPeriod? = .yearly
     var editNotes = ""
     var editAttachedResume: ResumeDocument? = nil
+    var editReminderEnabled: Bool = false
+    var editReminderTime: Date = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: Date()) ?? Date()
+    var editJobURL = ""
+    var editCompanyResearch = ""
+    var editInterviewNotes = ""
 
     // MARK: - UI state
 
@@ -73,6 +78,11 @@ final class EmailParseViewModel {
         editCompensationAmount = nil
         editNotes = ""
         editAttachedResume = nil
+        editReminderEnabled = false
+        editReminderTime = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: Date()) ?? Date()
+        editJobURL = ""
+        editCompanyResearch = ""
+        editInterviewNotes = ""
         isEmailExpanded = true
         fetchedLogoData = nil
         isFetchingLogo = false
@@ -121,7 +131,9 @@ final class EmailParseViewModel {
     ) {
         let attached = editAttachedResume
         let selectedCycle = selectedCycleID.flatMap { id in cycles.first { $0.id == id } }
-        modelContext.insert(JobApplication(
+        let wantsReminder = editStatus == .toApply && editReminderEnabled
+        let reminderTime: Date? = wantsReminder ? editReminderTime : nil
+        let newJob = JobApplication(
             companyName: editCompany.isEmpty ? "Unknown Company" : editCompany,
             companyLogoImageData: fetchedLogoData,
             position: editPosition.isEmpty ? "Unknown Position" : editPosition,
@@ -130,6 +142,7 @@ final class EmailParseViewModel {
             season: editSeason,
             cycle: selectedCycle,
             dateApplied: editDate,
+            jobURL: editJobURL.trimmingCharacters(in: .whitespaces).isEmpty ? nil : editJobURL.trimmingCharacters(in: .whitespaces),
             jobNotes: editNotes,
             resumeFileName: attached?.fileName,
             resumeBookmark: attached?.bookmark,
@@ -137,8 +150,13 @@ final class EmailParseViewModel {
             compensationKind: editCompensationKind,
             compensationAmount: editCompensationAmount,
             compensationCurrency: editCompensationCurrency,
-            salaryPeriod: editSalaryPeriod
-        ))
+            salaryPeriod: editSalaryPeriod,
+            reminderEnabled: wantsReminder,
+            reminderTime: reminderTime
+        )
+        newJob.companyResearch = editCompanyResearch.isEmpty ? nil : editCompanyResearch
+        newJob.interviewNotes  = editInterviewNotes.isEmpty  ? nil : editInterviewNotes
+        modelContext.insert(newJob)
         AppHaptics.shared.success()
         withAnimation(.appSmooth) { saveSuccess = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { [weak self] in
@@ -148,6 +166,22 @@ final class EmailParseViewModel {
                 onSaved()
             }
         }
+    }
+
+    // MARK: - Logo fetch
+
+    /// Debounced logo fetch tied to editCompany changes.
+    /// Call from `.task(id: vm.editCompany) { await vm.fetchLogo(isDark:) }` in the host view.
+    func fetchLogo(isDark: Bool) async {
+        fetchedLogoData = nil
+        isFetchingLogo = false
+        let trimmed = editCompany.trimmingCharacters(in: .whitespaces)
+        guard trimmed.count >= 2 else { return }
+        do { try await Task.sleep(for: .milliseconds(600)) } catch { return }
+        guard !Task.isCancelled else { return }
+        withAnimation(.appFastOut) { isFetchingLogo = true }
+        fetchedLogoData = await LogoFetcher.fetchLogoData(for: trimmed, darkMode: isDark)
+        withAnimation(.appFastOut) { isFetchingLogo = false }
     }
 
     // MARK: - Highlight helpers
