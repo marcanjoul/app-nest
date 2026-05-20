@@ -182,7 +182,7 @@ struct ApplicationView: View {
 
                     ForEach(Array(filteredAndSorted.enumerated()), id: \.element.id) { index, job in
                         JobCardSwipeRow(job: job, isEditMode: isEditMode, onDelete: { scheduleDelete(job) })
-                            .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
+                            .listRowInsets(EdgeInsets(top: 6, leading: isEditMode ? 4 : 20, bottom: 6, trailing: 20))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
                             .visualEffect { content, proxy in
