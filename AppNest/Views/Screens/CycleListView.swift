@@ -26,31 +26,39 @@ struct CycleListView: View {
             } else {
                 List {
                     ForEach(Array(cycles.enumerated()), id: \.element.id) { index, cycle in
-                        CycleRow(
-                            cycle: cycle,
-                            isActive: appState.selectedCycleID == cycle.id,
-                            onSelect: { selectCycle(cycle) }
-                        )
+                        SwipeActionRow(
+                            leadingActions: [],
+                            trailingActions: [
+                                SwipeAction(
+                                    title: "Rename",
+                                    icon: "pencil",
+                                    color: Color.accentColor,
+                                    action: {
+                                        cycleToRename = cycle
+                                        renameText = cycle.name
+                                    }
+                                ),
+                                SwipeAction(
+                                    title: "Delete",
+                                    icon: "trash.fill",
+                                    color: Theme.destructive,
+                                    action: { cycleToDelete = cycle }
+                                )
+                            ],
+                            isEditMode: false
+                        ) {
+                            CycleRow(
+                                cycle: cycle,
+                                isActive: appState.selectedCycleID == cycle.id,
+                                onSelect: { selectCycle(cycle) }
+                            )
+                        }
                         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .opacity(contentAppeared ? 1 : 0)
                         .offset(y: contentAppeared ? 0 : 12)
                         .animation(.appSmooth.delay(Double(min(index, 8)) * 0.04), value: contentAppeared)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button(role: .destructive) {
-                                cycleToDelete = cycle
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                            Button {
-                                cycleToRename = cycle
-                                renameText = cycle.name
-                            } label: {
-                                Label("Rename", systemImage: "pencil")
-                            }
-                            .tint(Color.accentColor)
-                        }
                     }
 
                     Color.clear
