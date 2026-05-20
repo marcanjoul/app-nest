@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct DateAppliedSection: View {
-    @Binding var dateApplied: Date
+    @Binding var dateApplied: Date?
     var status: ApplicationStatus?
     @Binding var reminderEnabled: Bool
     @Binding var reminderTime: Date
@@ -59,10 +59,33 @@ struct DateAppliedSection: View {
 
             HStack {
                 Spacer()
-                if isToApply {
+                if dateApplied == nil {
+                    Button {
+                        withAnimation(.appSmooth) { dateApplied = Date() }
+                    } label: {
+                        HStack(spacing: 7) {
+                            Image(systemName: "calendar.badge.plus")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Select a date")
+                                .font(.system(size: 17, weight: .semibold))
+                        }
+                        .foregroundStyle(accent)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(accent.opacity(0.10))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                        .strokeBorder(accent.opacity(0.22), lineWidth: 1)
+                                }
+                        }
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
+                } else if isToApply {
                     DatePicker(
                         "",
-                        selection: $dateApplied,
+                        selection: Binding(get: { dateApplied ?? Date() }, set: { dateApplied = $0 }),
                         in: Date()...,
                         displayedComponents: .date
                     )
@@ -73,7 +96,7 @@ struct DateAppliedSection: View {
                 } else {
                     DatePicker(
                         "",
-                        selection: $dateApplied,
+                        selection: Binding(get: { dateApplied ?? Date() }, set: { dateApplied = $0 }),
                         in: ...Date(),
                         displayedComponents: .date
                     )

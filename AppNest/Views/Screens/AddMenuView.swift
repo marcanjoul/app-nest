@@ -170,18 +170,40 @@ struct AddMenuView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         if !vm.isEmailExpanded && !vm.emailText.isEmpty && !vm.highlights.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
-                                if vm.isHighlightExpanded {
-                                    Text(vm.buildHighlightedString(vm.emailText, spans: vm.highlights))
-                                        .font(.system(size: 13))
-                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                HStack {
+                                    Spacer()
+                                    Button {
+                                        vm.backToEdit()
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                            isEmailEditorFocused = true
+                                        }
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "pencil")
+                                                .font(.system(size: 10, weight: .semibold))
+                                            Text("Edit")
+                                                .font(.caption.weight(.semibold))
+                                        }
                                         .foregroundStyle(Theme.textSecondary)
-                                } else {
-                                    Text(vm.buildHighlightedString(vm.emailText, spans: vm.highlights))
-                                        .font(.system(size: 13))
-                                        .lineLimit(3)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .foregroundStyle(Theme.textSecondary)
+                                        .padding(.horizontal, 9)
+                                        .padding(.vertical, 5)
+                                        .background {
+                                            Capsule()
+                                                .fill(Color.primary.opacity(0.06))
+                                                .overlay {
+                                                    Capsule()
+                                                        .strokeBorder(Color.primary.opacity(0.10), lineWidth: 1)
+                                                }
+                                        }
+                                    }
+                                    .buttonStyle(PressScaleButtonStyle())
                                 }
+
+                                Text(vm.buildHighlightedString(vm.emailText, spans: vm.highlights))
+                                    .font(.system(size: 13))
+                                    .lineLimit(vm.isHighlightExpanded ? nil : 3)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .foregroundStyle(Theme.textSecondary)
 
                                 Button {
                                     withAnimation(.appCrisp) { vm.isHighlightExpanded.toggle() }
@@ -255,15 +277,6 @@ struct AddMenuView: View {
                             .scaleEffect(vm.isButtonPressed ? AppAnimations.pressScale : 1.0)
                             .disabled(vm.isParseDisabled)
                             .padding(.bottom, 20)
-                        } else if vm.hasResult {
-                            Button {
-                                withAnimation(.appCrisp) { vm.isEmailExpanded = true }
-                            } label: {
-                                Label("Edit Email Text", systemImage: "pencil.circle.fill")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(Color.orange)
-                            }
-                            .padding(.bottom, 8)
                         }
                     }
                     .padding(.horizontal, 20)

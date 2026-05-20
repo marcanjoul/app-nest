@@ -106,15 +106,18 @@ struct EmailParserView: View {
 
                 Spacer()
 
-                if vm.hasResult {
+                if vm.hasResult && !vm.isEmailExpanded {
                     Button {
-                        withAnimation(.appCrisp) { vm.isEmailExpanded.toggle() }
+                        vm.backToEdit()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            isEditorFocused = true
+                        }
                     } label: {
                         HStack(spacing: 4) {
-                            Text(vm.isEmailExpanded ? "Collapse" : "Edit email")
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("Edit email")
                                 .font(.caption.weight(.medium))
-                            Image(systemName: vm.isEmailExpanded ? "chevron.up" : "chevron.down")
-                                .font(.caption.weight(.semibold))
                         }
                         .foregroundStyle(Color.accentColor)
                         .padding(.horizontal, 10)

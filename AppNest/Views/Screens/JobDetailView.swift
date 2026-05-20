@@ -237,7 +237,10 @@ struct JobDetailView: View {
                                 ))
                         }
                         DateAppliedSection(
-                            dateApplied: $dateApplied,
+                            dateApplied: Binding(
+                                get: { dateApplied as Date? },
+                                set: { dateApplied = $0 ?? Date() }
+                            ),
                             status: status,
                             reminderEnabled: $reminderEnabled,
                             reminderTime: $reminderTime

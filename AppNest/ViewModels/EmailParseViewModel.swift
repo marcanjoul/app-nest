@@ -20,7 +20,7 @@ final class EmailParseViewModel {
     var editJobType: ApplicationType? = nil
     var editStatus: ApplicationStatus = .applied
     var editSeason: ApplicationSeason? = nil
-    var editDate: Date = Date()
+    var editDate: Date? = nil
     var editCompensationKind: CompensationKind? = nil
     var editCompensationAmount: Double? = nil
     var editCompensationCurrency: Currency? = .usd
@@ -73,7 +73,7 @@ final class EmailParseViewModel {
         editJobType = nil
         editStatus = .applied
         editSeason = nil
-        editDate = Date()
+        editDate = nil
         editCompensationKind = nil
         editCompensationAmount = nil
         editCompensationCurrency = .usd
@@ -93,6 +93,18 @@ final class EmailParseViewModel {
         saveSuccess = false
     }
 
+    /// Returns to the pre-parse state: shows the text editor with email text intact, hides results.
+    func backToEdit() {
+        AppHaptics.shared.light()
+        withAnimation(.appSmooth) {
+            hasResult = false
+            isEmailExpanded = true
+            highlights = []
+            isHighlightExpanded = false
+            saveSuccess = false
+        }
+    }
+
     func parseEmail(defaultResume: ResumeDocument?, onParsed: (() -> Void)? = nil) {
         guard !emailText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         #if canImport(UIKit)
@@ -109,7 +121,7 @@ final class EmailParseViewModel {
                 self.editJobType = result.jobType
                 self.editStatus = result.status ?? .applied
                 self.editSeason = nil
-                self.editDate = result.dateApplied ?? Date()
+                self.editDate = result.dateApplied
                 self.editCompensationKind = nil
                 self.editCompensationAmount = nil
                 self.editNotes = ""
@@ -143,7 +155,7 @@ final class EmailParseViewModel {
             status: editStatus,
             season: editSeason,
             cycle: selectedCycle,
-            dateApplied: editDate,
+            dateApplied: editDate ?? Date(),
             jobURL: editJobURL.trimmingCharacters(in: .whitespaces).isEmpty ? nil : editJobURL.trimmingCharacters(in: .whitespaces),
             jobNotes: editNotes,
             resumeFileName: attached?.fileName,

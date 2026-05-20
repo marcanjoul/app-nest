@@ -40,7 +40,7 @@ struct EditImportRowView: View {
                             ))
                     }
                     DateAppliedSection(
-                        dateApplied: $row.dateApplied,
+                        dateApplied: dateAppliedBinding,
                         status: row.status,
                         reminderEnabled: $reminderEnabled,
                         reminderTime: $reminderTime
@@ -167,6 +167,15 @@ struct EditImportRowView: View {
         }
         .buttonStyle(.plain)
         .animation(.appCrisp, value: isSelected)
+    }
+
+    // MARK: - Date binding
+
+    private var dateAppliedBinding: Binding<Date?> {
+        Binding(
+            get: { row.dateApplied },
+            set: { row.dateApplied = $0 ?? Date() }
+        )
     }
 
     // MARK: - Compensation bindings
