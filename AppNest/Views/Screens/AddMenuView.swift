@@ -251,10 +251,6 @@ struct AddMenuView: View {
                             .padding(.bottom, 12)
 
                             Button {
-                                withAnimation(.appFastOut) { vm.isButtonPressed = true }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                                    withAnimation(.appFastOut) { vm.isButtonPressed = false }
-                                }
                                 vm.parseEmail(defaultResume: defaultResume)
                             } label: {
                                 HStack(spacing: 8) {
@@ -274,7 +270,7 @@ struct AddMenuView: View {
                                         .fill(vm.isParseDisabled ? Color.secondary.opacity(0.3) : Color.orange)
                                 }
                             }
-                            .scaleEffect(vm.isButtonPressed ? AppAnimations.pressScale : 1.0)
+                            .buttonStyle(PressScaleButtonStyle())
                             .disabled(vm.isParseDisabled)
                             .padding(.bottom, 20)
                         }
@@ -315,6 +311,7 @@ struct AddMenuView: View {
                                         .background(Color.primary.opacity(0.06))
                                         .clipShape(Capsule())
                                 }
+                                .buttonStyle(PressScaleButtonStyle())
 
                                 Button {
                                     withAnimation(.appSmooth) {
@@ -330,6 +327,7 @@ struct AddMenuView: View {
                                         .background(Color.primary.opacity(0.06))
                                         .clipShape(Capsule())
                                 }
+                                .buttonStyle(PressScaleButtonStyle())
                             }
                         }
                         .padding(.horizontal, 20)

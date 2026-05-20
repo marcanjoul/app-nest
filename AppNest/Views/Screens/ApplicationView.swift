@@ -195,6 +195,7 @@ struct ApplicationView: View {
                                 removal: .opacity.combined(with: .scale(scale: 0.9))
                             ))
                             .animation(.appSmooth.delay(Double(min(index, 6)) * 0.05), value: filteredAndSorted.count)
+                            .animation(.appSmooth.delay(Double(min(index, 6)) * 0.05), value: contentAppeared)
                     }
                 }
 
@@ -316,7 +317,8 @@ struct ApplicationView: View {
                                 }
                             }
                             .onEnded { value in
-                                if value.translation.height > 50 {
+                                let velocity = value.predictedEndTranslation.height / 500.0
+                                if value.translation.height > 50 || velocity > 0.11 {
                                     undoTask?.cancel()
                                     undoTask = nil
                                     modelContext.delete(pending)
@@ -474,6 +476,7 @@ struct ApplicationView: View {
                 }
                 AppHaptics.shared.light()
             }
+            .buttonStyle(PressScaleButtonStyle())
             .font(.system(size: 13, weight: .bold))
             .foregroundStyle(Color.accentColor)
             .padding(.horizontal, 12)
@@ -673,7 +676,7 @@ struct ApplicationView: View {
                                     .fill(Color.accentColor)
                                     .frame(width: 8, height: 8)
                                     .offset(x: -4, y: 4)
-                                    .transition(.scale.combined(with: .opacity))
+                                    .transition(.scale(scale: 0.8).combined(with: .opacity))
                             }
                         }
                     }

@@ -102,6 +102,8 @@ struct StatChip: View {
                 Text("\(number)")
                     .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundStyle(isSelected ? Color.white : Theme.textPrimary)
+                    .contentTransition(.numericText())
+                    .animation(.appCrisp, value: number)
 
                 Text(label)
                     .font(.system(size: 11, weight: .semibold))
