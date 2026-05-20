@@ -63,13 +63,13 @@ struct EmailParser {
         // Patterns ordered from most to least specific.
         let companyPatterns = [
             // "joining BillionToOne" / "join our team at Acme"
-            #"(?:joining|join)\s+(?:our\s+team\s+at\s+|the\s+team\s+at\s+)?([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
+            #"(?:joining|join)\s+(?:our\s+team\s+at\s+|the\s+team\s+at\s+)?([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
             // "role/position/internship at Company"
-            #"(?:role|position|opportunity|internship|job)\s+(?:at|with)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
+            #"(?:role|position|opportunity|internship|job)\s+(?:at|with)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
             // "applied to [POSITION] at Company" — skip past the position title to find the company
-            #"(?:apply|applied|applying)\s+(?:to|for)\s+.+?\s+at\s+([A-Z][A-Za-z0-9&®\s\.]+?)(?:\s+on\b|\s+via\b|\s+through\b|\.|,|\!|\n|$)"#,
+            #"(?:apply|applied|applying)\s+(?:to|for)\s+.+?\s+at\s+([A-Z][A-Za-z0-9&®\s\.]+?)(?:\s+on\b|\s+via\b|\s+through\b|\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
             // "apply/applied/applying to/at Company" — negative lookahead skips articles that precede position titles
-            #"(?:apply|applied|applying)\s+(?:to|at|for)\s+(?!the\b|a\b|an\b)([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+through\b|\s+via\b|\.|,|\!|\n|$)"#,
+            #"(?:apply|applied|applying)\s+(?:to|at|for)\s+(?!the\b|a\b|an\b)([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+through\b|\s+via\b|\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
             // "application to Company" — acknowledgment emails ("submit an application to Snackpass")
             #"(?:application|applying|applied)\s+to\s+([A-Z][A-Za-z0-9&\.]+(?:\s+[A-Z][A-Za-z0-9&\.]+){0,2})(?:'s)?\b"#,
             // "about Company and" — rejection emails ("learn more about Intuitive and the...")
@@ -82,13 +82,15 @@ struct EmailParser {
             // "Company is committed/growing/excited..." — company self-describes ("Helios Medical is committed to...")
             #"([A-Z][A-Za-z0-9&]+(?:\s+[A-Z][A-Za-z0-9&]+){0,2})\s+is\s+(?:committed|growing|excited|dedicated|building|expanding|a\s+fast|at\s+a)\b"#,
             // "team/company at/of Company"
-            #"(?:team|company)\s+(?:at|of)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
+            #"(?:team|company)\s+(?:at|of)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
             // "welcome to / offer from Company"
-            #"(?:welcome to|offer from)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
+            #"(?:welcome to|offer from)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
             // "career/opportunity at Company" — catches "interest in a career at Norstella"
-            #"(?:career|opportunity)\s+at\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
+            #"(?:career|opportunity)\s+at\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
             // "interest in Company" — but NOT "interest in joining" (handled by pattern above)
-            #"(?:interest in|interested in)\s+(?!joining\b|applying\b|working\b)([A-Z][A-Za-z0-9&\s\.]+?)(?:\.|,|\!|\n|$)"#,
+            // Terminators include \s+and\b and \s+for\b to prevent over-capture into surrounding sentence
+            // (e.g. "your interest in Pindrop and for the time..." → stops at "and")
+            #"(?:interest in|interested in)\s+(?!joining\b|applying\b|working\b)([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
         ]
 
         for pattern in companyPatterns {
@@ -215,6 +217,8 @@ struct EmailParser {
         // Strip leading noise
         let leadingNoise = ["role of the ", "position of the ", "role of ", "position of ",
                             "for the ", "for a ", "for an ",
+                            "your interest in the ", "your interest in ",
+                            "interest in the ", "interest in ",
                             "the ", "our ", "a ", "an "]
         for noise in leadingNoise {
             if s.lowercased().hasPrefix(noise) {

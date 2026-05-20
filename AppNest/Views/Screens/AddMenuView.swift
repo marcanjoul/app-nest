@@ -210,7 +210,7 @@ struct AddMenuView: View {
                                 TextEditor(text: bvm.emailText)
                                     .scrollContentBackground(.hidden)
                                     .background(Color.clear)
-                                    .frame(minHeight: vm.hasResult ? 90 : 180)
+                                    .frame(height: vm.hasResult ? 90 : 180)
                                     .font(.subheadline)
                                     .focused($isEmailEditorFocused)
                             }
