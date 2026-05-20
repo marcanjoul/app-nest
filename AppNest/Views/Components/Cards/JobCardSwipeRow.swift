@@ -124,12 +124,16 @@ struct JobCardSwipeRow: View {
     }
 
     private func cardOffset(_ raw: CGFloat) -> CGFloat {
+        let maxPull: CGFloat = 160
+        let resistance: CGFloat = 0.65
+        
         if raw > 0 {
-            let d = raw * 0.70
-            return d > 165 ? 165 + (d - 165) * 0.18 : d
+            // Logarithmic-like resistance for rubber-banding
+            return maxPull * atan(raw * resistance / maxPull)
         } else if raw < 0 {
-            let d = raw * 0.70
-            return d < -110 ? -110 + (d + 110) * 0.18 : d
+            let absRaw = abs(raw)
+            let maxNegPull: CGFloat = 100
+            return -maxNegPull * atan(absRaw * resistance / maxNegPull)
         }
         return 0
     }

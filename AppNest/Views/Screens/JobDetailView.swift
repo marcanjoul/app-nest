@@ -45,6 +45,7 @@ struct JobDetailView: View {
     @State private var isShowingLogoAttribution = false
     @State private var shakeMissingFields = false
     @State private var scrollTargetSection: FormSection?
+    @State private var contentAppeared = false
 
     private enum FormSection: Hashable {
         case info, type, status
@@ -222,19 +223,33 @@ struct JobDetailView: View {
                         )
                         .id(FormSection.info)
                         .modifier(ShakeEffect(animatableData: shakingSection == .info ? 1 : 0))
+                        .opacity(contentAppeared ? 1 : 0)
+                        .offset(y: contentAppeared ? 0 : 12)
+                        .animation(.appSmooth.delay(0.00), value: contentAppeared)
 
                         TypePickerSection(type: $type)
                             .id(FormSection.type)
                             .modifier(ShakeEffect(animatableData: shakingSection == .type ? 1 : 0))
+                            .opacity(contentAppeared ? 1 : 0)
+                            .offset(y: contentAppeared ? 0 : 12)
+                            .animation(.appSmooth.delay(0.05), value: contentAppeared)
+
                         StatusPickerSection(status: $status)
                             .id(FormSection.status)
                             .modifier(ShakeEffect(animatableData: shakingSection == .status ? 1 : 0))
+                            .opacity(contentAppeared ? 1 : 0)
+                            .offset(y: contentAppeared ? 0 : 12)
+                            .animation(.appSmooth.delay(0.10), value: contentAppeared)
+
                         if isSeasonAllowed {
                             SeasonPickerSection(season: $season)
                                 .transition(.asymmetric(
                                     insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)),
                                     removal: .opacity
                                 ))
+                                .opacity(contentAppeared ? 1 : 0)
+                                .offset(y: contentAppeared ? 0 : 12)
+                                .animation(.appSmooth.delay(0.15), value: contentAppeared)
                         }
                         DateAppliedSection(
                             dateApplied: Binding(
@@ -245,13 +260,25 @@ struct JobDetailView: View {
                             reminderEnabled: $reminderEnabled,
                             reminderTime: $reminderTime
                         )
+                        .opacity(contentAppeared ? 1 : 0)
+                        .offset(y: contentAppeared ? 0 : 12)
+                        .animation(.appSmooth.delay(0.20), value: contentAppeared)
+
                         JobLinkSection(jobURL: $jobURL)
+                            .opacity(contentAppeared ? 1 : 0)
+                            .offset(y: contentAppeared ? 0 : 12)
+                            .animation(.appSmooth.delay(0.25), value: contentAppeared)
+
                         CompensationSection(
                             kind: $compensationKind,
                             amount: $compensationAmount,
                             currency: $compensationCurrency,
                             salaryPeriod: $salaryPeriod
                         )
+                        .opacity(contentAppeared ? 1 : 0)
+                        .offset(y: contentAppeared ? 0 : 12)
+                        .animation(.appSmooth.delay(0.30), value: contentAppeared)
+
                         ResumeSection(
                             resumes: orderedResumes,
                             attachedResume: attachedResume,
@@ -262,7 +289,15 @@ struct JobDetailView: View {
                             onPick: { isShowingDocumentPicker = true },
                             onClear: { isConfirmingResumeClear = true }
                         )
+                        .opacity(contentAppeared ? 1 : 0)
+                        .offset(y: contentAppeared ? 0 : 12)
+                        .animation(.appSmooth.delay(0.35), value: contentAppeared)
+
                         JobNotesSection(jobNotes: $jobNotes)
+                            .opacity(contentAppeared ? 1 : 0)
+                            .offset(y: contentAppeared ? 0 : 12)
+                            .animation(.appSmooth.delay(0.40), value: contentAppeared)
+
                         if isInterviewStage {
                             InterviewKitSection(
                                 companyResearch: $companyResearch,
@@ -272,6 +307,9 @@ struct JobDetailView: View {
                                 insertion: .opacity.combined(with: .move(edge: .bottom)).combined(with: .scale(scale: 0.96, anchor: .top)),
                                 removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .top))
                             ))
+                            .opacity(contentAppeared ? 1 : 0)
+                            .offset(y: contentAppeared ? 0 : 12)
+                            .animation(.appSmooth.delay(0.45), value: contentAppeared)
                         }
                     }
                     .onChange(of: type) { _, _ in
@@ -282,6 +320,7 @@ struct JobDetailView: View {
                     .padding()
                 }
                 .scrollDismissesKeyboard(.interactively)
+                .onAppear { contentAppeared = true }
                 .onChange(of: scrollTargetSection) { _, target in
                     guard let target else { return }
                     withAnimation(.appSmooth) {

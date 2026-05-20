@@ -151,21 +151,21 @@ struct ApplicationView: View {
                 // Content
                 if cycleFiltered.isEmpty && !applications.isEmpty && appState.selectedCycleID != nil {
                     emptyCycleState
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)).combined(with: .offset(y: 20)))
                         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .selectionDisabled()
                 } else if applications.isEmpty {
                     emptyState
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)).combined(with: .offset(y: 20)))
                         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .selectionDisabled()
                 } else if filteredAndSorted.isEmpty {
                     noResultsState
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)).combined(with: .offset(y: 20)))
                         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
