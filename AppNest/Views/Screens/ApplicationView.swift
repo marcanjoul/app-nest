@@ -103,6 +103,14 @@ struct ApplicationView: View {
                             Text("App Nest")
                                 .font(.system(size: 40, weight: .bold))
                                 .foregroundStyle(Theme.textPrimary)
+                                .visualEffect { content, proxy in
+                                    let minY = proxy.frame(in: .global).minY
+                                    let progress = max(0, min(1, (120 - minY) / 80))
+                                    return content
+                                        .scaleEffect(1.0 - (progress * 0.3), anchor: .leading)
+                                        .opacity(1.0 - (progress * 0.5))
+                                        .offset(x: progress * 10, y: progress * 5)
+                                }
                             
                             if !searchText.isEmpty {
                                 Text("\(filteredAndSorted.count) results")
@@ -127,6 +135,10 @@ struct ApplicationView: View {
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 .selectionDisabled() // Header should not be selectable
+                .visualEffect { content, proxy in
+                    let minY = proxy.frame(in: .global).minY
+                    return content.opacity(minY < 0 ? max(0, 1 + minY / 100) : 1)
+                }
 
                 // Search + Filter
                 searchFilterRow
@@ -412,6 +424,11 @@ struct ApplicationView: View {
         }) {
             NavigationStack {
                 EmailParserView(initialText: appState.pendingEmailText)
+            }
+        }
+        .onChange(of: searchText) { _, newValue in
+            if !newValue.isEmpty {
+                AppHaptics.shared.light()
             }
         }
         .onChange(of: appState.pendingEmailText) { _, text in

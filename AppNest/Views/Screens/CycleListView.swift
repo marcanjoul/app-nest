@@ -111,7 +111,7 @@ struct CycleListView: View {
             isPresented: Binding(get: { cycleToDelete != nil }, set: { if !$0 { cycleToDelete = nil } }),
             titleVisibility: .visible
         ) {
-            Button("Delete Cycle", role: .destructive) {
+            HoldToConfirmButton(title: "Delete Cycle", icon: "trash.fill", color: Theme.destructive) {
                 if let cycle = cycleToDelete { deleteCycle(cycle) }
                 cycleToDelete = nil
             }
