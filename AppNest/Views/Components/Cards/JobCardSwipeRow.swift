@@ -1,9 +1,12 @@
 import SwiftUI
 
+@MainActor
 struct JobCardSwipeRow: View {
     let job: JobApplication
     let isEditMode: Bool
     let onDelete: () -> Void
+    
+    @Environment(AppState.self) private var appState
 
     @State private var isSwiping = false
 
@@ -44,13 +47,14 @@ struct JobCardSwipeRow: View {
             isEditMode: isEditMode,
             cornerRadius: 16
         ) {
-            ZStack {
-                NavigationLink(destination: JobDetailView(job: job)) { EmptyView() }
-                    .opacity(0)
-                    .disabled(isEditMode)
-                
-                DarkJobCardView(job: job)
-            }
+            DarkJobCardView(job: job)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if !isEditMode {
+                        AppHaptics.shared.light()
+                        appState.navigationPath.append(job)
+                    }
+                }
         }
     }
 }

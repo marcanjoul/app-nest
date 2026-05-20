@@ -17,7 +17,6 @@ struct ProfileView: View {
     @AppStorage(AppStorageKeys.displayName)    private var profileDisplayName: String = ""
     @AppStorage(AppStorageKeys.avatarData)     private var profileAvatarDataBase64: String = ""
     @AppStorage(AppStorageKeys.hapticsEnabled) private var hapticsEnabled: Bool = true
-    @AppStorage(AppStorageKeys.hideRejected)   private var hideRejected: Bool = false
 
     @State private var avatarSelection: PhotosPickerItem?
     @State private var isShowingDocumentPicker = false
@@ -25,6 +24,7 @@ struct ProfileView: View {
     @State private var isShowingResumeManager  = false
     @State private var isShowingCyclePicker    = false
     @State private var isShowingResetConfirmation = false
+    @State private var fullscreenResume: FullscreenResume?
 
     @FocusState private var isNameFocused: Bool
 
@@ -100,7 +100,7 @@ struct ProfileView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 20)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 110)
                 }
             }
         }
@@ -150,8 +150,12 @@ struct ProfileView: View {
                 attachmentCount: attachmentCount,
                 onSetDefault: setDefaultResume,
                 onRequestDelete: { resumePendingDeletion = $0 },
-                onUpload: { isShowingDocumentPicker = true }
+                onUpload: { isShowingDocumentPicker = true },
+                onView: { openFullscreen($0) }
             )
+        }
+        .fullScreenCover(item: $fullscreenResume) { resume in
+            FullscreenResumeViewer(bookmark: resume.bookmark, fileName: resume.fileName)
         }
         .sheet(isPresented: $isShowingCyclePicker) {
             NavigationStack { CyclePickerSheet(isPresented: $isShowingCyclePicker) }
@@ -381,11 +385,19 @@ struct ProfileView: View {
                     Spacer()
                 }
             } else {
-                VStack(spacing: 10) {
+                VStack(spacing: 12) {
                     ForEach(inlineResumes, id: \.id) { resume in
                         HStack(spacing: 10) {
-                            ResumePill(title: resume.fileName, style: .resume, isLarge: true)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                            ResumePill(
+                                title: resume.fileName,
+                                style: .resume,
+                                isDefault: resume.isDefault,
+                                isLarge: true,
+                                action: { openFullscreen(resume) }
+                            ) {
+                                AnyView(ResumePreview(bookmark: resume.bookmark, fileName: resume.fileName))
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
 
                             Button {
                                 setDefaultResume(resume)
@@ -480,14 +492,6 @@ struct ProfileView: View {
 
                 Divider().opacity(0.4)
 
-                Toggle(isOn: $hideRejected) {
-                    Label("Hide Rejected", systemImage: "xmark.circle")
-                        .font(.system(size: 15, weight: .medium))
-                }
-                .padding(.vertical, 12)
-
-                Divider().opacity(0.4)
-
                 Button(role: .destructive) {
                     isShowingResetConfirmation = true
                 } label: {
@@ -551,6 +555,10 @@ struct ProfileView: View {
         if wasDefault, let replacement = resumes.first(where: { $0.id != resume.id }) {
             replacement.isDefault = true
         }
+    }
+
+    private func openFullscreen(_ resume: ResumeDocument) {
+        fullscreenResume = FullscreenResume(id: resume.id, bookmark: resume.bookmark, fileName: resume.fileName)
     }
 
     private func resetAllData() {
@@ -679,6 +687,7 @@ private struct ResumeManagerSheet: View {
     let onSetDefault: (ResumeDocument) -> Void
     let onRequestDelete: (ResumeDocument) -> Void
     let onUpload: () -> Void
+    let onView: (ResumeDocument) -> Void
 
     var body: some View {
         NavigationStack {
@@ -718,8 +727,16 @@ private struct ResumeManagerSheet: View {
     @ViewBuilder
     private func row(for resume: ResumeDocument) -> some View {
         HStack(spacing: 10) {
-            ResumePill(title: resume.fileName, style: .resume, isLarge: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            ResumePill(
+                title: resume.fileName,
+                style: .resume,
+                isDefault: resume.isDefault,
+                isLarge: true,
+                action: { onView(resume) }
+            ) {
+                AnyView(ResumePreview(bookmark: resume.bookmark, fileName: resume.fileName))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             Button { onSetDefault(resume) } label: {
                 Image(systemName: resume.isDefault ? "star.fill" : "star")

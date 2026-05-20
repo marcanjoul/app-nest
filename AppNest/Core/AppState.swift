@@ -1,5 +1,8 @@
 import Foundation
+import SwiftUI
 import Observation
+
+typealias NavigationPath = SwiftUI.NavigationPath
 
 @Observable
 class AppState {
@@ -11,6 +14,17 @@ class AppState {
     // MARK: - Navigation & Interaction
     var isPresentingSheet = false
 
+    /// Main navigation path for the Applications tab.
+    var navigationPath = NavigationPath()
+    
+    /// Triggered when the user taps the 'Add' tab while already on it, or when switching away.
+    var shouldResetAddMenu = false
+    
+    /// Tracks if the main application list entrance animation has already played.
+    var dashboardHasAppeared = false
+    /// Tracks if the cycle list entrance animation has already played.
+    var cycleListHasAppeared = false
+
     // MARK: - Share Extension Import
     var pendingJobImport: PendingJobImport?
     /// Raw email text from the share extension — triggers the email parse sheet.
@@ -21,3 +35,4 @@ class AppState {
             .flatMap(UUID.init(uuidString:))
     }
 }
+

@@ -25,9 +25,46 @@ struct GlassCard: ViewModifier {
     }
 }
 
+// MARK: - Changed Highlight
+
+struct ChangedHighlight: ViewModifier {
+    let isChanged: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .overlay {
+                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                    .strokeBorder(
+                        Color.accentColor.opacity(isChanged ? 0.35 : 0),
+                        lineWidth: isChanged ? 1.5 : 0
+                    )
+                    .animation(.appSmooth, value: isChanged)
+            }
+            .background {
+                if isChanged {
+                    RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                        .fill(Color.accentColor.opacity(0.02))
+                }
+            }
+    }
+}
+
 extension View {
+    func changedHighlight(_ isChanged: Bool) -> some View {
+        modifier(ChangedHighlight(isChanged: isChanged))
+    }
+    
     func glassCard(cornerRadius: CGFloat = 20, shadowOpacity: Double = 0.08, fillOpacity: Double = 1.0) -> some View {
         modifier(GlassCard(cornerRadius: cornerRadius, shadowOpacity: shadowOpacity, fillOpacity: fillOpacity))
+    }
+    
+    @ViewBuilder
+    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
     }
 }
 

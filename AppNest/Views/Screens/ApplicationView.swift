@@ -18,7 +18,6 @@ struct ApplicationView: View {
 
     @Namespace private var filterNS
     @FocusState private var isSearchFocused: Bool
-    @State private var contentAppeared = false
     @State private var searchText: String = ""
     @State private var isPresentingNewApplication = false
     @State private var selectedStatuses: Set<ApplicationStatus> = []
@@ -103,14 +102,6 @@ struct ApplicationView: View {
                             Text("App Nest")
                                 .font(.system(size: 40, weight: .bold))
                                 .foregroundStyle(Theme.textPrimary)
-                                .visualEffect { content, proxy in
-                                    let minY = proxy.frame(in: .global).minY
-                                    let progress = max(0, min(1, (120 - minY) / 80))
-                                    return content
-                                        .scaleEffect(1.0 - (progress * 0.3), anchor: .leading)
-                                        .opacity(1.0 - (progress * 0.5))
-                                        .offset(x: progress * 10, y: progress * 5)
-                                }
                             
                             if !searchText.isEmpty {
                                 Text("\(filteredAndSorted.count) results")
@@ -127,24 +118,20 @@ struct ApplicationView: View {
                     cycleSelectorChip
                         .padding(.top, 8)
                 }
-                .opacity(contentAppeared ? 1 : 0)
-                .offset(y: contentAppeared ? 0 : 20)
-                .animation(.appSmooth, value: contentAppeared)
+                .opacity(appState.dashboardHasAppeared ? 1 : 0)
+                .offset(y: appState.dashboardHasAppeared ? 0 : 20)
+                .animation(.appSmooth, value: appState.dashboardHasAppeared)
                 .animation(.appSmooth, value: searchText.isEmpty)
                 .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 .selectionDisabled() // Header should not be selectable
-                .visualEffect { content, proxy in
-                    let minY = proxy.frame(in: .global).minY
-                    return content.opacity(minY < 0 ? max(0, 1 + minY / 100) : 1)
-                }
 
                 // Search + Filter
                 searchFilterRow
-                    .opacity(contentAppeared ? 1 : 0)
-                    .offset(y: contentAppeared ? 0 : 16)
-                    .animation(.appSmooth.delay(0.07), value: contentAppeared)
+                    .opacity(appState.dashboardHasAppeared ? 1 : 0)
+                    .offset(y: appState.dashboardHasAppeared ? 0 : 16)
+                    .animation(.appSmooth.delay(0.07), value: appState.dashboardHasAppeared)
                     .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -152,9 +139,9 @@ struct ApplicationView: View {
 
                 // Stats
                 statsSection
-                    .opacity(contentAppeared ? 1 : 0)
-                    .offset(y: contentAppeared ? 0 : 12)
-                    .animation(.appSmooth.delay(0.12), value: contentAppeared)
+                    .opacity(appState.dashboardHasAppeared ? 1 : 0)
+                    .offset(y: appState.dashboardHasAppeared ? 0 : 12)
+                    .animation(.appSmooth.delay(0.12), value: appState.dashboardHasAppeared)
                     .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 14, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -207,7 +194,7 @@ struct ApplicationView: View {
                                 removal: .opacity.combined(with: .scale(scale: 0.9))
                             ))
                             .animation(.appSmooth.delay(Double(min(index, 6)) * 0.05), value: filteredAndSorted.count)
-                            .animation(.appSmooth.delay(Double(min(index, 6)) * 0.05), value: contentAppeared)
+                            .animation(.appSmooth.delay(Double(min(index, 6)) * 0.05), value: appState.dashboardHasAppeared)
                     }
                 }
 
@@ -279,7 +266,7 @@ struct ApplicationView: View {
                     }
                     .font(.system(size: 12, weight: .semibold))
                     .padding(.top, 12)
-                    .padding(.bottom, 34)
+                    .padding(.bottom, 100)
                     .background(.ultraThinMaterial)
                     .overlay(alignment: .top) {
                         Divider().opacity(0.5)
@@ -319,7 +306,7 @@ struct ApplicationView: View {
                             .shadow(color: .black.opacity(0.3), radius: 15, y: 8)
                     }
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 34)
+                    .padding(.bottom, 110)
                     .offset(y: toastDragY)
                     .gesture(
                         DragGesture(minimumDistance: 10)
@@ -352,9 +339,8 @@ struct ApplicationView: View {
             }
         }
         .animation(.appSmooth, value: pendingDeleteJob != nil)
-        .toolbar(.hidden, for: .navigationBar)
         .onAppear {
-            contentAppeared = true
+            appState.dashboardHasAppeared = true
         }
         .sheet(isPresented: Binding(
             get: { isShowingCyclePicker },
@@ -782,7 +768,7 @@ struct ApplicationView: View {
                     }
                 }
             }
-            .animation(.appCrisp, value: selectedStatuses)
+            .animation(.appSmooth, value: selectedStatuses)
         }
     }
 

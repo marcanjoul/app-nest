@@ -150,35 +150,39 @@ struct JobDetailView: View {
 
     @ViewBuilder
     private var saveBar: some View {
-        VStack(spacing: 0) {
-            Divider().opacity(0.4)
-            HStack {
-                Button {
-                    if !missingFields.isEmpty {
-                        handleInvalidSaveTap()
-                    } else if hasChanges {
-                        AppHaptics.shared.medium()
-                        save()
-                        dismiss()
-                    }
-                } label: {
-                    Text(saveButtonLabel)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 15)
-                        .background {
-                            Capsule()
-                                .fill(isSaveDisabled ? Color.secondary.opacity(0.3) : Color.accentColor)
+        if hasChanges || isNewApplication || !missingFields.isEmpty {
+            VStack(spacing: 0) {
+                Divider().opacity(0.4)
+                HStack {
+                    Button {
+                        if !missingFields.isEmpty {
+                            handleInvalidSaveTap()
+                        } else if hasChanges {
+                            AppHaptics.shared.medium()
+                            save()
+                            dismiss()
                         }
+                    } label: {
+                        Text(saveButtonLabel)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 15)
+                            .background {
+                                Capsule()
+                                    .fill(isSaveDisabled ? Color.secondary.opacity(0.3) : Color.accentColor)
+                            }
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
                 }
-                .buttonStyle(PressScaleButtonStyle())
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 110)
+                .background(Color(UIColor.systemBackground))
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(Color(UIColor.systemBackground))
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .animation(.appSmooth, value: isSaveDisabled)
         }
-        .animation(.appFastOut, value: isSaveDisabled)
     }
 
     private var firstMissingSection: FormSection? {
@@ -223,6 +227,7 @@ struct JobDetailView: View {
                         )
                         .id(FormSection.info)
                         .modifier(ShakeEffect(animatableData: shakingSection == .info ? 1 : 0))
+                        .changedHighlight(!isNewApplication && (companyName != job?.companyName || position != job?.position || companyLogoImageData != job?.companyLogoImageData))
                         .opacity(contentAppeared ? 1 : 0)
                         .offset(y: contentAppeared ? 0 : 12)
                         .animation(.appSmooth.delay(0.00), value: contentAppeared)
@@ -230,6 +235,7 @@ struct JobDetailView: View {
                         TypePickerSection(type: $type)
                             .id(FormSection.type)
                             .modifier(ShakeEffect(animatableData: shakingSection == .type ? 1 : 0))
+                            .changedHighlight(!isNewApplication && type != job?.jobType)
                             .opacity(contentAppeared ? 1 : 0)
                             .offset(y: contentAppeared ? 0 : 12)
                             .animation(.appSmooth.delay(0.05), value: contentAppeared)
@@ -237,6 +243,7 @@ struct JobDetailView: View {
                         StatusPickerSection(status: $status)
                             .id(FormSection.status)
                             .modifier(ShakeEffect(animatableData: shakingSection == .status ? 1 : 0))
+                            .changedHighlight(!isNewApplication && status != job?.status)
                             .opacity(contentAppeared ? 1 : 0)
                             .offset(y: contentAppeared ? 0 : 12)
                             .animation(.appSmooth.delay(0.10), value: contentAppeared)
@@ -247,6 +254,7 @@ struct JobDetailView: View {
                                     insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)),
                                     removal: .opacity
                                 ))
+                                .changedHighlight(!isNewApplication && season != job?.season)
                                 .opacity(contentAppeared ? 1 : 0)
                                 .offset(y: contentAppeared ? 0 : 12)
                                 .animation(.appSmooth.delay(0.15), value: contentAppeared)
@@ -260,11 +268,13 @@ struct JobDetailView: View {
                             reminderEnabled: $reminderEnabled,
                             reminderTime: $reminderTime
                         )
+                        .changedHighlight(!isNewApplication && (dateApplied != job?.dateApplied || reminderEnabled != job?.reminderEnabled))
                         .opacity(contentAppeared ? 1 : 0)
                         .offset(y: contentAppeared ? 0 : 12)
                         .animation(.appSmooth.delay(0.20), value: contentAppeared)
 
                         JobLinkSection(jobURL: $jobURL)
+                            .changedHighlight(!isNewApplication && jobURL.trimmingCharacters(in: .whitespaces) != (job?.jobURL ?? ""))
                             .opacity(contentAppeared ? 1 : 0)
                             .offset(y: contentAppeared ? 0 : 12)
                             .animation(.appSmooth.delay(0.25), value: contentAppeared)
@@ -275,6 +285,7 @@ struct JobDetailView: View {
                             currency: $compensationCurrency,
                             salaryPeriod: $salaryPeriod
                         )
+                        .changedHighlight(!isNewApplication && (compensationKind != job?.compensationKind || parsedCompensationAmount != job?.compensationAmount || compensationCurrency != (job?.compensationCurrency ?? .usd) || salaryPeriod != (job?.salaryPeriod ?? .yearly)))
                         .opacity(contentAppeared ? 1 : 0)
                         .offset(y: contentAppeared ? 0 : 12)
                         .animation(.appSmooth.delay(0.30), value: contentAppeared)
@@ -289,11 +300,13 @@ struct JobDetailView: View {
                             onPick: { isShowingDocumentPicker = true },
                             onClear: { isConfirmingResumeClear = true }
                         )
+                        .changedHighlight(!isNewApplication && (resumeID != job?.resumeID))
                         .opacity(contentAppeared ? 1 : 0)
                         .offset(y: contentAppeared ? 0 : 12)
                         .animation(.appSmooth.delay(0.35), value: contentAppeared)
 
                         JobNotesSection(jobNotes: $jobNotes)
+                            .changedHighlight(!isNewApplication && jobNotes != (job?.jobNotes ?? ""))
                             .opacity(contentAppeared ? 1 : 0)
                             .offset(y: contentAppeared ? 0 : 12)
                             .animation(.appSmooth.delay(0.40), value: contentAppeared)
@@ -307,6 +320,7 @@ struct JobDetailView: View {
                                 insertion: .opacity.combined(with: .move(edge: .bottom)).combined(with: .scale(scale: 0.96, anchor: .top)),
                                 removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .top))
                             ))
+                            .changedHighlight(!isNewApplication && (companyResearch != (job?.companyResearch ?? "") || interviewNotes != (job?.interviewNotes ?? "")))
                             .opacity(contentAppeared ? 1 : 0)
                             .offset(y: contentAppeared ? 0 : 12)
                             .animation(.appSmooth.delay(0.45), value: contentAppeared)

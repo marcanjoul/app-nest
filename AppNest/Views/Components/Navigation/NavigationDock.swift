@@ -1,8 +1,18 @@
 import SwiftUI
 
+@MainActor
 struct NavigationDock: View {
     @Binding var selectedTab: Int
+    @Environment(AppState.self) private var appState
     @Namespace private var namespace
+    
+    /// Local state to drive the pill animation independently of the heavy content switch.
+    @State private var visualSelectedTab: Int
+    
+    init(selectedTab: Binding<Int>) {
+        self._selectedTab = selectedTab
+        self._visualSelectedTab = State(initialValue: selectedTab.wrappedValue)
+    }
     
     private let tabs: [(icon: String, title: String)] = [
         ("briefcase.fill", "Apps"),
@@ -14,15 +24,10 @@ struct NavigationDock: View {
         HStack(spacing: 0) {
             ForEach(0..<tabs.count, id: \.self) { index in
                 let tab = tabs[index]
-                let isSelected = selectedTab == index
+                let isSelected = visualSelectedTab == index
                 
                 Button {
-                    if selectedTab != index {
-                        AppHaptics.shared.selection()
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            selectedTab = index
-                        }
-                    }
+                    handleTabTap(at: index)
                 } label: {
                     VStack(spacing: 4) {
                         ZStack {
@@ -35,8 +40,8 @@ struct NavigationDock: View {
                             
                             Image(systemName: tab.icon)
                                 .font(.system(size: index == 1 ? 22 : 18, weight: .bold))
-                                .foregroundStyle(isSelected ? (index == 1 ? .white : Color.accentColor) : Theme.textSecondary)
-                                .scaleEffect(isSelected ? 1.1 : 1.0)
+                                .foregroundStyle(selectedTab == index ? (index == 1 ? .white : Color.accentColor) : Theme.textSecondary)
+                                .scaleEffect(selectedTab == index ? 1.1 : 1.0)
                         }
                         .frame(height: 54)
                     }
@@ -58,6 +63,44 @@ struct NavigationDock: View {
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 12)
+        .onAppear {
+            visualSelectedTab = selectedTab
+        }
+        .onChange(of: selectedTab) { _, newValue in
+            // Sync visual state if selectedTab changes externally
+            if visualSelectedTab != newValue {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                    visualSelectedTab = newValue
+                }
+            }
+        }
+    }
+    
+    private func handleTabTap(at index: Int) {
+        let isSameTab = selectedTab == index
+        
+        // 1. Perform the 'Exit' logic (pop to root or reset states)
+        if index == 0 {
+            // Exit logic for Apps tab
+            if !appState.navigationPath.isEmpty {
+                AppHaptics.shared.medium()
+                withAnimation(.appSmooth) {
+                    appState.navigationPath.removeLast(appState.navigationPath.count)
+                }
+            }
+        } else if index == 1 {
+            // Exit logic for Add tab
+            appState.shouldResetAddMenu = true
+        }
+        
+        // 2. Perform tab switch if needed
+        if !isSameTab {
+            AppHaptics.shared.selection()
+            selectedTab = index
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                visualSelectedTab = index
+            }
+        }
     }
 }
 

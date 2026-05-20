@@ -10,7 +10,6 @@ struct CycleListView: View {
 
     var dismissSheet: (() -> Void)? = nil
 
-    @State private var contentAppeared = false
     @State private var isAddingCycle = false
     @State private var newCycleName  = ""
     @State private var cycleToDelete: JobCycle?
@@ -56,9 +55,9 @@ struct CycleListView: View {
                         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
-                        .opacity(contentAppeared ? 1 : 0)
-                        .offset(y: contentAppeared ? 0 : 12)
-                        .animation(.appSmooth.delay(Double(min(index, 8)) * 0.04), value: contentAppeared)
+                        .opacity(appState.cycleListHasAppeared ? 1 : 0)
+                        .offset(y: appState.cycleListHasAppeared ? 0 : 12)
+                        .animation(.appSmooth.delay(Double(min(index, 8)) * 0.04), value: appState.cycleListHasAppeared)
                     }
 
                     Color.clear
@@ -74,7 +73,7 @@ struct CycleListView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(Color(UIColor.systemBackground), for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
-        .onAppear { contentAppeared = true }
+        .onAppear { appState.cycleListHasAppeared = true }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {

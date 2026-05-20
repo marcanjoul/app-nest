@@ -81,7 +81,7 @@ struct AddMenuView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
-                .padding(.bottom, 40)
+                .padding(.bottom, 110)
                 .onAppear { cardsVisible = true }
             }
             .scrollBounceBehavior(.basedOnSize)
@@ -128,6 +128,16 @@ struct AddMenuView: View {
         }
         .task(id: vm.editCompany) {
             await vm.fetchLogo(isDark: colorScheme == .dark)
+        }
+        .onChange(of: appState.shouldResetAddMenu) { _, newValue in
+            if newValue {
+                withAnimation(.appSmooth) {
+                    isShowingPasteLink = false
+                    isShowingEmailParse = false
+                    vm.reset()
+                }
+                appState.shouldResetAddMenu = false
+            }
         }
     }
 

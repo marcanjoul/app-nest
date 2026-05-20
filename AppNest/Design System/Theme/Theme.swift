@@ -148,7 +148,7 @@ enum Theme {
     ]
 
     static func avatarFill(for name: String) -> Color {
-        let hash = abs(name.hashValue)
+        let hash = stableHash(name)
         return avatarColors[hash % avatarColors.count]
     }
 
@@ -164,8 +164,17 @@ enum Theme {
     ]
 
     static func avatarColor(for name: String) -> (background: Color, foreground: Color) {
-        let hash = abs(name.hashValue)
+        let hash = stableHash(name)
         return avatarPalette[hash % avatarPalette.count]
+    }
+
+    /// Stable deterministic hash for strings to keep colors consistent across launches.
+    private static func stableHash(_ string: String) -> Int {
+        var hash = 5381
+        for char in string.unicodeScalars {
+            hash = ((hash << 5) &+ hash) &+ Int(char.value)
+        }
+        return abs(hash)
     }
 
     // MARK: - Progress Gradient

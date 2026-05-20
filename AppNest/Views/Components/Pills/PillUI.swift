@@ -66,6 +66,7 @@ struct ResumePill: View {
     var showsGlow: Bool = true
     var isLarge: Bool = false
     var action: (() -> Void)? = nil
+    var preview: (() -> AnyView)? = nil
 
     private var horizontalPadding: CGFloat {
         if isLarge { return 22 }
@@ -151,6 +152,19 @@ struct ResumePill: View {
         .buttonStyle(PressScaleButtonStyle())
         .allowsHitTesting(action != nil)
         .animation(.appCrisp, value: isSelected)
+        .if(preview != nil) { view in
+            view.contextMenu {
+                if let action {
+                    Button(action: action) {
+                        Label("Open Full Screen", systemImage: "arrow.up.left.and.arrow.down.right")
+                    }
+                }
+            } preview: {
+                if let preview {
+                    preview()
+                }
+            }
+        }
     }
 }
 

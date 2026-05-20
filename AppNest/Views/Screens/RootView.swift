@@ -9,8 +9,11 @@ struct RootView: View {
         
         ZStack(alignment: .bottom) {
             TabView(selection: $bindableAppState.selectedTab) {
-                NavigationStack {
+                NavigationStack(path: $bindableAppState.navigationPath) {
                     ApplicationView()
+                        .navigationDestination(for: JobApplication.self) { job in
+                            JobDetailView(job: job)
+                        }
                 }
                 .toolbar(.hidden, for: .tabBar)
                 .tag(0)
@@ -27,10 +30,12 @@ struct RootView: View {
                 .toolbar(.hidden, for: .tabBar)
                 .tag(2)
             }
-            
+            .animation(.none, value: bindableAppState.selectedTab)
+
             if !appState.isPresentingSheet {
                 NavigationDock(selectedTab: $bindableAppState.selectedTab)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .ignoresSafeArea(.keyboard, edges: .bottom)
             }
         }
         .tint(.accentColor)
