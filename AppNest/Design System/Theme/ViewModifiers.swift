@@ -49,3 +49,20 @@ extension UIApplication {
     }
 }
 #endif
+
+// MARK: - Swipe-Back Gesture (re-enabled when nav bar is hidden)
+
+// SwiftUI disables the interactive pop gesture whenever the navigation bar is hidden.
+// Overriding the delegate here restores it for every NavigationStack push in the app.
+#if canImport(UIKit)
+extension UINavigationController: @retroactive UIGestureRecognizerDelegate {
+    override open func viewDidLoad() {
+        super.viewDidLoad()
+        interactivePopGestureRecognizer?.delegate = self
+    }
+
+    public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        viewControllers.count > 1
+    }
+}
+#endif

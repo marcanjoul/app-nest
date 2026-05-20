@@ -38,6 +38,16 @@ struct EmailParser {
         let (date, dateText) = extractDateAndText(from: emailText)
         result.dateApplied = date
 
+        // Discard position if it resolved to the company name — happens when the email
+        // says "applying to CompanyName" with no position title in the body.
+        if let pos = result.position, let company = result.companyName {
+            let normalizedPos     = pos.trimmingCharacters(in: .punctuationCharacters).lowercased()
+            let normalizedCompany = company.lowercased()
+            if normalizedPos == normalizedCompany || normalizedPos.hasPrefix(normalizedCompany + " ") {
+                result.position = nil
+            }
+        }
+
         if let v = result.companyName, !v.isEmpty  { result.highlights.append(.init(text: v,      field: .company)) }
         if let v = result.position,    !v.isEmpty  { result.highlights.append(.init(text: v,      field: .position)) }
         if let p = statusPhrase                    { result.highlights.append(.init(text: p,      field: .status)) }
