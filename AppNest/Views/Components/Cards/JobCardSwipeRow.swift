@@ -41,7 +41,8 @@ struct JobCardSwipeRow: View {
         SwipeActionRow(
             leadingActions: pipeline,
             trailingActions: trailingActions,
-            isEditMode: isEditMode
+            isEditMode: isEditMode,
+            cornerRadius: 16
         ) {
             ZStack {
                 NavigationLink(destination: JobDetailView(job: job)) { EmptyView() }

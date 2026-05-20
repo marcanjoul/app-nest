@@ -12,14 +12,15 @@ struct SwipeActionRow<Content: View>: View {
     let leadingActions: [SwipeAction]
     let trailingActions: [SwipeAction]
     let isEditMode: Bool
+    var cornerRadius: CGFloat = Theme.cardRadius
     @ViewBuilder let content: () -> Content
 
     @GestureState private var dragOffset: CGFloat = 0
     @State private var isSwiping = false
     
     // Thresholds
-    private let actionThreshold: CGFloat = 70
-    private let fullSwipeThreshold: CGFloat = 180
+    private let actionThreshold: CGFloat = 95
+    private let fullSwipeThreshold: CGFloat = 200
 
     var body: some View {
         ZStack {
@@ -83,28 +84,25 @@ struct SwipeActionRow<Content: View>: View {
         let absOffset = abs(offset)
         let isLeading = alignment == .leading
         
-        // Multi-stage logic for leading/trailing
-        // For now, we follow the "One active action" logic from JobCardSwipeRow
-        // But we adapt it to pick from the list based on how far we pull
-        let index = min(Int(absOffset / 70), actions.count - 1)
+        let index = min(Int(absOffset / actionThreshold), actions.count - 1)
         let action = actions[index]
         
-        HStack(spacing: 10) {
-            if isLeading { Spacer().frame(width: 14) }
+        HStack(spacing: 12) {
+            if isLeading { Spacer().frame(width: 18) }
             
-            Image(systemName: action.icon).font(.system(size: 18, weight: .bold))
+            Image(systemName: action.icon).font(.system(size: 20, weight: .bold))
             Text(action.title).font(.system(size: 14, weight: .bold))
             
-            if !isLeading { Spacer().frame(width: 14) }
+            if !isLeading { Spacer().frame(width: 18) }
         }
         .foregroundStyle(action.color)
         .padding(isLeading ? .leading : .trailing, 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: isLeading ? .leading : .trailing)
         .background(
-            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .fill(action.color.opacity(0.12))
                 .overlay(
-                    RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                         .strokeBorder(action.color.opacity(0.25), lineWidth: 1.5)
                 )
         )
@@ -117,13 +115,13 @@ struct SwipeActionRow<Content: View>: View {
 
     private func triggerAction(on actions: [SwipeAction], offset: CGFloat) {
         let absOffset = abs(offset)
-        let index = min(Int(absOffset / 70), actions.count - 1)
+        let index = min(Int(absOffset / actionThreshold), actions.count - 1)
         actions[index].action()
         AppHaptics.shared.medium()
     }
 
     private func cardOffset(_ raw: CGFloat) -> CGFloat {
-        let maxPull: CGFloat = 160
+        let maxPull: CGFloat = 180
         let resistance: CGFloat = 0.65
         
         if raw > 0 {
