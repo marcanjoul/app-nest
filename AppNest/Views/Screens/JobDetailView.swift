@@ -38,6 +38,7 @@ struct JobDetailView: View {
     @State private var isShowingResumeLibrary = false
     @State private var pickerItem: PhotosPickerItem? = nil
     @State private var reminderEnabled: Bool
+    @State private var reminderTime: Date
     @State private var companyResearch:   String
     @State private var interviewNotes:    String
     @State private var isShowingDeleteConfirmation = false
@@ -93,8 +94,13 @@ struct JobDetailView: View {
         _compensationCurrency   = State(initialValue: job?.compensationCurrency ?? .usd)
         _salaryPeriod           = State(initialValue: job?.salaryPeriod ?? .yearly)
         _reminderEnabled        = State(initialValue: job?.reminderEnabled ?? false)
+        _reminderTime           = State(initialValue: job?.reminderTime ?? Self.defaultReminderTime)
         _companyResearch        = State(initialValue: job?.companyResearch ?? "")
         _interviewNotes         = State(initialValue: job?.interviewNotes ?? "")
+    }
+
+    private static var defaultReminderTime: Date {
+        Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: Date()) ?? Date()
     }
 
     private static func formatAmount(_ value: Double) -> String {
@@ -198,7 +204,8 @@ struct JobDetailView: View {
                         DateAppliedSection(
                             dateApplied: $dateApplied,
                             status: status,
-                            reminderEnabled: $reminderEnabled
+                            reminderEnabled: $reminderEnabled,
+                            reminderTime: $reminderTime
                         )
                         JobLinkSection(jobURL: $jobURL)
                         CompensationSection(
@@ -405,6 +412,7 @@ struct JobDetailView: View {
             job.compensationCurrency = compensationCurrency
             job.salaryPeriod        = resolvedSalaryPeriod
             job.reminderEnabled     = wantsReminder
+            job.reminderTime        = wantsReminder ? reminderTime : nil
             job.companyResearch     = companyResearch.isEmpty ? nil : companyResearch
             job.interviewNotes      = interviewNotes.isEmpty  ? nil : interviewNotes
 
@@ -433,6 +441,7 @@ struct JobDetailView: View {
             )
             newJob.companyResearch = companyResearch.isEmpty ? nil : companyResearch
             newJob.interviewNotes  = interviewNotes.isEmpty  ? nil : interviewNotes
+            newJob.reminderTime = wantsReminder ? reminderTime : nil
             modelContext.insert(newJob)
             updateReminder(for: newJob, wantsReminder: wantsReminder)
         }
@@ -461,8 +470,12 @@ struct JobDetailView: View {
 
     private func reminderFireDate(from date: Date) -> Date {
         let calendar = Calendar.current
-        let startOfDay = calendar.startOfDay(for: date)
-        return calendar.date(byAdding: .hour, value: 9, to: startOfDay) ?? date
+        let tc = calendar.dateComponents([.hour, .minute], from: reminderTime)
+        return calendar.date(
+            bySettingHour: tc.hour ?? 9,
+            minute: tc.minute ?? 0,
+            second: 0, of: date
+        ) ?? date
     }
 
     private func applicationReminderBody(company: String, position: String) -> String {

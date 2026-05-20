@@ -20,6 +20,14 @@ struct JobCardView: View {
         String(job.companyName.prefix(1)).uppercased()
     }
 
+    private var showReminderBadge: Bool {
+        job.status == .toApply && job.reminderEnabled
+    }
+
+    private var reminderBadgeColor: Color {
+        job.dateApplied <= Date() ? .orange : Color.accentColor
+    }
+
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
             // Company avatar — image or letter fallback
@@ -46,6 +54,20 @@ struct JobCardView: View {
             }
             .frame(width: 60, height: 60)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(alignment: .bottomTrailing) {
+                if showReminderBadge {
+                    ZStack {
+                        Circle()
+                            .fill(reminderBadgeColor)
+                            .frame(width: 20, height: 20)
+                        Image(systemName: "bell.fill")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                    .offset(x: 4, y: 4)
+                    .transition(.scale.combined(with: .opacity))
+                }
+            }
 
             VStack(alignment: .leading, spacing: 5) {
                 Text(job.position)
@@ -94,6 +116,7 @@ struct JobCardView: View {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color(.separator).opacity(0.3), lineWidth: 0.5)
         )
+        .animation(.appCrisp, value: showReminderBadge)
         .task(id: job.companyName) {
             guard job.companyLogoImageData == nil else { return }
             let trimmed = job.companyName.trimmingCharacters(in: .whitespaces)

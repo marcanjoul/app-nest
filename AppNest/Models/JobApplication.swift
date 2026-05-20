@@ -162,6 +162,9 @@ class JobApplication {
     /// Only meaningful while `status == .toApply`.
     var reminderEnabled: Bool = false
 
+    /// The time-of-day at which the reminder fires. Defaults to 9 AM if nil.
+    var reminderTime: Date?
+
     /// Identifier for the scheduled `UNNotificationRequest`, if any. Used to cancel/replace.
     var reminderNotificationID: String?
 
@@ -198,6 +201,7 @@ class JobApplication {
         compensationCurrency: Currency? = .usd,
         salaryPeriod: SalaryPeriod? = nil,
         reminderEnabled: Bool = false,
+        reminderTime: Date? = nil,
         reminderNotificationID: String? = nil
     ) {
         self.companyName = companyName
@@ -218,6 +222,7 @@ class JobApplication {
         self.compensationCurrency = compensationCurrency
         self.salaryPeriod = salaryPeriod
         self.reminderEnabled = reminderEnabled
+        self.reminderTime = reminderTime
         self.reminderNotificationID = reminderNotificationID
     }
 }

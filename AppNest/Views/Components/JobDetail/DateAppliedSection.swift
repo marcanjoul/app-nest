@@ -4,6 +4,7 @@ struct DateAppliedSection: View {
     @Binding var dateApplied: Date
     var status: ApplicationStatus?
     @Binding var reminderEnabled: Bool
+    @Binding var reminderTime: Date
 
     @State private var permissionDenied: Bool = false
 
@@ -67,6 +68,23 @@ struct DateAppliedSection: View {
                     }
                     .tint(accent)
 
+                    if reminderEnabled && !permissionDenied {
+                        HStack(spacing: 10) {
+                            Image(systemName: "clock.fill")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(accent)
+                                .frame(width: 16)
+                            Text("Remind me at")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(Theme.textPrimary)
+                            Spacer()
+                            DatePicker("", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                                .labelsHidden()
+                                .tint(accent)
+                        }
+                        .transition(.opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)))
+                    }
+
                     if permissionDenied {
                         HStack(spacing: 6) {
                             Image(systemName: "exclamationmark.triangle.fill")
@@ -100,6 +118,7 @@ struct DateAppliedSection: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassCard()
         .animation(.appSmooth, value: isToApply)
+        .animation(.appSmooth, value: reminderEnabled)
         .animation(.appFastOut, value: permissionDenied)
         .task(id: isToApply) {
             guard isToApply else { return }
