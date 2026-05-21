@@ -39,7 +39,7 @@ enum CSVImporter {
         ("company",      ["company name", "company", "employer", "organization",
                           "company/organization", "firm", "org"]),
         ("position",     ["job title", "position/role", "position", "job role",
-                          "posting title", "opening", "title", "role", "job"]),
+                          "posting title", "opening", "title", "role", "job", "name"]),
         ("type",         ["employment type", "job type", "contract type", "job category",
                           "work type", "position type", "employment", "type"]),
         ("status",       ["application status", "hiring stage", "hiring status",
