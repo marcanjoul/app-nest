@@ -3,6 +3,82 @@ import SwiftUI
 import UIKit
 #endif
 
+// MARK: - Filter Token Button
+
+/// Collapsed filter token showing current selection summary and expand chevron.
+struct FilterToken: View {
+    let label: String
+    let icon: String
+    var selectionSummary: String?
+    var isExpanded: Bool = false
+    var isActive: Bool = false
+    var action: () -> Void
+
+    var body: some View {
+        Button { action() } label: {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 10, weight: .bold))
+                Text(selectionSummary ?? label)
+                    .font(.system(size: 12, weight: .semibold))
+                    .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .bold))
+                    .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                    .animation(.appCrisp, value: isExpanded)
+            }
+            .foregroundStyle(isActive ? Color.accentColor : Theme.textSecondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                Capsule()
+                    .fill(isActive ? Color.accentColor.opacity(0.10) : Color.primary.opacity(0.06))
+                    .overlay(
+                        Capsule().strokeBorder(
+                            isActive ? Color.accentColor.opacity(0.25) : Color.primary.opacity(isExpanded ? 0.15 : 0.09),
+                            lineWidth: isExpanded ? 1.2 : 0.8
+                        )
+                    )
+            )
+        }
+        .buttonStyle(PressScaleButtonStyle())
+        .animation(.appCrisp, value: isActive)
+    }
+}
+
+// MARK: - Compact Filter Chip
+
+/// Lightweight filter chip for type and season rows — icon + label, no count.
+struct CompactFilterChip: View {
+    let label: String
+    let icon: String
+    let color: Color
+    var isSelected: Bool
+    var action: () -> Void
+
+    var body: some View {
+        Button { action() } label: {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 10, weight: .bold))
+                Text(label)
+                    .font(.system(size: 11, weight: .semibold))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(isSelected ? Color.white : color)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(
+                Capsule()
+                    .fill(isSelected ? AnyShapeStyle(color) : AnyShapeStyle(color.opacity(0.10)))
+                    .overlay(Capsule().strokeBorder(isSelected ? Color.clear : color.opacity(0.20), lineWidth: 0.8))
+            )
+        }
+        .buttonStyle(PressScaleButtonStyle())
+        .animation(.appCrisp, value: isSelected)
+    }
+}
+
 // MARK: - Universal Selectable Pill
 
 /// Glassmorphic pill button for picking enum values in forms.

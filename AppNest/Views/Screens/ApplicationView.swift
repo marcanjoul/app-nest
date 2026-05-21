@@ -21,6 +21,10 @@ struct ApplicationView: View {
     @State private var searchText: String = ""
     @State private var isPresentingNewApplication = false
     @State private var selectedStatuses: Set<ApplicationStatus> = []
+    @State private var selectedTypes: Set<ApplicationType> = []
+    @State private var selectedSeasons: Set<ApplicationSeason> = []
+    @State private var isTypePickerExpanded = false
+    @State private var isSeasonPickerExpanded = false
     @State private var sortOption: SortOption = .dateNewest
     @State private var pendingDeleteJob: JobApplication? = nil
     @State private var undoTask: Task<Void, Never>? = nil
@@ -70,6 +74,16 @@ struct ApplicationView: View {
         if !selectedStatuses.isEmpty {
             result = result.filter { job in
                 job.status.map { selectedStatuses.contains($0) } ?? false
+            }
+        }
+        if !selectedTypes.isEmpty {
+            result = result.filter { job in
+                job.jobType.map { selectedTypes.contains($0) } ?? false
+            }
+        }
+        if !selectedSeasons.isEmpty {
+            result = result.filter { job in
+                job.season.map { selectedSeasons.contains($0) } ?? false
             }
         }
 
@@ -133,12 +147,22 @@ struct ApplicationView: View {
                     .listRowSeparator(.hidden)
                     .selectionDisabled()
 
-                // Stats
+                // Stats — status chips
                 statsSection
                     .opacity(appState.dashboardHasAppeared ? 1 : 0)
                     .offset(y: appState.dashboardHasAppeared ? 0 : 12)
                     .animation(.appSmooth.delay(0.12), value: appState.dashboardHasAppeared)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 14, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 6, trailing: 0))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .selectionDisabled()
+
+                // Filters — type + season expandable tokens
+                typeSeasonFilter
+                    .opacity(appState.dashboardHasAppeared ? 1 : 0)
+                    .offset(y: appState.dashboardHasAppeared ? 0 : 10)
+                    .animation(.appSmooth.delay(0.15), value: appState.dashboardHasAppeared)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 12, trailing: 16))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .selectionDisabled()
@@ -786,6 +810,127 @@ struct ApplicationView: View {
                 }
             }
             .animation(.appSmooth, value: selectedStatuses)
+        }
+    }
+
+    private var typeSelectionLabel: String? {
+        switch selectedTypes.count {
+        case 0: return nil
+        case 1: return selectedTypes.first!.rawValue
+        default: return "\(selectedTypes.count) Types"
+        }
+    }
+
+    private var seasonSelectionLabel: String? {
+        switch selectedSeasons.count {
+        case 0: return nil
+        case 1: return selectedSeasons.first!.rawValue
+        default: return "\(selectedSeasons.count) Seasons"
+        }
+    }
+
+    private var typeSeasonFilter: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // Token row
+            HStack(spacing: 8) {
+                FilterToken(
+                    label: "Type",
+                    icon: "briefcase.fill",
+                    selectionSummary: typeSelectionLabel,
+                    isExpanded: isTypePickerExpanded,
+                    isActive: !selectedTypes.isEmpty
+                ) {
+                    withAnimation(.appSmooth) {
+                        isTypePickerExpanded.toggle()
+                        if isTypePickerExpanded { isSeasonPickerExpanded = false }
+                    }
+                    AppHaptics.shared.light()
+                }
+
+                FilterToken(
+                    label: "Season",
+                    icon: "leaf.fill",
+                    selectionSummary: seasonSelectionLabel,
+                    isExpanded: isSeasonPickerExpanded,
+                    isActive: !selectedSeasons.isEmpty
+                ) {
+                    withAnimation(.appSmooth) {
+                        isSeasonPickerExpanded.toggle()
+                        if isSeasonPickerExpanded { isTypePickerExpanded = false }
+                    }
+                    AppHaptics.shared.light()
+                }
+
+                Spacer()
+
+                if !selectedTypes.isEmpty || !selectedSeasons.isEmpty {
+                    Button {
+                        withAnimation(.appCrisp) {
+                            selectedTypes.removeAll()
+                            selectedSeasons.removeAll()
+                            isTypePickerExpanded = false
+                            isSeasonPickerExpanded = false
+                        }
+                        AppHaptics.shared.light()
+                    } label: {
+                        Text("Clear")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                }
+            }
+
+            // Type grid
+            if isTypePickerExpanded {
+                LazyVGrid(
+                    columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3),
+                    spacing: 8
+                ) {
+                    ForEach(ApplicationType.allCases, id: \.self) { type in
+                        let count = searchFiltered.filter { $0.jobType == type }.count
+                        CompactFilterChip(
+                            label: type.rawValue,
+                            icon: type.iconName,
+                            color: type.color,
+                            isSelected: selectedTypes.contains(type)
+                        ) {
+                            withAnimation(.appCrisp) {
+                                if selectedTypes.contains(type) { selectedTypes.remove(type) }
+                                else { selectedTypes.insert(type) }
+                            }
+                            AppHaptics.shared.light()
+                        }
+                        .opacity(count == 0 && !selectedTypes.contains(type) ? 0.4 : 1.0)
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.97, anchor: .top)))
+            }
+
+            // Season row
+            if isSeasonPickerExpanded {
+                HStack(spacing: 8) {
+                    ForEach(ApplicationSeason.allCases, id: \.self) { season in
+                        let count = searchFiltered.filter { $0.season == season }.count
+                        CompactFilterChip(
+                            label: season.rawValue,
+                            icon: season.iconName,
+                            color: season.color,
+                            isSelected: selectedSeasons.contains(season)
+                        ) {
+                            withAnimation(.appCrisp) {
+                                if selectedSeasons.contains(season) { selectedSeasons.remove(season) }
+                                else { selectedSeasons.insert(season) }
+                            }
+                            AppHaptics.shared.light()
+                        }
+                        .opacity(count == 0 && !selectedSeasons.contains(season) ? 0.4 : 1.0)
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.97, anchor: .top)))
+            }
         }
     }
 
