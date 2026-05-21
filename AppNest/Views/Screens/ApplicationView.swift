@@ -339,6 +339,7 @@ struct ApplicationView: View {
             }
         }
         .animation(.appSmooth, value: pendingDeleteJob != nil)
+        .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             appState.dashboardHasAppeared = true
         }
