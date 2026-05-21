@@ -3,10 +3,11 @@ import SwiftData
 
 struct RootView: View {
     @Environment(AppState.self) private var appState
-    
+    @State private var isKeyboardVisible = false
+
     var body: some View {
         @Bindable var bindableAppState = appState
-        
+
         ZStack(alignment: .bottom) {
             TabView(selection: $bindableAppState.selectedTab) {
                 NavigationStack(path: $bindableAppState.navigationPath) {
@@ -32,11 +33,16 @@ struct RootView: View {
             }
             .animation(.none, value: bindableAppState.selectedTab)
 
-            if !appState.isPresentingSheet {
+            if !appState.isPresentingSheet && !isKeyboardVisible {
                 NavigationDock(selectedTab: $bindableAppState.selectedTab)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .ignoresSafeArea(.keyboard, edges: .bottom)
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            withAnimation(.appCrisp) { isKeyboardVisible = true }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            withAnimation(.appCrisp) { isKeyboardVisible = false }
         }
         .tint(.accentColor)
         .scaleEffect(appState.isPresentingSheet ? 0.95 : 1.0)
