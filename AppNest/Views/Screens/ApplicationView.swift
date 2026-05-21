@@ -192,7 +192,7 @@ struct ApplicationView: View {
                                     AppHaptics.shared.light()
                                 }
                             )
-                            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 20))
+                            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
                             .visualEffect { content, proxy in

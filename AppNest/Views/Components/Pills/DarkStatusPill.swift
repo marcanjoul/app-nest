@@ -210,10 +210,16 @@ struct DarkJobCardView: View {
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
 
-                Text(job.companyName)
-                    .font(.system(size: 14))
-                    .foregroundStyle(Theme.textSecondary)
-                    .lineLimit(1)
+                HStack {
+                    Text(job.companyName)
+                        .font(.system(size: 14))
+                        .foregroundStyle(Theme.textSecondary)
+                        .lineLimit(1)
+                    Spacer()
+                    Text(dateText)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
 
                 HStack(spacing: 6) {
                     if let status = job.status {
@@ -226,16 +232,6 @@ struct DarkJobCardView: View {
                 .padding(.top, 2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-
-            VStack(alignment: .trailing, spacing: 0) {
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.quaternary)
-                Spacer()
-                Text(dateText)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-            }
         }
         .padding(16)
         .glassCard(cornerRadius: Theme.cardRadius)
