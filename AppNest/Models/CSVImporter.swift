@@ -73,12 +73,14 @@ enum CSVImporter {
         let colMap  = buildColumnMap(from: headers)
 
         let dateParsers: [DateFormatter] = [
+            "d-MMM-yy", "dd-MMM-yy", "d-MMM-yyyy", "dd-MMM-yyyy",
             "yyyy-MM-dd", "MM/dd/yyyy", "M/d/yyyy", "MM-dd-yyyy",
             "dd/MM/yyyy", "d/M/yyyy", "MMMM d, yyyy", "MMM d, yyyy"
         ].map {
             let df = DateFormatter()
             df.dateFormat = $0
             df.locale = Locale(identifier: "en_US_POSIX")
+            df.isLenient = false
             return df
         }
 
