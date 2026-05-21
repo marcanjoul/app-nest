@@ -67,16 +67,17 @@ struct JobCardSwipeRow: View {
                 isEditMode: isEditMode,
                 cornerRadius: 16
             ) {
-                DarkJobCardView(job: job)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        if isEditMode {
-                            onToggleSelection()
-                        } else {
-                            AppHaptics.shared.light()
-                            appState.navigationPath.append(job)
-                        }
+                Button {
+                    if isEditMode {
+                        onToggleSelection()
+                    } else {
+                        AppHaptics.shared.light()
+                        appState.navigationPath.append(job)
                     }
+                } label: {
+                    DarkJobCardView(job: job)
+                }
+                .buttonStyle(CardPressButtonStyle())
             }
         }
     }

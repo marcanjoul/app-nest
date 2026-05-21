@@ -106,26 +106,74 @@ struct ApplicationView: View {
             List {
                 // Header
                 VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .center) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("App Nest")
-                                .font(.system(size: 40, weight: .bold))
-                                .foregroundStyle(Theme.textPrimary)
-                            
-                            if !searchText.isEmpty {
-                                Text("\(filteredAndSorted.count) results")
-                                    .font(.system(size: 13, weight: .bold))
-                                    .foregroundStyle(Color.accentColor)
-                                    .transition(.opacity.combined(with: .move(edge: .leading)))
-                            }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("App Nest")
+                            .font(.system(size: 40, weight: .bold))
+                            .foregroundStyle(Theme.textPrimary)
+
+                        if !searchText.isEmpty {
+                            Text("\(filteredAndSorted.count) results")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(Color.accentColor)
+                                .transition(.opacity.combined(with: .move(edge: .leading)))
                         }
-                        
-                        Spacer()
                     }
                     .padding(.top, 16)
-                    
-                    cycleSelectorChip
-                        .padding(.top, 8)
+
+                    HStack(spacing: 8) {
+                        cycleSelectorChip
+
+                        Spacer()
+
+                        if !applications.isEmpty {
+                            HStack(spacing: 0) {
+                                Button {
+                                    isShowingExportConfirmation = true
+                                    AppHaptics.shared.light()
+                                } label: {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(Theme.textSecondary)
+                                        .frame(width: 38, height: 32)
+                                }
+                                .buttonStyle(PressScaleButtonStyle())
+
+                                Rectangle()
+                                    .fill(Color.primary.opacity(0.12))
+                                    .frame(width: 1, height: 16)
+
+                                Button {
+                                    withAnimation(.appSmooth) {
+                                        isEditMode.toggle()
+                                        if !isEditMode { selectedJobIDs.removeAll() }
+                                    }
+                                    AppHaptics.shared.light()
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: isEditMode ? "checkmark" : "pencil")
+                                            .font(.system(size: 13, weight: .semibold))
+                                        if isEditMode {
+                                            Text("Done")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                                        }
+                                    }
+                                    .foregroundStyle(isEditMode ? Color.accentColor : Theme.textSecondary)
+                                    .frame(minWidth: 38, height: 32)
+                                    .padding(.horizontal, isEditMode ? 4 : 0)
+                                }
+                                .buttonStyle(PressScaleButtonStyle())
+                                .animation(.appCrisp, value: isEditMode)
+                            }
+                            .background {
+                                Capsule()
+                                    .fill(Color.primary.opacity(0.06))
+                                    .overlay(Capsule().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                            }
+                            .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .trailing)))
+                        }
+                    }
+                    .padding(.top, 8)
                 }
                 .opacity(appState.dashboardHasAppeared ? 1 : 0)
                 .offset(y: appState.dashboardHasAppeared ? 0 : 20)
@@ -660,7 +708,7 @@ struct ApplicationView: View {
                     .foregroundStyle(isSearchFocused ? Color.accentColor : Theme.textSecondary)
                     .font(.system(size: 15, weight: .medium))
 
-                TextField(isSearchFocused ? "Search company, position..." : "Search...", text: $searchText)
+                TextField("Search company, position...", text: $searchText)
                     .foregroundStyle(Theme.textPrimary)
                     .tint(.accentColor)
                     .focused($isSearchFocused)
@@ -691,83 +739,38 @@ struct ApplicationView: View {
             .animation(.appBubbly, value: isSearchFocused)
 
             if !applications.isEmpty && !isSearchFocused {
-                HStack(spacing: 8) {
-                    // Sort button
-                    Menu {
-                        ForEach(SortOption.allCases, id: \.self) { option in
-                            Button { 
-                                sortOption = option
-                                AppHaptics.shared.light()
-                            } label: {
-                                HStack {
-                                    Text(option.rawValue)
-                                    if sortOption == option { Image(systemName: "checkmark") }
-                                }
-                            }
-                        }
-                    } label: {
-                        ZStack(alignment: .topTrailing) {
-                            Image(systemName: "line.3.horizontal.decrease.circle")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(sortOption == .dateNewest ? Theme.textPrimary : Color.accentColor)
-                                .frame(width: 44, height: 44)
-                                .background(.ultraThinMaterial)
-                                .clipShape(Circle())
-                                .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
-                            
-                            if sortOption != .dateNewest {
-                                Circle()
-                                    .fill(Color.accentColor)
-                                    .frame(width: 8, height: 8)
-                                    .offset(x: -4, y: 4)
-                                    .transition(.scale(scale: 0.8).combined(with: .opacity))
+                Menu {
+                    ForEach(SortOption.allCases, id: \.self) { option in
+                        Button {
+                            sortOption = option
+                            AppHaptics.shared.light()
+                        } label: {
+                            HStack {
+                                Text(option.rawValue)
+                                if sortOption == option { Image(systemName: "checkmark") }
                             }
                         }
                     }
-                    .buttonStyle(PressScaleButtonStyle())
-                    
-                    // Export button
-                    Button {
-                        isShowingExportConfirmation = true
-                        AppHaptics.shared.light()
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(Theme.textPrimary)
+                } label: {
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(sortOption == .dateNewest ? Theme.textPrimary : Color.accentColor)
                             .frame(width: 44, height: 44)
-                            .background {
-                                Circle()
-                                    .fill(.ultraThinMaterial)
-                                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-                            }
-                    }
-                    .buttonStyle(PressScaleButtonStyle())
-                    
-                    // Edit button
-                    Button {
-                        withAnimation(.appSmooth) {
-                            isEditMode.toggle()
-                            if !isEditMode { selectedJobIDs.removeAll() }
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                            .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+
+                        if sortOption != .dateNewest {
+                            Circle()
+                                .fill(Color.accentColor)
+                                .frame(width: 8, height: 8)
+                                .offset(x: -4, y: 4)
+                                .transition(.scale(scale: 0.8).combined(with: .opacity))
                         }
-                        AppHaptics.shared.light()
-                    } label: {
-                        Image(systemName: isEditMode ? "checkmark" : "pencil")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(isEditMode ? Color.white : Color.accentColor)
-                            .frame(width: isEditMode ? 60 : 44, height: 44)
-                            .background {
-                                if isEditMode {
-                                    Capsule()
-                                        .fill(Color.accentColor)
-                                } else {
-                                    Circle()
-                                        .fill(.ultraThinMaterial)
-                                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-                                }
-                            }
                     }
-                    .buttonStyle(PressScaleButtonStyle())
                 }
+                .buttonStyle(PressScaleButtonStyle())
                 .transition(.asymmetric(
                     insertion: .move(edge: .trailing).combined(with: .scale(scale: 0.8)).combined(with: .opacity).animation(.appBubbly.delay(0.15)),
                     removal: .move(edge: .trailing).combined(with: .scale(scale: 0.9)).combined(with: .opacity).animation(.appCrisp)
@@ -1062,31 +1065,91 @@ struct ApplicationView: View {
         .padding(.top, 10)
     }
 
+    private var hasActiveFilters: Bool {
+        !selectedStatuses.isEmpty || !selectedTypes.isEmpty || !selectedSeasons.isEmpty
+    }
+
     private var noResultsState: some View {
         VStack(spacing: 14) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 40))
-                .foregroundStyle(Theme.textSecondary.opacity(0.5))
-            Text("No results for \"\(searchText)\"")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Theme.textPrimary)
-            Button("Clear Search") {
-                searchText = ""
-                AppHaptics.shared.light()
+            if searchText.isEmpty {
+                Image(systemName: "line.3.horizontal.decrease.circle")
+                    .font(.system(size: 40))
+                    .foregroundStyle(Theme.textSecondary.opacity(0.5))
+                Text("No applications match these filters")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Theme.textPrimary)
+                    .multilineTextAlignment(.center)
+                Button("Clear Filters") {
+                    withAnimation(.appCrisp) {
+                        selectedStatuses.removeAll()
+                        selectedTypes.removeAll()
+                        selectedSeasons.removeAll()
+                        isTypePickerExpanded = false
+                        isSeasonPickerExpanded = false
+                    }
+                    AppHaptics.shared.light()
+                }
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(
+                    Capsule()
+                        .fill(Color.accentColor.opacity(0.10))
+                        .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1))
+                )
+                .buttonStyle(PressScaleButtonStyle())
+            } else {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 40))
+                    .foregroundStyle(Theme.textSecondary.opacity(0.5))
+                Text("No results for \"\(searchText)\"")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Theme.textPrimary)
+                HStack(spacing: 10) {
+                    Button("Clear Search") {
+                        searchText = ""
+                        AppHaptics.shared.light()
+                    }
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(
+                        Capsule()
+                            .fill(Color.accentColor.opacity(0.10))
+                            .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1))
+                    )
+                    .buttonStyle(PressScaleButtonStyle())
+
+                    if hasActiveFilters {
+                        Button("Clear Filters") {
+                            withAnimation(.appCrisp) {
+                                selectedStatuses.removeAll()
+                                selectedTypes.removeAll()
+                                selectedSeasons.removeAll()
+                                isTypePickerExpanded = false
+                                isSeasonPickerExpanded = false
+                            }
+                            AppHaptics.shared.light()
+                        }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Theme.textSecondary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(
+                            Capsule()
+                                .fill(Color.primary.opacity(0.06))
+                                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+                        )
+                        .buttonStyle(PressScaleButtonStyle())
+                    }
+                }
             }
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(Color.accentColor)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 7)
-            .background(
-                Capsule()
-                    .fill(Color.accentColor.opacity(0.10))
-                    .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1))
-            )
-            .buttonStyle(PressScaleButtonStyle())
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 60)
+        .padding(.horizontal, 20)
     }
 
     // MARK: - Delete with Undo

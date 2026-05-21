@@ -107,3 +107,11 @@ struct PressScaleButtonStyle: ButtonStyle {
             .animation(.interactiveSpring(response: 0.2, dampingFraction: 0.8), value: configuration.isPressed)
     }
 }
+
+struct CardPressButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.interactiveSpring(response: 0.18, dampingFraction: 0.85), value: configuration.isPressed)
+    }
+}
