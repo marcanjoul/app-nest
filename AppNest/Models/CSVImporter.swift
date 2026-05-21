@@ -95,6 +95,9 @@ enum CSVImporter {
             row.companyName = get("company")
             row.position    = get("position")
             row.jobType     = matchType(get("type"))
+            if row.jobType == nil {
+                row.jobType = matchTypeFromTitle(row.position)
+            }
             row.status      = matchStatus(get("status"))
             row.season      = matchSeason(get("season"))
             row.notes       = get("notes")
@@ -171,6 +174,28 @@ enum CSVImporter {
         if s.contains("full")     { return .fullTime }
         if s.contains("contract") { return .contract }
         if s.contains("temp")     { return .temporary }
+        return nil
+    }
+
+    private static func matchTypeFromTitle(_ raw: String) -> ApplicationType? {
+        let s = raw.lowercased()
+        guard !s.isEmpty else { return nil }
+
+        let typePatterns: [(ApplicationType, [String])] = [
+            (.internship, ["intern ", "internship", " intern\n", " intern,", " intern."]),
+            (.Co_op,      ["co-op", "co op", "coop"]),
+            (.partTime,   ["part-time", "part time"]),
+            (.fullTime,   ["full-time", "full time"]),
+            (.contract,   ["contract position", "contract role", "contractor"]),
+            (.temporary,  ["temporary position", "temporary role", "temp position"]),
+        ]
+
+        for (type, keywords) in typePatterns {
+            for keyword in keywords where s.contains(keyword) {
+                return type
+            }
+        }
+
         return nil
     }
 
