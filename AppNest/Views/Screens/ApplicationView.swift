@@ -88,270 +88,16 @@ struct ApplicationView: View {
             // Adaptive ambient gradient background
             AmbientBackground()
 
-            ScrollViewReader { proxy in
-            List {
-                // Header
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(alignment: .center) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("App Nest")
-                                .font(.system(size: 40, weight: .bold))
-                                .foregroundStyle(Theme.textPrimary)
-                            
-                            if !searchText.isEmpty {
-                                Text("\(filteredAndSorted.count) results")
-                                    .font(.system(size: 13, weight: .bold))
-                                    .foregroundStyle(Color.accentColor)
-                                    .transition(.opacity.combined(with: .move(edge: .leading)))
-                            }
-                        }
-                        
-                        Spacer()
-                    }
-                    .padding(.top, 16)
-                    
-                    cycleSelectorChip
-                        .padding(.top, 8)
-                }
-                .opacity(appState.dashboardHasAppeared ? 1 : 0)
-                .offset(y: appState.dashboardHasAppeared ? 0 : 20)
-                .animation(.appSmooth, value: appState.dashboardHasAppeared)
-                .animation(.appSmooth, value: searchText.isEmpty)
-                .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .selectionDisabled()
-                .id("appListTop")
-
-                // Search + Filter
-                searchFilterRow
-                    .opacity(appState.dashboardHasAppeared ? 1 : 0)
-                    .offset(y: appState.dashboardHasAppeared ? 0 : 16)
-                    .animation(.appSmooth.delay(0.07), value: appState.dashboardHasAppeared)
-                    .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .selectionDisabled()
-
-                // Stats
-                statsSection
-                    .opacity(appState.dashboardHasAppeared ? 1 : 0)
-                    .offset(y: appState.dashboardHasAppeared ? 0 : 12)
-                    .animation(.appSmooth.delay(0.12), value: appState.dashboardHasAppeared)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 14, trailing: 0))
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .selectionDisabled()
-
-                // Content
-                if cycleFiltered.isEmpty && !applications.isEmpty && appState.selectedCycleID != nil {
-                    emptyCycleState
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)).combined(with: .offset(y: 20)))
-                        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .selectionDisabled()
-                } else if applications.isEmpty {
-                    emptyState
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)).combined(with: .offset(y: 20)))
-                        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .selectionDisabled()
-                } else if filteredAndSorted.isEmpty {
-                    noResultsState
-                        .transition(.opacity.combined(with: .scale(scale: 0.95)).combined(with: .offset(y: 20)))
-                        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .selectionDisabled()
-                } else {
-                    if isEditMode {
-                        selectionToolbar
-                            .listRowInsets(EdgeInsets(top: 4, leading: 24, bottom: 10, trailing: 24))
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .selectionDisabled()
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                    }
-
-                    ForEach(Array(filteredAndSorted.enumerated()), id: \.element.id) { index, job in
-                        JobCardSwipeRow(
-                                job: job,
-                                isEditMode: isEditMode,
-                                isSelected: selectedJobIDs.contains(job.id),
-                                onDelete: { scheduleDelete(job) },
-                                onToggleSelection: {
-                                    withAnimation(.appCrisp) {
-                                        if selectedJobIDs.contains(job.id) {
-                                            selectedJobIDs.remove(job.id)
-                                        } else {
-                                            selectedJobIDs.insert(job.id)
-                                        }
-                                    }
-                                    AppHaptics.shared.light()
-                                }
-                            )
-                            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 20))
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .visualEffect { content, proxy in
-                                content
-                                    .scaleEffect(cardScale(proxy))
-                                    .opacity(cardOpacity(proxy))
-                            }
-                            .transition(.asymmetric(
-                                insertion: .opacity.combined(with: .scale(scale: 0.95)).combined(with: .offset(y: 10)),
-                                removal: .opacity.combined(with: .scale(scale: 0.97))
-                            ))
-                            .animation(.appSmooth.delay(Double(min(index, 6)) * 0.03), value: appState.dashboardHasAppeared)
-                            .animation(.appCrisp, value: filteredAndSorted.count)
-                    }
-                }
-
-                // Attribution Footer
-                VStack(spacing: 4) {
-                    Text("Logos provided by Logo.dev")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Theme.textTertiary.opacity(0.6))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 40)
-                .padding(.bottom, 100)
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .selectionDisabled()
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .scrollDismissesKeyboard(.interactively)
-            .onChange(of: appState.scrollToTopTrigger) { _, _ in
-                withAnimation(.appSmooth) {
-                    proxy.scrollTo("appListTop", anchor: .top)
-                }
-            }
-            } // ScrollViewReader
+            mainList
 
             // Bulk Actions Bar
             if isEditMode && !selectedJobIDs.isEmpty {
-                VStack {
-                    Spacer()
-                    HStack(spacing: 0) {
-                        Button(role: .destructive) {
-                            isConfirmingBulkDelete = true
-                        } label: {
-                            VStack(spacing: 4) {
-                                Image(systemName: "trash")
-                                Text("Delete")
-                            }
-                        }
-                        .foregroundStyle(Theme.destructive)
-                        .frame(maxWidth: .infinity)
-
-                        Button {
-                            // Menu handled by overlay
-                        } label: {
-                            VStack(spacing: 4) {
-                                Image(systemName: "folder")
-                                Text("Move")
-                            }
-                        }
-                        .foregroundStyle(Color.accentColor)
-                        .frame(maxWidth: .infinity)
-                        .overlay {
-                            Menu {
-                                Button {
-                                    newCycleName = ""
-                                    isAddingCycleFromBulk = true
-                                } label: {
-                                    Label("New Cycle...", systemImage: "plus")
-                                }
-                                if !cycles.isEmpty {
-                                    Divider()
-                                    ForEach(cycles) { cycle in
-                                        Button(cycle.name) {
-                                            moveSelectedToCycle(cycle)
-                                        }
-                                    }
-                                }
-                            } label: {
-                                Color.clear.frame(maxWidth: .infinity, maxHeight: .infinity)
-                            }
-                        }
-                    }
-                    .font(.system(size: 12, weight: .semibold))
-                    .padding(.top, 12)
-                    .padding(.bottom, 100)
-                    .background(.ultraThinMaterial)
-                    .overlay(alignment: .top) {
-                        Divider().opacity(0.5)
-                    }
-                }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                bulkActionsBar
             }
 
             // Undo delete toast
             if let pending = pendingDeleteJob {
-                VStack {
-                    Spacer()
-                    HStack(spacing: 14) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Removed \(pending.companyName)")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(.white)
-                            Text("The application has been deleted.")
-                                .font(.system(size: 13))
-                                .foregroundStyle(.white.opacity(0.7))
-                        }
-                        Spacer()
-                        Button(action: undoDelete) {
-                            Text("Undo")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundStyle(Color.accentColor)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 8)
-                                .background(Capsule().fill(Color.white.opacity(0.12)))
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-                    .background {
-                        Capsule()
-                            .fill(Color(red: 0.12, green: 0.12, blue: 0.14))
-                            .shadow(color: .black.opacity(0.3), radius: 15, y: 8)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 110)
-                    .offset(y: toastDragY)
-                    .gesture(
-                        DragGesture(minimumDistance: 10)
-                            .onChanged { value in
-                                if value.translation.height > 0 {
-                                    toastDragY = value.translation.height
-                                }
-                            }
-                            .onEnded { value in
-                                let velocity = value.predictedEndTranslation.height / 500.0
-                                if value.translation.height > 50 || velocity > 0.11 {
-                                    undoTask?.cancel()
-                                    undoTask = nil
-                                    modelContext.delete(pending)
-                                    withAnimation(.appSmooth) {
-                                        pendingDeleteJob = nil
-                                        toastDragY = 0
-                                    }
-                                    AppHaptics.shared.medium()
-                                } else {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                                        toastDragY = 0
-                                    }
-                                }
-                            }
-                    )
-                    .transition(.move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.95)))
-                }
-                .allowsHitTesting(true)
+                undoToast(for: pending)
             }
         }
         .animation(.appSmooth, value: pendingDeleteJob != nil)
@@ -664,7 +410,7 @@ struct ApplicationView: View {
             .clipShape(Capsule())
             .overlay(Capsule().strokeBorder(isSearchFocused ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08), lineWidth: 1))
             .frame(maxWidth: .infinity)
-            .animation(.appBubbly, value: isSearchFocused)
+            .animation(.appSmooth, value: isSearchFocused)
 
             if !applications.isEmpty && !isSearchFocused {
                 HStack(spacing: 8) {
@@ -975,6 +721,126 @@ struct ApplicationView: View {
             toastDragY = 0
         }
         AppHaptics.shared.light()
+    }
+
+    // MARK: - Main List Placeholder
+    private var mainList: some View {
+        if filteredAndSorted.isEmpty {
+            if applications.isEmpty {
+                AnyView(emptyState)
+            } else if let id = appState.selectedCycleID, !applications.contains(where: { $0.cycle?.id == id }) {
+                AnyView(emptyCycleState)
+            } else if !searchText.isEmpty {
+                AnyView(noResultsState)
+            } else {
+                AnyView(EmptyView())
+            }
+        } else {
+            AnyView(jobListContent)
+        }
+    }
+    
+    private var jobListContent: some View {
+        ScrollView {
+            VStack(spacing: 12) {
+                // Header: search + filters + cycle selector
+                VStack(spacing: 12) {
+                    HStack { cycleSelectorChip; Spacer() }
+                    searchFilterRow
+                    statsSection
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+
+                ForEach(filteredAndSorted, id: \.id) { job in
+                    JobCardView(job: job)
+                    .padding(.horizontal, 16)
+                }
+
+                Spacer(minLength: 80)
+            }
+        }
+    }
+
+    // MARK: - Bulk Actions Bar Placeholder
+    private var bulkActionsBar: some View {
+        VStack {
+            Spacer()
+            VStack(spacing: 10) {
+                selectionToolbar
+                HStack(spacing: 10) {
+                    Button {
+                        isAddingCycleFromBulk = true
+                        AppHaptics.shared.light()
+                    } label: {
+                        Label("New Cycle", systemImage: "tray.and.arrow.down.fill")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(Capsule().fill(Color.accentColor))
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
+
+                    Button {
+                        isConfirmingBulkDelete = true
+                        AppHaptics.shared.medium()
+                    } label: {
+                        Label("Delete", systemImage: "trash.fill")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(Capsule().fill(Color.red))
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
+                }
+            }
+            .padding(16)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 4)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
+        }
+        .ignoresSafeArea(edges: .bottom)
+    }
+
+    // MARK: - Undo Toast Placeholder
+    private func undoToast(for job: JobApplication) -> some View {
+        VStack {
+            Spacer()
+            HStack(spacing: 12) {
+                Text("Deleted \(job.companyName) — \(job.position)")
+                    .font(.system(size: 14, weight: .semibold))
+                    .lineLimit(1)
+                    .foregroundStyle(Theme.textPrimary)
+                Spacer()
+                Button("Undo") { undoDelete() }
+                    .font(.system(size: 14, weight: .bold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(Color.accentColor.opacity(0.15)))
+            }
+            .padding(14)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+            )
+            .padding(.horizontal, 16)
+            .offset(y: toastDragY)
+            .gesture(
+                DragGesture().onChanged { value in
+                    toastDragY = max(0, value.translation.height)
+                }.onEnded { value in
+                    if value.translation.height > 40 { undoDelete() } else { withAnimation(.appSmooth) { toastDragY = 0 } }
+                }
+            )
+        }
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .animation(.appSmooth, value: pendingDeleteJob?.id)
     }
 }
 
