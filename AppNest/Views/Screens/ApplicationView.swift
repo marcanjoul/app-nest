@@ -101,7 +101,8 @@ struct ApplicationView: View {
             }
         }
         .animation(.appSmooth, value: pendingDeleteJob != nil)
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationTitle("Applications")
+        .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             appState.dashboardHasAppeared = true
         }
