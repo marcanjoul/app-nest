@@ -5,6 +5,7 @@ import UIKit
 
 struct JobCardView: View {
     let job: JobApplication
+    let isEditMode: Bool = false
 
     private var appliedRelativeText: String {
         let formatter = RelativeDateTimeFormatter()
