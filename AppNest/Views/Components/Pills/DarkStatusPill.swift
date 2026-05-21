@@ -224,6 +224,20 @@ struct DarkJobCardView: View {
                 HStack(spacing: 6) {
                     if let status = job.status {
                         DarkStatusPill(status: status)
+                            .contextMenu {
+                                ForEach(ApplicationStatus.allCases, id: \.self) { s in
+                                    Button {
+                                        withAnimation(.appSmooth) {
+                                            job.status = s
+                                        }
+                                        AppHaptics.shared.light()
+                                    } label: {
+                                        let style = Theme.statusStyle(for: s)
+                                        Label(s.rawValue, systemImage: style.iconName)
+                                    }
+                                    .disabled(s == status)
+                                }
+                            }
                     }
                     if let type = job.jobType {
                         DarkTypeTag(text: type.rawValue, icon: type.iconName, color: type.color)

@@ -864,8 +864,11 @@ struct ApplicationView: View {
                     }
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
                 }
+            }
 
-                if !applications.isEmpty {
+            if !applications.isEmpty {
+                HStack {
+                    Spacer()
                     headerActionButtons
                 }
             }
