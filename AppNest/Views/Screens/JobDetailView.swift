@@ -24,6 +24,8 @@ struct JobDetailView: View {
     @State private var type:              ApplicationType?
     @State private var status:            ApplicationStatus?
     @State private var season:            ApplicationSeason?
+    @State private var workMode:          WorkMode?
+    @State private var location:          String
     @State private var dateApplied:       Date
     @State private var jobURL:            String
     @State private var jobNotes:          String
@@ -73,6 +75,8 @@ struct JobDetailView: View {
             || type                 != job.jobType
             || status               != job.status
             || season               != job.season
+            || workMode             != job.workMode
+            || location.trimmingCharacters(in: .whitespaces) != (job.location ?? "")
             || dateApplied          != job.dateApplied
             || jobURL.trimmingCharacters(in: .whitespaces) != (job.jobURL ?? "")
             || jobNotes             != (job.jobNotes ?? "")
@@ -123,6 +127,8 @@ struct JobDetailView: View {
         _type                   = State(initialValue: job?.jobType ?? prefillType)
         _status                 = State(initialValue: job?.status ?? prefillStatus ?? .applied)
         _season                 = State(initialValue: job?.season)
+        _workMode               = State(initialValue: job?.workMode)
+        _location               = State(initialValue: job?.location ?? "")
         _dateApplied            = State(initialValue: job?.dateApplied ?? Date())
         _jobURL                 = State(initialValue: job?.jobURL ?? prefillURL)
         _jobNotes               = State(initialValue: job?.jobNotes ?? "")
@@ -150,8 +156,10 @@ struct JobDetailView: View {
         _type                   = State(initialValue: r.jobType)
         _status                 = State(initialValue: r.status)
         _season                 = State(initialValue: r.season)
+        _workMode               = State(initialValue: r.workMode)
+        _location               = State(initialValue: r.location)
         _dateApplied            = State(initialValue: r.dateApplied)
-        _jobURL                 = State(initialValue: "")
+        _jobURL                 = State(initialValue: r.jobURL)
         _jobNotes               = State(initialValue: r.notes)
         _resumeFileName         = State(initialValue: nil)
         _resumeID               = State(initialValue: nil)
@@ -179,6 +187,9 @@ struct JobDetailView: View {
         r.status = status
         r.season = season
         r.dateApplied = dateApplied
+        r.workMode = workMode
+        r.location = location
+        r.jobURL = jobURL
         r.notes = jobNotes
         r.compensationKind = compensationKind
         r.compensationAmount = parsedCompensationAmount
@@ -310,6 +321,8 @@ struct JobDetailView: View {
         type                 = job.jobType
         status               = job.status
         season               = job.season
+        workMode             = job.workMode
+        location             = job.location ?? ""
         dateApplied          = job.dateApplied
         jobURL               = job.jobURL ?? ""
         jobNotes             = job.jobNotes ?? ""
@@ -375,6 +388,12 @@ struct JobDetailView: View {
     private var dateOrReminderChanged: Bool {
         guard !isNewApplication, let job else { return false }
         return dateApplied != job.dateApplied || reminderEnabled != job.reminderEnabled
+    }
+
+    private var locationChanged: Bool {
+        guard !isNewApplication, let job else { return false }
+        return workMode != job.workMode
+            || location.trimmingCharacters(in: .whitespaces) != (job.location ?? "")
     }
 
     private var jobURLChanged: Bool {
@@ -470,6 +489,15 @@ struct JobDetailView: View {
     }
 
     @ViewBuilder
+    private var locationSectionView: some View {
+        LocationSection(workMode: $workMode, location: $location)
+            .changedHighlight(locationChanged)
+            .opacity(contentAppeared ? 1 : 0)
+            .offset(y: contentAppeared ? 0 : 12)
+            .animation(.appSmooth.delay(0.12), value: contentAppeared)
+    }
+
+    @ViewBuilder
     private var dateAppliedSectionView: some View {
         DateAppliedSection(
             dateApplied: dateAppliedOptionalBinding,
@@ -557,57 +585,85 @@ struct JobDetailView: View {
         .animation(.appSmooth.delay(0.27), value: contentAppeared)
     }
 
+    private struct CSVSyncSignature: Equatable {
+        let companyName: String
+        let position: String
+        let companyLogoImageData: Data?
+        let type: ApplicationType?
+        let status: ApplicationStatus?
+        let season: ApplicationSeason?
+        let workMode: WorkMode?
+        let location: String
+        let dateApplied: Date
+        let jobURL: String
+        let jobNotes: String
+        let compensationKind: CompensationKind?
+        let compensationAmount: String
+        let compensationCurrency: Currency
+        let salaryPeriod: SalaryPeriod
+        let csvCycleID: UUID?
+    }
+
+    private var csvSyncSignature: CSVSyncSignature {
+        CSVSyncSignature(
+            companyName: companyName,
+            position: position,
+            companyLogoImageData: companyLogoImageData,
+            type: type,
+            status: status,
+            season: season,
+            workMode: workMode,
+            location: location,
+            dateApplied: dateApplied,
+            jobURL: jobURL,
+            jobNotes: jobNotes,
+            compensationKind: compensationKind,
+            compensationAmount: compensationAmount,
+            compensationCurrency: compensationCurrency,
+            salaryPeriod: salaryPeriod,
+            csvCycleID: csvCycleID
+        )
+    }
+
+    @ViewBuilder
+    private var formStackContent: some View {
+        VStack(spacing: 16) {
+            Group {
+                infoSectionView
+                typeSectionView
+                statusSectionView
+                if isSeasonAllowed {
+                    seasonSectionView
+                }
+                dateAppliedSectionView
+                locationSectionView
+            }
+            Group {
+                jobLinkSectionView
+                compensationSectionView
+                if isCSVMode {
+                    csvCycleSectionView
+                }
+                if !isCSVMode {
+                    resumeSectionView
+                }
+                notesSectionView
+                if isInterviewStage && !isCSVMode {
+                    interviewKitSectionView
+                }
+            }
+        }
+    }
+
     @ViewBuilder
     private var formStack: some View {
-        VStack(spacing: 16) {
-            infoSectionView
-            typeSectionView
-            statusSectionView
-
-            if isSeasonAllowed {
-                seasonSectionView
+        formStackContent
+            .onChange(of: type) { _, _ in
+                if !isSeasonAllowed { season = nil }
             }
-
-            dateAppliedSectionView
-
-            if !isCSVMode {
-                jobLinkSectionView
-            }
-
-            compensationSectionView
-
-            if isCSVMode {
-                csvCycleSectionView
-            }
-
-            if !isCSVMode {
-                resumeSectionView
-            }
-
-            notesSectionView
-
-            if isInterviewStage && !isCSVMode {
-                interviewKitSectionView
-            }
-        }
-        .onChange(of: type) { _, _ in
-            if !isSeasonAllowed { season = nil }
-        }
-        .animation(.appSmooth, value: isSeasonAllowed)
-        .animation(.appSmooth, value: isInterviewStage)
-        .onChange(of: companyName)          { _, _ in syncToCSVRow() }
-        .onChange(of: position)             { _, _ in syncToCSVRow() }
-        .onChange(of: companyLogoImageData) { _, _ in syncToCSVRow() }
-        .onChange(of: type)                 { _, _ in syncToCSVRow() }
-        .onChange(of: status)               { _, _ in syncToCSVRow() }
-        .onChange(of: season)               { _, _ in syncToCSVRow() }
-        .onChange(of: dateApplied)          { _, _ in syncToCSVRow() }
-        .onChange(of: jobNotes)             { _, _ in syncToCSVRow() }
-        .onChange(of: compensationKind)     { _, _ in syncToCSVRow() }
-        .onChange(of: compensationAmount)   { _, _ in syncToCSVRow() }
-        .onChange(of: compensationCurrency) { _, _ in syncToCSVRow() }
-        .onChange(of: salaryPeriod)         { _, _ in syncToCSVRow() }
-        .onChange(of: csvCycleID)           { _, _ in syncToCSVRow() }
+            .animation(.appSmooth, value: isSeasonAllowed)
+            .animation(.appSmooth, value: isInterviewStage)
+            .onChange(of: csvSyncSignature) { _, _ in syncToCSVRow() }
     }
 
     // MARK: - Body
@@ -781,6 +837,8 @@ struct JobDetailView: View {
             job.jobType             = type
             job.status              = status
             job.season              = season
+            job.workMode            = workMode
+            job.location            = location.trimmingCharacters(in: .whitespaces).isEmpty ? nil : location.trimmingCharacters(in: .whitespaces)
             job.dateApplied         = dateApplied
             job.jobURL              = jobURL.trimmingCharacters(in: .whitespaces).isEmpty ? nil : jobURL.trimmingCharacters(in: .whitespaces)
             job.jobNotes            = jobNotes
@@ -819,6 +877,8 @@ struct JobDetailView: View {
                 salaryPeriod: resolvedSalaryPeriod,
                 reminderEnabled: wantsReminder
             )
+            newJob.workMode  = workMode
+            newJob.location  = location.trimmingCharacters(in: .whitespaces).isEmpty ? nil : location.trimmingCharacters(in: .whitespaces)
             newJob.companyResearch = companyResearch.isEmpty ? nil : companyResearch
             newJob.interviewNotes  = interviewNotes.isEmpty  ? nil : interviewNotes
             newJob.reminderTime = wantsReminder ? reminderTime : nil

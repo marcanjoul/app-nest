@@ -15,6 +15,15 @@ enum ApplicationType: String, CaseIterable, Codable {
     case temporary = "Temporary"
 }
 
+// MARK: - Work Mode
+
+/// Whether a position is remote, hybrid, or fully on-site.
+enum WorkMode: String, CaseIterable, Codable {
+    case remote = "Remote"
+    case hybrid = "Hybrid"
+    case onSite = "On-site"
+}
+
 // MARK: - Application Season
 
 /// The season when a position is expected to start.
@@ -124,6 +133,12 @@ class JobApplication {
     
     /// Season when the position is expected to start.
     var season: ApplicationSeason?
+
+    /// Whether the position is remote, hybrid, or on-site.
+    var workMode: WorkMode?
+
+    /// City or location of the position (e.g. "San Francisco, CA" or "Remote").
+    var location: String?
 
     /// The job search cycle this application belongs to (optional).
     var cycle: JobCycle?

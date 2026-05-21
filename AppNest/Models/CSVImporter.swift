@@ -15,6 +15,9 @@ struct CSVImportRow: Identifiable {
     var compensationKind: CompensationKind? = nil
     var compensationCurrency: Currency? = .usd
     var salaryPeriod: SalaryPeriod? = .yearly
+    var workMode: WorkMode? = nil
+    var location: String = ""
+    var jobURL: String = ""
     var notes: String = ""
     var cycleID: UUID? = nil
     var logoData: Data? = nil
@@ -47,6 +50,9 @@ enum CSVImporter {
         ("compensation", ["salary", "compensation", "pay rate", "stipend", "base pay", "wage"]),
         ("currency",     ["currency", "currency code", "pay currency"]),
         ("notes",        ["notes", "comments", "additional notes", "remarks", "description"]),
+        ("url",          ["job url", "job link", "application url", "posting url", "listing url", "apply link"]),
+        ("work_mode",    ["work mode", "remote or onsite", "work arrangement", "work type", "remote status"]),
+        ("location",     ["location", "city", "office location", "work location", "job location"]),
     ]
 
     // Kept as a fallback for when the NLEmbedding model is unavailable on-device.
@@ -70,6 +76,12 @@ enum CSVImporter {
         ("currency",     ["currency code", "pay currency", "pay in", "currency", "curr"]),
         ("notes",        ["additional notes", "extra notes", "job notes",
                           "comments", "description", "remarks", "memo", "note", "notes"]),
+        ("url",          ["job url", "job link", "application url", "posting url",
+                          "listing url", "apply link", "apply url", "link", "url"]),
+        ("work_mode",    ["work mode", "work arrangement", "remote status", "work type",
+                          "remote or onsite", "location type", "remote"]),
+        ("location",     ["location", "city", "office", "work location",
+                          "job location", "office location", "place"]),
     ]
 
     // MARK: - Public API
@@ -117,6 +129,9 @@ enum CSVImporter {
             }
             row.status      = matchStatus(get("status"))
             row.season      = matchSeason(get("season"))
+            row.workMode    = matchWorkMode(get("work_mode"))
+            row.location    = get("location")
+            row.jobURL      = get("url")
             row.notes       = get("notes")
 
             let dateStr = get("date")
@@ -275,6 +290,16 @@ enum CSVImporter {
         if s.contains("apply")  || s.contains("to do") || s.contains("todo") || s.contains("plan") { return .toApply }
         if s.contains("ghost")                                                      { return .ghosted }
         if s.contains("removed") || s.contains("expired") || s.contains("closed") || s.contains("filled") { return .jobRemoved }
+        return nil
+    }
+
+    private static func matchWorkMode(_ raw: String) -> WorkMode? {
+        let s = raw.lowercased()
+        guard !s.isEmpty else { return nil }
+        if let hit = WorkMode.allCases.first(where: { $0.rawValue.lowercased() == s }) { return hit }
+        if s.contains("remote") { return .remote }
+        if s.contains("hybrid") { return .hybrid }
+        if s.contains("on-site") || s.contains("onsite") || s.contains("in-office") || s.contains("in person") || s.contains("office") { return .onSite }
         return nil
     }
 

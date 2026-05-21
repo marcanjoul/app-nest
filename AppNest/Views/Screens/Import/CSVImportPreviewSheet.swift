@@ -447,15 +447,18 @@ struct CSVImportPreviewSheet: View {
                 season: row.season,
                 cycle: rowCycle ?? defaultCycle,
                 dateApplied: row.dateApplied,
+                jobURL: row.jobURL.isEmpty ? nil : row.jobURL,
                 jobNotes: row.notes,
                 compensationKind: row.compensationKind,
                 compensationAmount: row.compensationAmount,
                 compensationCurrency: row.compensationCurrency,
                 salaryPeriod: row.salaryPeriod
             )
+            app.workMode = row.workMode
+            app.location = row.location.isEmpty ? nil : row.location
             modelContext.insert(app)
         }
-        
+
         try? modelContext.save()
         AppHaptics.shared.success()
         dismiss()

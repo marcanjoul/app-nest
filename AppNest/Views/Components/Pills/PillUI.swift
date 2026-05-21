@@ -296,6 +296,24 @@ extension ApplicationStatus {
     }
 }
 
+extension WorkMode {
+    var color: Color {
+        switch self {
+        case .remote: return Color(red: 0.35, green: 0.65, blue: 0.96)
+        case .hybrid: return Color(red: 0.62, green: 0.52, blue: 0.96)
+        case .onSite: return Color(red: 0.30, green: 0.80, blue: 0.45)
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .remote: return "wifi"
+        case .hybrid: return "arrow.left.arrow.right"
+        case .onSite: return "building.2.fill"
+        }
+    }
+}
+
 extension ApplicationSeason {
     var color: Color {
         switch self {

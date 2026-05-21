@@ -23,8 +23,10 @@ struct ApplicationView: View {
     @State private var selectedStatuses: Set<ApplicationStatus> = []
     @State private var selectedTypes: Set<ApplicationType> = []
     @State private var selectedSeasons: Set<ApplicationSeason> = []
+    @State private var selectedWorkModes: Set<WorkMode> = []
     @State private var isTypePickerExpanded = false
     @State private var isSeasonPickerExpanded = false
+    @State private var isWorkModePickerExpanded = false
     @State private var sortOption: SortOption = .dateNewest
     @State private var pendingDeleteJob: JobApplication? = nil
     @State private var undoTask: Task<Void, Never>? = nil
@@ -84,6 +86,11 @@ struct ApplicationView: View {
         if !selectedSeasons.isEmpty {
             result = result.filter { job in
                 job.season.map { selectedSeasons.contains($0) } ?? false
+            }
+        }
+        if !selectedWorkModes.isEmpty {
+            result = result.filter { job in
+                job.workMode.map { selectedWorkModes.contains($0) } ?? false
             }
         }
 
@@ -567,7 +574,7 @@ struct ApplicationView: View {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let exportable = filteredAndSorted
-        let header = "Company,Position,Type,Status,Season,Date Applied,Compensation,Currency,Resume,Notes\n"
+        let header = "Company,Position,Type,Status,Season,Work Mode,Location,Date Applied,Compensation,Currency,Resume,Notes,URL\n"
         let rows = exportable.map { app -> String in
             let compensation: String = {
                 guard let amount = app.compensationAmount else { return "" }
@@ -581,11 +588,14 @@ struct ApplicationView: View {
                 escapeCSV(app.jobType?.rawValue ?? ""),
                 escapeCSV(app.status?.rawValue ?? ""),
                 escapeCSV(app.season?.rawValue ?? ""),
+                escapeCSV(app.workMode?.rawValue ?? ""),
+                escapeCSV(app.location ?? ""),
                 escapeCSV(dateFormatter.string(from: app.dateApplied)),
                 escapeCSV(compensation),
                 escapeCSV(app.compensationCurrency?.rawValue ?? ""),
                 escapeCSV(app.resumeFileName ?? ""),
-                escapeCSV(app.jobNotes ?? "")
+                escapeCSV(app.jobNotes ?? ""),
+                escapeCSV(app.jobURL ?? "")
             ].joined(separator: ",")
         }.joined(separator: "\n")
 
@@ -780,6 +790,14 @@ struct ApplicationView: View {
         }
     }
 
+    private var workModeSelectionLabel: String? {
+        switch selectedWorkModes.count {
+        case 0: return nil
+        case 1: return selectedWorkModes.first!.rawValue
+        default: return "\(selectedWorkModes.count) Modes"
+        }
+    }
+
     private var typeSeasonFilter: some View {
         VStack(alignment: .leading, spacing: 10) {
             // Token row
@@ -793,7 +811,7 @@ struct ApplicationView: View {
                 ) {
                     withAnimation(.appSmooth) {
                         isTypePickerExpanded.toggle()
-                        if isTypePickerExpanded { isSeasonPickerExpanded = false }
+                        if isTypePickerExpanded { isSeasonPickerExpanded = false; isWorkModePickerExpanded = false }
                     }
                     AppHaptics.shared.light()
                 }
@@ -807,20 +825,36 @@ struct ApplicationView: View {
                 ) {
                     withAnimation(.appSmooth) {
                         isSeasonPickerExpanded.toggle()
-                        if isSeasonPickerExpanded { isTypePickerExpanded = false }
+                        if isSeasonPickerExpanded { isTypePickerExpanded = false; isWorkModePickerExpanded = false }
+                    }
+                    AppHaptics.shared.light()
+                }
+
+                FilterToken(
+                    label: "Location",
+                    icon: "mappin.circle.fill",
+                    selectionSummary: workModeSelectionLabel,
+                    isExpanded: isWorkModePickerExpanded,
+                    isActive: !selectedWorkModes.isEmpty
+                ) {
+                    withAnimation(.appSmooth) {
+                        isWorkModePickerExpanded.toggle()
+                        if isWorkModePickerExpanded { isTypePickerExpanded = false; isSeasonPickerExpanded = false }
                     }
                     AppHaptics.shared.light()
                 }
 
                 Spacer()
 
-                if !selectedTypes.isEmpty || !selectedSeasons.isEmpty {
+                if !selectedTypes.isEmpty || !selectedSeasons.isEmpty || !selectedWorkModes.isEmpty {
                     Button {
                         withAnimation(.appCrisp) {
                             selectedTypes.removeAll()
                             selectedSeasons.removeAll()
+                            selectedWorkModes.removeAll()
                             isTypePickerExpanded = false
                             isSeasonPickerExpanded = false
+                            isWorkModePickerExpanded = false
                         }
                         AppHaptics.shared.light()
                     } label: {
@@ -881,6 +915,30 @@ struct ApplicationView: View {
                             AppHaptics.shared.light()
                         }
                         .opacity(count == 0 && !selectedSeasons.contains(season) ? 0.4 : 1.0)
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.97, anchor: .top)))
+            }
+
+            // Work mode row
+            if isWorkModePickerExpanded {
+                HStack(spacing: 8) {
+                    ForEach(WorkMode.allCases, id: \.self) { mode in
+                        let count = searchFiltered.filter { $0.workMode == mode }.count
+                        CompactFilterChip(
+                            label: mode.rawValue,
+                            icon: mode.iconName,
+                            color: mode.color,
+                            isSelected: selectedWorkModes.contains(mode)
+                        ) {
+                            withAnimation(.appCrisp) {
+                                if selectedWorkModes.contains(mode) { selectedWorkModes.remove(mode) }
+                                else { selectedWorkModes.insert(mode) }
+                            }
+                            AppHaptics.shared.light()
+                        }
+                        .opacity(count == 0 && !selectedWorkModes.contains(mode) ? 0.4 : 1.0)
                         .frame(maxWidth: .infinity)
                     }
                 }
@@ -1079,7 +1137,7 @@ struct ApplicationView: View {
     }
 
     private var hasActiveFilters: Bool {
-        !selectedStatuses.isEmpty || !selectedTypes.isEmpty || !selectedSeasons.isEmpty
+        !selectedStatuses.isEmpty || !selectedTypes.isEmpty || !selectedSeasons.isEmpty || !selectedWorkModes.isEmpty
     }
 
     private var noResultsState: some View {
@@ -1097,8 +1155,10 @@ struct ApplicationView: View {
                         selectedStatuses.removeAll()
                         selectedTypes.removeAll()
                         selectedSeasons.removeAll()
+                        selectedWorkModes.removeAll()
                         isTypePickerExpanded = false
                         isSeasonPickerExpanded = false
+                        isWorkModePickerExpanded = false
                     }
                     AppHaptics.shared.light()
                 }
