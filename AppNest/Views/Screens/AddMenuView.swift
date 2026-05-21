@@ -86,7 +86,7 @@ struct AddMenuView: View {
             }
             .scrollBounceBehavior(.basedOnSize)
         }
-        .navigationTitle("Add Job")
+        .navigationTitle("Add a Job")
         .navigationBarTitleDisplayMode(.large)
         .sheet(isPresented: Binding(
             get: { isPresentingManualAdd },

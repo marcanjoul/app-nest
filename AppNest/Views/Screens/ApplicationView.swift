@@ -906,7 +906,7 @@ struct ApplicationView: View {
             AppHaptics.shared.light()
             appState.selectedTab = 1 // Navigate to Add tab
         } label: {
-            Label("Add Job", systemImage: "plus")
+            Label("Add a Job", systemImage: "plus")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 22)
