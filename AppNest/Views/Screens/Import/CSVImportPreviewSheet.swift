@@ -10,7 +10,7 @@ struct CSVImportPreviewSheet: View {
     @Environment(AppState.self) private var appState
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
 
-    @State private var editingRow: CSVImportRow?
+    @State private var editingRowID: UUID?
     @State private var localRows: [CSVImportRow] = []
     @State private var selectedRows = Set<UUID>()
     @State private var isAddingNewCycle = false
@@ -142,12 +142,13 @@ struct CSVImportPreviewSheet: View {
             .onAppear {
                 if localRows.isEmpty { localRows = initialRows }
             }
-            .sheet(item: $editingRow) { row in
-                EditImportRowView(row: row) { updated in
-                    if let index = localRows.firstIndex(where: { $0.id == updated.id }) {
-                        localRows[index] = updated
-                        checkFilterConsistency()
-                    }
+            .sheet(isPresented: Binding(
+                get: { editingRowID != nil },
+                set: { if !$0 { editingRowID = nil } }
+            ), onDismiss: checkFilterConsistency) {
+                if let id = editingRowID,
+                   let index = localRows.firstIndex(where: { $0.id == id }) {
+                    JobDetailView(csvRow: $localRows[index])
                 }
             }
         }
@@ -315,7 +316,7 @@ struct CSVImportPreviewSheet: View {
             
             // Content
             Button {
-                editingRow = r
+                editingRowID = r.id
             } label: {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 3) {

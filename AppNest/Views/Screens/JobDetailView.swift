@@ -14,6 +14,7 @@ struct JobDetailView: View {
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
 
     var job: JobApplication?
+    private let csvRow: Binding<CSVImportRow>?
 
     // MARK: - State
 
@@ -33,6 +34,7 @@ struct JobDetailView: View {
     @State private var compensationAmount:   String
     @State private var compensationCurrency: Currency
     @State private var salaryPeriod:         SalaryPeriod
+    @State private var csvCycleID: UUID?
     @State private var isShowingDocumentPicker = false
     @State private var isShowingResumeLibrary = false
     @State private var pickerItem: PhotosPickerItem? = nil
@@ -52,6 +54,7 @@ struct JobDetailView: View {
     }
 
     private var isNewApplication: Bool { job == nil }
+    private var isCSVMode: Bool { csvRow != nil }
 
     private var hasChanges: Bool {
         guard let job else { return true }
@@ -112,6 +115,7 @@ struct JobDetailView: View {
     }
 
     init(job: JobApplication?, prefillCompany: String = "", prefillPosition: String = "", prefillURL: String = "", prefillType: ApplicationType? = nil, prefillStatus: ApplicationStatus? = nil) {
+        self.csvRow = nil
         self.job = job
         _companyName            = State(initialValue: job?.companyName ?? prefillCompany)
         _companyLogoImageData   = State(initialValue: job?.companyLogoImageData)
@@ -133,6 +137,101 @@ struct JobDetailView: View {
         _reminderTime           = State(initialValue: job?.reminderTime ?? Self.defaultReminderTime)
         _companyResearch        = State(initialValue: job?.companyResearch ?? "")
         _interviewNotes         = State(initialValue: job?.interviewNotes ?? "")
+        _csvCycleID             = State(initialValue: nil)
+    }
+
+    init(csvRow: Binding<CSVImportRow>) {
+        self.csvRow = csvRow
+        self.job = nil
+        let r = csvRow.wrappedValue
+        _companyName            = State(initialValue: r.companyName)
+        _companyLogoImageData   = State(initialValue: r.logoData)
+        _position               = State(initialValue: r.position)
+        _type                   = State(initialValue: r.jobType)
+        _status                 = State(initialValue: r.status)
+        _season                 = State(initialValue: r.season)
+        _dateApplied            = State(initialValue: r.dateApplied)
+        _jobURL                 = State(initialValue: "")
+        _jobNotes               = State(initialValue: r.notes)
+        _resumeFileName         = State(initialValue: nil)
+        _resumeID               = State(initialValue: nil)
+        __pendingResumeBookmark = State(initialValue: nil)
+        _compensationKind       = State(initialValue: r.compensationKind)
+        _compensationAmount     = State(initialValue: r.compensationAmount.map { Self.formatAmount($0) } ?? "")
+        _compensationCurrency   = State(initialValue: r.compensationCurrency ?? .usd)
+        _salaryPeriod           = State(initialValue: r.salaryPeriod ?? .yearly)
+        _reminderEnabled        = State(initialValue: false)
+        _reminderTime           = State(initialValue: Self.defaultReminderTime)
+        _companyResearch        = State(initialValue: "")
+        _interviewNotes         = State(initialValue: "")
+        _csvCycleID             = State(initialValue: r.cycleID)
+    }
+
+    // MARK: - CSV Sync
+
+    private func syncToCSVRow() {
+        guard let binding = csvRow else { return }
+        var r = binding.wrappedValue
+        r.companyName = companyName
+        r.logoData = companyLogoImageData
+        r.position = position
+        r.jobType = type
+        r.status = status
+        r.season = season
+        r.dateApplied = dateApplied
+        r.notes = jobNotes
+        r.compensationKind = compensationKind
+        r.compensationAmount = parsedCompensationAmount
+        r.compensationCurrency = compensationCurrency
+        r.salaryPeriod = compensationKind == .salary ? salaryPeriod : nil
+        r.cycleID = csvCycleID
+        binding.wrappedValue = r
+    }
+
+    @ViewBuilder
+    private var csvCycleCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionLabel(icon: "tray.fill", title: "Cycle")
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    csvCycleChip(name: "None", id: nil)
+                    ForEach(cycles) { cycle in
+                        csvCycleChip(name: cycle.name, id: cycle.id)
+                    }
+                }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 2)
+            }
+        }
+        .padding(16)
+        .glassCard()
+    }
+
+    @ViewBuilder
+    private func csvCycleChip(name: String, id: UUID?) -> some View {
+        let isSelected = csvCycleID == id
+        Button {
+            withAnimation(.appCrisp) { csvCycleID = id }
+            AppHaptics.shared.light()
+        } label: {
+            Text(name)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(isSelected ? Color.accentColor : Theme.textSecondary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background {
+                    Capsule()
+                        .fill(isSelected ? Color.accentColor.opacity(0.13) : Color.primary.opacity(0.06))
+                        .overlay(
+                            Capsule().strokeBorder(
+                                isSelected ? Color.accentColor.opacity(0.4) : Color.primary.opacity(0.09),
+                                lineWidth: isSelected ? 1.5 : 1
+                            )
+                        )
+                }
+        }
+        .buttonStyle(.plain)
+        .animation(.appCrisp, value: isSelected)
     }
 
     private static var defaultReminderTime: Date {
@@ -150,7 +249,7 @@ struct JobDetailView: View {
 
     @ViewBuilder
     private var saveBar: some View {
-        if hasChanges || isNewApplication || !missingFields.isEmpty {
+        if !isCSVMode && (hasChanges || isNewApplication || !missingFields.isEmpty) {
             VStack(spacing: 0) {
                 Divider().opacity(0.4)
                 HStack(spacing: 10) {
@@ -251,131 +350,277 @@ struct JobDetailView: View {
         }
     }
 
+    // MARK: - Change Highlights
+
+    private var infoChanged: Bool {
+        guard !isNewApplication, let job else { return false }
+        if companyName != job.companyName { return true }
+        if position != job.position { return true }
+        if companyLogoImageData != job.companyLogoImageData { return true }
+        return false
+    }
+
+    private var typeChanged: Bool {
+        !isNewApplication && type != job?.jobType
+    }
+
+    private var statusChanged: Bool {
+        !isNewApplication && status != job?.status
+    }
+
+    private var seasonChanged: Bool {
+        !isNewApplication && season != job?.season
+    }
+
+    private var dateOrReminderChanged: Bool {
+        guard !isNewApplication, let job else { return false }
+        return dateApplied != job.dateApplied || reminderEnabled != job.reminderEnabled
+    }
+
+    private var jobURLChanged: Bool {
+        guard !isNewApplication else { return false }
+        return jobURL.trimmingCharacters(in: .whitespaces) != (job?.jobURL ?? "")
+    }
+
+    private var compensationChanged: Bool {
+        guard !isNewApplication, let job else { return false }
+        if compensationKind != job.compensationKind { return true }
+        if parsedCompensationAmount != job.compensationAmount { return true }
+        if compensationCurrency != (job.compensationCurrency ?? .usd) { return true }
+        if salaryPeriod != (job.salaryPeriod ?? .yearly) { return true }
+        return false
+    }
+
+    private var resumeChanged: Bool {
+        !isNewApplication && resumeID != job?.resumeID
+    }
+
+    private var notesChanged: Bool {
+        !isNewApplication && jobNotes != (job?.jobNotes ?? "")
+    }
+
+    private var interviewKitChanged: Bool {
+        guard !isNewApplication, let job else { return false }
+        return companyResearch != (job.companyResearch ?? "")
+            || interviewNotes != (job.interviewNotes ?? "")
+    }
+
+    private var dateAppliedOptionalBinding: Binding<Date?> {
+        Binding(
+            get: { dateApplied as Date? },
+            set: { dateApplied = $0 ?? Date() }
+        )
+    }
+
+    private var shakingSection: FormSection? {
+        shakeMissingFields ? firstMissingSection : nil
+    }
+
+    // MARK: - Sections
+
+    @ViewBuilder
+    private var infoSectionView: some View {
+        JobInfoSection(
+            companyName: $companyName,
+            companyLogoImageData: $companyLogoImageData,
+            position: $position,
+            pickerItem: $pickerItem
+        )
+        .id(FormSection.info)
+        .modifier(ShakeEffect(animatableData: shakingSection == .info ? 1 : 0))
+        .changedHighlight(infoChanged)
+        .opacity(contentAppeared ? 1 : 0)
+        .offset(y: contentAppeared ? 0 : 12)
+        .animation(.appSmooth.delay(0.00), value: contentAppeared)
+    }
+
+    @ViewBuilder
+    private var typeSectionView: some View {
+        TypePickerSection(type: $type)
+            .id(FormSection.type)
+            .modifier(ShakeEffect(animatableData: shakingSection == .type ? 1 : 0))
+            .changedHighlight(typeChanged)
+            .opacity(contentAppeared ? 1 : 0)
+            .offset(y: contentAppeared ? 0 : 12)
+            .animation(.appSmooth.delay(0.03), value: contentAppeared)
+    }
+
+    @ViewBuilder
+    private var statusSectionView: some View {
+        StatusPickerSection(status: $status)
+            .id(FormSection.status)
+            .modifier(ShakeEffect(animatableData: shakingSection == .status ? 1 : 0))
+            .changedHighlight(statusChanged)
+            .opacity(contentAppeared ? 1 : 0)
+            .offset(y: contentAppeared ? 0 : 12)
+            .animation(.appSmooth.delay(0.06), value: contentAppeared)
+    }
+
+    @ViewBuilder
+    private var seasonSectionView: some View {
+        SeasonPickerSection(season: $season)
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)),
+                removal: .opacity
+            ))
+            .changedHighlight(seasonChanged)
+            .opacity(contentAppeared ? 1 : 0)
+            .offset(y: contentAppeared ? 0 : 12)
+            .animation(.appSmooth.delay(0.09), value: contentAppeared)
+    }
+
+    @ViewBuilder
+    private var dateAppliedSectionView: some View {
+        DateAppliedSection(
+            dateApplied: dateAppliedOptionalBinding,
+            status: status,
+            reminderEnabled: $reminderEnabled,
+            reminderTime: $reminderTime
+        )
+        .changedHighlight(dateOrReminderChanged)
+        .opacity(contentAppeared ? 1 : 0)
+        .offset(y: contentAppeared ? 0 : 12)
+        .animation(.appSmooth.delay(0.12), value: contentAppeared)
+    }
+
+    @ViewBuilder
+    private var jobLinkSectionView: some View {
+        JobLinkSection(jobURL: $jobURL)
+            .changedHighlight(jobURLChanged)
+            .opacity(contentAppeared ? 1 : 0)
+            .offset(y: contentAppeared ? 0 : 12)
+            .animation(.appSmooth.delay(0.15), value: contentAppeared)
+    }
+
+    @ViewBuilder
+    private var compensationSectionView: some View {
+        CompensationSection(
+            kind: $compensationKind,
+            amount: $compensationAmount,
+            currency: $compensationCurrency,
+            salaryPeriod: $salaryPeriod
+        )
+        .changedHighlight(compensationChanged)
+        .opacity(contentAppeared ? 1 : 0)
+        .offset(y: contentAppeared ? 0 : 12)
+        .animation(.appSmooth.delay(0.18), value: contentAppeared)
+    }
+
+    @ViewBuilder
+    private var csvCycleSectionView: some View {
+        csvCycleCard
+            .opacity(contentAppeared ? 1 : 0)
+            .offset(y: contentAppeared ? 0 : 12)
+            .animation(.appSmooth.delay(0.21), value: contentAppeared)
+    }
+
+    @ViewBuilder
+    private var resumeSectionView: some View {
+        ResumeSection(
+            resumes: orderedResumes,
+            attachedResume: attachedResume,
+            legacyResumeFileName: resumeID == nil ? resumeFileName : nil,
+            attachedResumeWasDeleted: attachedResumeWasDeleted,
+            onSelectResume: attachResume,
+            onViewAll: { isShowingResumeLibrary = true },
+            onPick: { isShowingDocumentPicker = true },
+            onClear: { isConfirmingResumeClear = true }
+        )
+        .changedHighlight(resumeChanged)
+        .opacity(contentAppeared ? 1 : 0)
+        .offset(y: contentAppeared ? 0 : 12)
+        .animation(.appSmooth.delay(0.24), value: contentAppeared)
+    }
+
+    @ViewBuilder
+    private var notesSectionView: some View {
+        JobNotesSection(jobNotes: $jobNotes)
+            .changedHighlight(notesChanged)
+            .opacity(contentAppeared ? 1 : 0)
+            .offset(y: contentAppeared ? 0 : 12)
+            .animation(.appSmooth.delay(0.27), value: contentAppeared)
+    }
+
+    @ViewBuilder
+    private var interviewKitSectionView: some View {
+        InterviewKitSection(
+            companyResearch: $companyResearch,
+            interviewNotes: $interviewNotes
+        )
+        .transition(.asymmetric(
+            insertion: .opacity.combined(with: .move(edge: .bottom)).combined(with: .scale(scale: 0.96, anchor: .top)),
+            removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .top))
+        ))
+        .changedHighlight(interviewKitChanged)
+        .opacity(contentAppeared ? 1 : 0)
+        .offset(y: contentAppeared ? 0 : 12)
+        .animation(.appSmooth.delay(0.27), value: contentAppeared)
+    }
+
+    @ViewBuilder
+    private var formStack: some View {
+        VStack(spacing: 16) {
+            infoSectionView
+            typeSectionView
+            statusSectionView
+
+            if isSeasonAllowed {
+                seasonSectionView
+            }
+
+            dateAppliedSectionView
+
+            if !isCSVMode {
+                jobLinkSectionView
+            }
+
+            compensationSectionView
+
+            if isCSVMode {
+                csvCycleSectionView
+            }
+
+            if !isCSVMode {
+                resumeSectionView
+            }
+
+            notesSectionView
+
+            if isInterviewStage && !isCSVMode {
+                interviewKitSectionView
+            }
+        }
+        .onChange(of: type) { _, _ in
+            if !isSeasonAllowed { season = nil }
+        }
+        .animation(.appSmooth, value: isSeasonAllowed)
+        .animation(.appSmooth, value: isInterviewStage)
+        .onChange(of: companyName)          { _, _ in syncToCSVRow() }
+        .onChange(of: position)             { _, _ in syncToCSVRow() }
+        .onChange(of: companyLogoImageData) { _, _ in syncToCSVRow() }
+        .onChange(of: type)                 { _, _ in syncToCSVRow() }
+        .onChange(of: status)               { _, _ in syncToCSVRow() }
+        .onChange(of: season)               { _, _ in syncToCSVRow() }
+        .onChange(of: dateApplied)          { _, _ in syncToCSVRow() }
+        .onChange(of: jobNotes)             { _, _ in syncToCSVRow() }
+        .onChange(of: compensationKind)     { _, _ in syncToCSVRow() }
+        .onChange(of: compensationAmount)   { _, _ in syncToCSVRow() }
+        .onChange(of: compensationCurrency) { _, _ in syncToCSVRow() }
+        .onChange(of: salaryPeriod)         { _, _ in syncToCSVRow() }
+        .onChange(of: csvCycleID)           { _, _ in syncToCSVRow() }
+    }
+
     // MARK: - Body
 
     var body: some View {
-        let shakingSection: FormSection? = shakeMissingFields ? firstMissingSection : nil
-
         ZStack {
             AmbientBackground()
 
             ScrollViewReader { proxy in
                 ScrollView {
-                    VStack(spacing: 16) {
-                        JobInfoSection(
-                            companyName: $companyName,
-                            companyLogoImageData: $companyLogoImageData,
-                            position: $position,
-                            pickerItem: $pickerItem
-                        )
-                        .id(FormSection.info)
-                        .modifier(ShakeEffect(animatableData: shakingSection == .info ? 1 : 0))
-                        .changedHighlight(!isNewApplication && (companyName != job?.companyName || position != job?.position || companyLogoImageData != job?.companyLogoImageData))
-                        .opacity(contentAppeared ? 1 : 0)
-                        .offset(y: contentAppeared ? 0 : 12)
-                        .animation(.appSmooth.delay(0.00), value: contentAppeared)
-
-                        TypePickerSection(type: $type)
-                            .id(FormSection.type)
-                            .modifier(ShakeEffect(animatableData: shakingSection == .type ? 1 : 0))
-                            .changedHighlight(!isNewApplication && type != job?.jobType)
-                            .opacity(contentAppeared ? 1 : 0)
-                            .offset(y: contentAppeared ? 0 : 12)
-                            .animation(.appSmooth.delay(0.03), value: contentAppeared)
-
-                        StatusPickerSection(status: $status)
-                            .id(FormSection.status)
-                            .modifier(ShakeEffect(animatableData: shakingSection == .status ? 1 : 0))
-                            .changedHighlight(!isNewApplication && status != job?.status)
-                            .opacity(contentAppeared ? 1 : 0)
-                            .offset(y: contentAppeared ? 0 : 12)
-                            .animation(.appSmooth.delay(0.06), value: contentAppeared)
-
-                        if isSeasonAllowed {
-                            SeasonPickerSection(season: $season)
-                                .transition(.asymmetric(
-                                    insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)),
-                                    removal: .opacity
-                                ))
-                                .changedHighlight(!isNewApplication && season != job?.season)
-                                .opacity(contentAppeared ? 1 : 0)
-                                .offset(y: contentAppeared ? 0 : 12)
-                                .animation(.appSmooth.delay(0.09), value: contentAppeared)
-                        }
-                        DateAppliedSection(
-                            dateApplied: Binding(
-                                get: { dateApplied as Date? },
-                                set: { dateApplied = $0 ?? Date() }
-                            ),
-                            status: status,
-                            reminderEnabled: $reminderEnabled,
-                            reminderTime: $reminderTime
-                        )
-                        .changedHighlight(!isNewApplication && (dateApplied != job?.dateApplied || reminderEnabled != job?.reminderEnabled))
-                        .opacity(contentAppeared ? 1 : 0)
-                        .offset(y: contentAppeared ? 0 : 12)
-                        .animation(.appSmooth.delay(0.12), value: contentAppeared)
-
-                        JobLinkSection(jobURL: $jobURL)
-                            .changedHighlight(!isNewApplication && jobURL.trimmingCharacters(in: .whitespaces) != (job?.jobURL ?? ""))
-                            .opacity(contentAppeared ? 1 : 0)
-                            .offset(y: contentAppeared ? 0 : 12)
-                            .animation(.appSmooth.delay(0.15), value: contentAppeared)
-
-                        CompensationSection(
-                            kind: $compensationKind,
-                            amount: $compensationAmount,
-                            currency: $compensationCurrency,
-                            salaryPeriod: $salaryPeriod
-                        )
-                        .changedHighlight(!isNewApplication && (compensationKind != job?.compensationKind || parsedCompensationAmount != job?.compensationAmount || compensationCurrency != (job?.compensationCurrency ?? .usd) || salaryPeriod != (job?.salaryPeriod ?? .yearly)))
-                        .opacity(contentAppeared ? 1 : 0)
-                        .offset(y: contentAppeared ? 0 : 12)
-                        .animation(.appSmooth.delay(0.18), value: contentAppeared)
-
-                        ResumeSection(
-                            resumes: orderedResumes,
-                            attachedResume: attachedResume,
-                            legacyResumeFileName: resumeID == nil ? resumeFileName : nil,
-                            attachedResumeWasDeleted: attachedResumeWasDeleted,
-                            onSelectResume: attachResume,
-                            onViewAll: { isShowingResumeLibrary = true },
-                            onPick: { isShowingDocumentPicker = true },
-                            onClear: { isConfirmingResumeClear = true }
-                        )
-                        .changedHighlight(!isNewApplication && (resumeID != job?.resumeID))
-                        .opacity(contentAppeared ? 1 : 0)
-                        .offset(y: contentAppeared ? 0 : 12)
-                        .animation(.appSmooth.delay(0.21), value: contentAppeared)
-
-                        JobNotesSection(jobNotes: $jobNotes)
-                            .changedHighlight(!isNewApplication && jobNotes != (job?.jobNotes ?? ""))
-                            .opacity(contentAppeared ? 1 : 0)
-                            .offset(y: contentAppeared ? 0 : 12)
-                            .animation(.appSmooth.delay(0.24), value: contentAppeared)
-
-                        if isInterviewStage {
-                            InterviewKitSection(
-                                companyResearch: $companyResearch,
-                                interviewNotes: $interviewNotes
-                            )
-                            .transition(.asymmetric(
-                                insertion: .opacity.combined(with: .move(edge: .bottom)).combined(with: .scale(scale: 0.96, anchor: .top)),
-                                removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .top))
-                            ))
-                            .changedHighlight(!isNewApplication && (companyResearch != (job?.companyResearch ?? "") || interviewNotes != (job?.interviewNotes ?? "")))
-                            .opacity(contentAppeared ? 1 : 0)
-                            .offset(y: contentAppeared ? 0 : 12)
-                            .animation(.appSmooth.delay(0.27), value: contentAppeared)
-                        }
-                    }
-                    .onChange(of: type) { _, _ in
-                        if !isSeasonAllowed { season = nil }
-                    }
-                    .animation(.appSmooth, value: isSeasonAllowed)
-                    .animation(.appSmooth, value: isInterviewStage)
-                    .padding([.top, .horizontal])
-                    .padding(.bottom, 100)
+                    formStack
+                        .padding([.top, .horizontal])
+                        .padding(.bottom, 100)
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .onAppear { contentAppeared = true }
