@@ -181,7 +181,7 @@ struct ApplicationView: View {
 
                     ForEach(Array(filteredAndSorted.enumerated()), id: \.element.id) { index, job in
                         JobCardSwipeRow(job: job, isEditMode: isEditMode, onDelete: { scheduleDelete(job) })
-                            .listRowInsets(EdgeInsets(top: 6, leading: isEditMode ? 4 : 20, bottom: 6, trailing: 20))
+                            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 20))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
                             .visualEffect { content, proxy in
@@ -193,8 +193,8 @@ struct ApplicationView: View {
                                 insertion: .move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.95)),
                                 removal: .opacity.combined(with: .scale(scale: 0.9))
                             ))
-                            .animation(.appSmooth.delay(Double(min(index, 6)) * 0.05), value: filteredAndSorted.count)
-                            .animation(.appSmooth.delay(Double(min(index, 6)) * 0.05), value: appState.dashboardHasAppeared)
+                            .animation(.appSmooth.delay(Double(min(index, 6)) * 0.03), value: filteredAndSorted.count)
+                            .animation(.appSmooth.delay(Double(min(index, 6)) * 0.03), value: appState.dashboardHasAppeared)
                     }
                 }
 
@@ -206,7 +206,7 @@ struct ApplicationView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 40)
-                .padding(.bottom, 60)
+                .padding(.bottom, 100)
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)

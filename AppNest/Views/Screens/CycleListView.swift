@@ -61,7 +61,7 @@ struct CycleListView: View {
                     }
 
                     Color.clear
-                        .frame(height: 20)
+                        .frame(height: 90)
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                 }

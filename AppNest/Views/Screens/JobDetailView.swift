@@ -238,7 +238,7 @@ struct JobDetailView: View {
                             .changedHighlight(!isNewApplication && type != job?.jobType)
                             .opacity(contentAppeared ? 1 : 0)
                             .offset(y: contentAppeared ? 0 : 12)
-                            .animation(.appSmooth.delay(0.05), value: contentAppeared)
+                            .animation(.appSmooth.delay(0.03), value: contentAppeared)
 
                         StatusPickerSection(status: $status)
                             .id(FormSection.status)
@@ -246,7 +246,7 @@ struct JobDetailView: View {
                             .changedHighlight(!isNewApplication && status != job?.status)
                             .opacity(contentAppeared ? 1 : 0)
                             .offset(y: contentAppeared ? 0 : 12)
-                            .animation(.appSmooth.delay(0.10), value: contentAppeared)
+                            .animation(.appSmooth.delay(0.06), value: contentAppeared)
 
                         if isSeasonAllowed {
                             SeasonPickerSection(season: $season)
@@ -257,7 +257,7 @@ struct JobDetailView: View {
                                 .changedHighlight(!isNewApplication && season != job?.season)
                                 .opacity(contentAppeared ? 1 : 0)
                                 .offset(y: contentAppeared ? 0 : 12)
-                                .animation(.appSmooth.delay(0.15), value: contentAppeared)
+                                .animation(.appSmooth.delay(0.09), value: contentAppeared)
                         }
                         DateAppliedSection(
                             dateApplied: Binding(
@@ -271,13 +271,13 @@ struct JobDetailView: View {
                         .changedHighlight(!isNewApplication && (dateApplied != job?.dateApplied || reminderEnabled != job?.reminderEnabled))
                         .opacity(contentAppeared ? 1 : 0)
                         .offset(y: contentAppeared ? 0 : 12)
-                        .animation(.appSmooth.delay(0.20), value: contentAppeared)
+                        .animation(.appSmooth.delay(0.12), value: contentAppeared)
 
                         JobLinkSection(jobURL: $jobURL)
                             .changedHighlight(!isNewApplication && jobURL.trimmingCharacters(in: .whitespaces) != (job?.jobURL ?? ""))
                             .opacity(contentAppeared ? 1 : 0)
                             .offset(y: contentAppeared ? 0 : 12)
-                            .animation(.appSmooth.delay(0.25), value: contentAppeared)
+                            .animation(.appSmooth.delay(0.15), value: contentAppeared)
 
                         CompensationSection(
                             kind: $compensationKind,
@@ -288,7 +288,7 @@ struct JobDetailView: View {
                         .changedHighlight(!isNewApplication && (compensationKind != job?.compensationKind || parsedCompensationAmount != job?.compensationAmount || compensationCurrency != (job?.compensationCurrency ?? .usd) || salaryPeriod != (job?.salaryPeriod ?? .yearly)))
                         .opacity(contentAppeared ? 1 : 0)
                         .offset(y: contentAppeared ? 0 : 12)
-                        .animation(.appSmooth.delay(0.30), value: contentAppeared)
+                        .animation(.appSmooth.delay(0.18), value: contentAppeared)
 
                         ResumeSection(
                             resumes: orderedResumes,
@@ -303,13 +303,13 @@ struct JobDetailView: View {
                         .changedHighlight(!isNewApplication && (resumeID != job?.resumeID))
                         .opacity(contentAppeared ? 1 : 0)
                         .offset(y: contentAppeared ? 0 : 12)
-                        .animation(.appSmooth.delay(0.35), value: contentAppeared)
+                        .animation(.appSmooth.delay(0.21), value: contentAppeared)
 
                         JobNotesSection(jobNotes: $jobNotes)
                             .changedHighlight(!isNewApplication && jobNotes != (job?.jobNotes ?? ""))
                             .opacity(contentAppeared ? 1 : 0)
                             .offset(y: contentAppeared ? 0 : 12)
-                            .animation(.appSmooth.delay(0.40), value: contentAppeared)
+                            .animation(.appSmooth.delay(0.24), value: contentAppeared)
 
                         if isInterviewStage {
                             InterviewKitSection(
@@ -323,7 +323,7 @@ struct JobDetailView: View {
                             .changedHighlight(!isNewApplication && (companyResearch != (job?.companyResearch ?? "") || interviewNotes != (job?.interviewNotes ?? "")))
                             .opacity(contentAppeared ? 1 : 0)
                             .offset(y: contentAppeared ? 0 : 12)
-                            .animation(.appSmooth.delay(0.45), value: contentAppeared)
+                            .animation(.appSmooth.delay(0.27), value: contentAppeared)
                         }
                     }
                     .onChange(of: type) { _, _ in
@@ -331,7 +331,8 @@ struct JobDetailView: View {
                     }
                     .animation(.appSmooth, value: isSeasonAllowed)
                     .animation(.appSmooth, value: isInterviewStage)
-                    .padding()
+                    .padding([.top, .horizontal])
+                    .padding(.bottom, 100)
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .onAppear { contentAppeared = true }
