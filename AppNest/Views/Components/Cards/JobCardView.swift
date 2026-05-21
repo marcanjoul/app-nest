@@ -32,7 +32,8 @@ struct JobCardView: View {
     @State private var isFetchingLogo = false
 
     var body: some View {
-        HStack(alignment: .center, spacing: 16) {
+        NavigationLink(destination: JobDetailView(job: job)) {
+            HStack(alignment: .center, spacing: 16) {
             // Company avatar — image or letter fallback
             Group {
                 #if canImport(UIKit)
@@ -144,6 +145,7 @@ struct JobCardView: View {
                 }
             } else {
                 isFetchingLogo = false
+            }
             }
         }
     }
