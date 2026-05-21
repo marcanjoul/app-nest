@@ -81,11 +81,13 @@ struct StatChip: View {
 
     private var label: String {
         switch status {
-        case .toApply:   return "To Apply"
-        case .applied:   return "Applied"
-        case .interview: return "Interview"
-        case .offer:     return "Offers"
-        case .rejected:  return "Rejected"
+        case .toApply:    return "To Apply"
+        case .applied:    return "Applied"
+        case .interview:  return "Interview"
+        case .offer:      return "Offers"
+        case .rejected:   return "Rejected"
+        case .ghosted:    return "Ghosted"
+        case .jobRemoved: return "Removed"
         }
     }
 

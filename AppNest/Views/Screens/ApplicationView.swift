@@ -755,7 +755,7 @@ struct ApplicationView: View {
     }
 
     private var statsSection: some View {
-        let filterStatuses: [ApplicationStatus] = [.toApply, .applied, .interview, .offer, .rejected]
+        let filterStatuses: [ApplicationStatus] = [.toApply, .applied, .interview, .offer, .rejected, .ghosted, .jobRemoved]
         
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {

@@ -71,6 +71,12 @@ enum Theme {
         case .rejected:
             let c = Color(red: 0.93, green: 0.33, blue: 0.40)
             return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "xmark.circle.fill")
+        case .ghosted:
+            let c = Color(red: 0.52, green: 0.52, blue: 0.54)
+            return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "moon.zzz.fill")
+        case .jobRemoved:
+            let c = Color(red: 0.88, green: 0.52, blue: 0.20)
+            return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "minus.circle.fill")
         }
     }
 
@@ -93,6 +99,10 @@ enum Theme {
             return TagStyle(background: Color(red: 0.99, green: 0.92, blue: 0.92), foreground: Color(red: 0.47, green: 0.12, blue: 0.12))
         case .toApply:
             return TagStyle(background: Color(red: 0.95, green: 0.94, blue: 0.91), foreground: Color(red: 0.37, green: 0.37, blue: 0.35))
+        case .ghosted:
+            return TagStyle(background: Color(red: 0.93, green: 0.93, blue: 0.93), foreground: Color(red: 0.30, green: 0.30, blue: 0.32))
+        case .jobRemoved:
+            return TagStyle(background: Color(red: 0.99, green: 0.93, blue: 0.87), foreground: Color(red: 0.50, green: 0.25, blue: 0.04))
         }
     }
 

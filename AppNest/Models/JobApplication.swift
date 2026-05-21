@@ -87,6 +87,12 @@ enum ApplicationStatus: String, CaseIterable, Codable {
     
     /// Application was rejected or position filled
     case rejected = "Rejected"
+
+    /// Company stopped responding (no reply after follow-ups)
+    case ghosted = "Ghosted"
+
+    /// Job listing was removed before or after applying
+    case jobRemoved = "Job Removed"
 }
 
 // MARK: - Model

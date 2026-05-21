@@ -1,4 +1,5 @@
 import Foundation
+import NaturalLanguage
 
 // MARK: - Import Row
 
@@ -33,8 +34,22 @@ struct CSVImportRow: Identifiable {
 
 enum CSVImporter {
 
-    // Aliases are matched against lowercased, trimmed column headers.
-    // Earlier entries win for a given column — order matters for ambiguous overlaps.
+    // Semantic anchor phrases used by NLEmbedding for fuzzy header matching.
+    // Each field lists diverse natural-language variants — the closer a CSV header
+    // is to any anchor (cosine distance), the more confidently it maps to that field.
+    private static let fieldSemanticAnchors: [(field: String, anchors: [String])] = [
+        ("company",      ["company name", "employer", "organization", "company", "firm"]),
+        ("position",     ["position title", "job title", "role", "job role", "opening", "title"]),
+        ("type",         ["job type", "employment type", "work type", "contract type", "position type"]),
+        ("status",       ["application status", "status", "stage", "outcome", "hiring stage"]),
+        ("season",       ["season", "term", "semester", "cohort", "cycle term"]),
+        ("date",         ["application date", "date applied", "applied date", "submission date", "apply date"]),
+        ("compensation", ["salary", "compensation", "pay rate", "stipend", "base pay", "wage"]),
+        ("currency",     ["currency", "currency code", "pay currency"]),
+        ("notes",        ["notes", "comments", "additional notes", "remarks", "description"]),
+    ]
+
+    // Kept as a fallback for when the NLEmbedding model is unavailable on-device.
     private static let fieldAliases: [(field: String, aliases: [String])] = [
         ("company",      ["company name", "company", "employer", "organization",
                           "company/organization", "firm", "org"]),
@@ -152,6 +167,51 @@ enum CSVImporter {
     // MARK: - Column mapping
 
     private static func buildColumnMap(from headers: [String]) -> [String: Int] {
+        if let map = buildColumnMapWithEmbedding(from: headers), !map.isEmpty {
+            return map
+        }
+        return buildColumnMapWithAliases(from: headers)
+    }
+
+    // NLP-based: uses NLEmbedding.sentenceEmbedding to semantically match each header
+    // against anchor phrases. Greedy assignment picks lowest-distance (field, column) pairs.
+    private static func buildColumnMapWithEmbedding(from headers: [String]) -> [String: Int]? {
+        guard let embedding = NLEmbedding.sentenceEmbedding(for: .english) else { return nil }
+
+        struct Candidate { let idx: Int; let field: String; let distance: NLDistance }
+        var candidates: [Candidate] = []
+
+        for (idx, header) in headers.enumerated() {
+            let normalized = header.lowercased().trimmingCharacters(in: .whitespaces)
+            for (field, anchors) in fieldSemanticAnchors {
+                let best = anchors
+                    .map { embedding.distance(between: normalized, and: $0) }
+                    .min() ?? 1.0
+                candidates.append(Candidate(idx: idx, field: field, distance: best))
+            }
+        }
+
+        // Greedy: assign the most confident (lowest distance) pairs first,
+        // ensuring each column index and each field is used at most once.
+        let sorted = candidates.sorted { $0.distance < $1.distance }
+        var map: [String: Int] = [:]
+        var usedIdx   = Set<Int>()
+        var usedField = Set<String>()
+
+        for c in sorted {
+            guard !usedIdx.contains(c.idx),
+                  !usedField.contains(c.field),
+                  c.distance < 0.65 else { continue }
+            map[c.field] = c.idx
+            usedIdx.insert(c.idx)
+            usedField.insert(c.field)
+        }
+
+        return map
+    }
+
+    // Alias-based fallback: exact-match or substring against the hardcoded alias table.
+    private static func buildColumnMapWithAliases(from headers: [String]) -> [String: Int] {
         var map: [String: Int] = [:]
         for (idx, header) in headers.enumerated() {
             for (field, aliases) in fieldAliases {
@@ -213,6 +273,8 @@ enum CSVImporter {
         if s.contains("interview")                                                  { return .interview }
         if s.contains("applied") || s.contains("submitted") || s.contains("pending") { return .applied }
         if s.contains("apply")  || s.contains("to do") || s.contains("todo") || s.contains("plan") { return .toApply }
+        if s.contains("ghost")                                                      { return .ghosted }
+        if s.contains("removed") || s.contains("expired") || s.contains("closed") || s.contains("filled") { return .jobRemoved }
         return nil
     }
 

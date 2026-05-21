@@ -197,21 +197,25 @@ extension ApplicationType {
 extension ApplicationStatus {
     var color: Color {
         switch self {
-        case .toApply:   return Color(red: 0.58, green: 0.62, blue: 0.82)
-        case .applied:   return Color(red: 0.35, green: 0.65, blue: 0.96)
-        case .interview: return Color(red: 0.96, green: 0.73, blue: 0.28)
-        case .offer:     return Color(red: 0.30, green: 0.80, blue: 0.45)
-        case .rejected:  return Color(red: 0.93, green: 0.38, blue: 0.44)
+        case .toApply:    return Color(red: 0.58, green: 0.62, blue: 0.82)
+        case .applied:    return Color(red: 0.35, green: 0.65, blue: 0.96)
+        case .interview:  return Color(red: 0.96, green: 0.73, blue: 0.28)
+        case .offer:      return Color(red: 0.30, green: 0.80, blue: 0.45)
+        case .rejected:   return Color(red: 0.93, green: 0.38, blue: 0.44)
+        case .ghosted:    return Color(red: 0.52, green: 0.52, blue: 0.54)
+        case .jobRemoved: return Color(red: 0.88, green: 0.52, blue: 0.20)
         }
     }
 
     var iconName: String {
         switch self {
-        case .toApply:   return "plus.circle.fill"
-        case .applied:   return "paperplane.fill"
-        case .interview: return "person.2.fill"
-        case .offer:     return "checkmark.seal.fill"
-        case .rejected:  return "xmark.circle.fill"
+        case .toApply:    return "plus.circle.fill"
+        case .applied:    return "paperplane.fill"
+        case .interview:  return "person.2.fill"
+        case .offer:      return "checkmark.seal.fill"
+        case .rejected:   return "xmark.circle.fill"
+        case .ghosted:    return "moon.zzz.fill"
+        case .jobRemoved: return "minus.circle.fill"
         }
     }
 }
