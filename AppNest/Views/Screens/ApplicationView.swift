@@ -753,9 +753,9 @@ struct ApplicationView: View {
                 .padding(.top, 16)
 
                 ForEach(filteredAndSorted, id: \.id) { job in
-                    JobCardView(job: job, isEditMode: isEditMode)
-                    .padding(.horizontal, 8)
-                    .padding(.leading, isEditMode ? 36 : 0)
+                    JobCardView(job: job)
+                        .padding(.horizontal, 8)
+                        .padding(.leading, isEditMode ? 36 : 0)
                 }
 
                 Spacer(minLength: 80)
