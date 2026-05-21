@@ -11,6 +11,7 @@ struct JobCardSwipeRow: View {
     @Environment(AppState.self) private var appState
 
     @State private var isSwiping = false
+    @State private var showDeleteConfirmation = false
 
     private var pipeline: [SwipeAction] {
         let all: [ApplicationStatus] = [.toApply, .applied, .interview, .offer]
@@ -37,7 +38,7 @@ struct JobCardSwipeRow: View {
                 title: "Delete",
                 icon: "trash.fill",
                 color: Theme.destructive,
-                action: onDelete
+                action: { showDeleteConfirmation = true }
             )
         ]
     }
@@ -78,5 +79,18 @@ struct JobCardSwipeRow: View {
                     }
             }
         }
+        .confirmationDialog(
+            "Delete Job Application",
+            isPresented: $showDeleteConfirmation,
+            actions: {
+                Button("Delete", role: .destructive) {
+                    onDelete()
+                }
+                Button("Cancel", role: .cancel) { }
+            },
+            message: {
+                Text("Are you sure you want to delete this job application? This action cannot be undone.")
+            }
+        )
     }
 }
