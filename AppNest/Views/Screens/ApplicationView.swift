@@ -866,13 +866,6 @@ struct ApplicationView: View {
                 }
             }
 
-            if !applications.isEmpty {
-                HStack {
-                    Spacer()
-                    headerActionButtons
-                }
-            }
-
             // Type grid
             if isTypePickerExpanded {
                 LazyVGrid(
@@ -946,6 +939,13 @@ struct ApplicationView: View {
                     }
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.97, anchor: .top)))
+            }
+
+            if !applications.isEmpty {
+                HStack {
+                    Spacer()
+                    headerActionButtons
+                }
             }
         }
     }
