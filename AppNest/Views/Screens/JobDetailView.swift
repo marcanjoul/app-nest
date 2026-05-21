@@ -153,21 +153,39 @@ struct JobDetailView: View {
         if hasChanges || isNewApplication || !missingFields.isEmpty {
             VStack(spacing: 0) {
                 Divider().opacity(0.4)
-                HStack {
+                HStack(spacing: 10) {
+                    if !isNewApplication {
+                        Button {
+                            resetToOriginal()
+                        } label: {
+                            Text("Cancel")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(Theme.textPrimary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 13)
+                                .background {
+                                    Capsule()
+                                        .fill(Color.primary.opacity(0.07))
+                                        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.10), lineWidth: 1))
+                                }
+                        }
+                        .buttonStyle(PressScaleButtonStyle())
+                    }
+
                     Button {
                         if !missingFields.isEmpty {
                             handleInvalidSaveTap()
-                        } else if hasChanges {
+                        } else if hasChanges || isNewApplication {
                             AppHaptics.shared.medium()
                             save()
                             dismiss()
                         }
                     } label: {
                         Text(saveButtonLabel)
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 15)
+                            .padding(.vertical, 13)
                             .background {
                                 Capsule()
                                     .fill(isSaveDisabled ? Color.secondary.opacity(0.3) : Color.accentColor)
@@ -177,12 +195,37 @@ struct JobDetailView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
-                .padding(.bottom, 110)
+                .padding(.bottom, 100)
                 .background(Color(UIColor.systemBackground))
             }
             .transition(.move(edge: .bottom).combined(with: .opacity))
             .animation(.appSmooth, value: isSaveDisabled)
         }
+    }
+
+    private func resetToOriginal() {
+        guard let job else { return }
+        companyName          = job.companyName
+        companyLogoImageData = job.companyLogoImageData
+        position             = job.position
+        type                 = job.jobType
+        status               = job.status
+        season               = job.season
+        dateApplied          = job.dateApplied
+        jobURL               = job.jobURL ?? ""
+        jobNotes             = job.jobNotes ?? ""
+        resumeFileName       = job.resumeFileName
+        resumeID             = job.resumeID
+        _pendingResumeBookmark = nil
+        compensationKind     = job.compensationKind
+        compensationAmount   = job.compensationAmount.map { Self.formatAmount($0) } ?? ""
+        compensationCurrency = job.compensationCurrency ?? .usd
+        salaryPeriod         = job.salaryPeriod ?? .yearly
+        reminderEnabled      = job.reminderEnabled
+        reminderTime         = job.reminderTime ?? Self.defaultReminderTime
+        companyResearch      = job.companyResearch ?? ""
+        interviewNotes       = job.interviewNotes ?? ""
+        AppHaptics.shared.light()
     }
 
     private var firstMissingSection: FormSection? {

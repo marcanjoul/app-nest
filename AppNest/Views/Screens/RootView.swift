@@ -44,7 +44,7 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             withAnimation(.appCrisp) { isKeyboardVisible = false }
         }
-        .tint(.accentColor)
+        .tint(Theme.accent)
         .scaleEffect(appState.isPresentingSheet ? 0.95 : 1.0)
         .blur(radius: appState.isPresentingSheet ? 2 : 0)
         .overlay {

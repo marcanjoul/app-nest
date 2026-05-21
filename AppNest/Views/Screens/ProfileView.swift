@@ -17,7 +17,6 @@ struct ProfileView: View {
     @AppStorage(AppStorageKeys.displayName)    private var profileDisplayName: String = ""
     @AppStorage(AppStorageKeys.avatarData)     private var profileAvatarDataBase64: String = ""
     @AppStorage(AppStorageKeys.hapticsEnabled) private var hapticsEnabled: Bool = true
-    @AppStorage(AppStorageKeys.hideRejected)   private var hideRejected: Bool = false
 
     @State private var avatarSelection: PhotosPickerItem?
     @State private var isShowingDocumentPicker = false
@@ -487,14 +486,6 @@ struct ProfileView: View {
             VStack(spacing: 0) {
                 Toggle(isOn: $hapticsEnabled) {
                     Label("Haptic Feedback", systemImage: "waveform")
-                        .font(.system(size: 15, weight: .medium))
-                }
-                .padding(.vertical, 12)
-
-                Divider().opacity(0.4)
-
-                Toggle(isOn: $hideRejected) {
-                    Label("Hide Rejected", systemImage: "xmark.circle")
                         .font(.system(size: 15, weight: .medium))
                 }
                 .padding(.vertical, 12)

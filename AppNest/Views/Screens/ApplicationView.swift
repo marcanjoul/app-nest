@@ -33,8 +33,6 @@ struct ApplicationView: View {
     @State private var isEditMode = false
     @State private var isConfirmingBulkDelete = false
 
-    @AppStorage(AppStorageKeys.hideRejected) private var hideRejected: Bool = false
-
     @State private var isShowingEmailParseSheet = false
 
     // Import / Export
@@ -69,10 +67,6 @@ struct ApplicationView: View {
     private var filteredAndSorted: [JobApplication] {
         var result = searchFiltered
 
-        if hideRejected {
-            result = result.filter { $0.status != .rejected }
-        }
-
         if !selectedStatuses.isEmpty {
             result = result.filter { job in
                 job.status.map { selectedStatuses.contains($0) } ?? false
@@ -94,7 +88,8 @@ struct ApplicationView: View {
             // Adaptive ambient gradient background
             AmbientBackground()
 
-            List(selection: $selectedJobIDs) {
+            ScrollViewReader { proxy in
+            List {
                 // Header
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .center) {
@@ -125,7 +120,8 @@ struct ApplicationView: View {
                 .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
-                .selectionDisabled() // Header should not be selectable
+                .selectionDisabled()
+                .id("appListTop")
 
                 // Search + Filter
                 searchFilterRow
@@ -180,7 +176,22 @@ struct ApplicationView: View {
                     }
 
                     ForEach(Array(filteredAndSorted.enumerated()), id: \.element.id) { index, job in
-                        JobCardSwipeRow(job: job, isEditMode: isEditMode, onDelete: { scheduleDelete(job) })
+                        JobCardSwipeRow(
+                                job: job,
+                                isEditMode: isEditMode,
+                                isSelected: selectedJobIDs.contains(job.id),
+                                onDelete: { scheduleDelete(job) },
+                                onToggleSelection: {
+                                    withAnimation(.appCrisp) {
+                                        if selectedJobIDs.contains(job.id) {
+                                            selectedJobIDs.remove(job.id)
+                                        } else {
+                                            selectedJobIDs.insert(job.id)
+                                        }
+                                    }
+                                    AppHaptics.shared.light()
+                                }
+                            )
                             .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 20))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
@@ -190,11 +201,11 @@ struct ApplicationView: View {
                                     .opacity(cardOpacity(proxy))
                             }
                             .transition(.asymmetric(
-                                insertion: .move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.95)),
-                                removal: .opacity.combined(with: .scale(scale: 0.9))
+                                insertion: .opacity.combined(with: .scale(scale: 0.95)).combined(with: .offset(y: 10)),
+                                removal: .opacity.combined(with: .scale(scale: 0.97))
                             ))
-                            .animation(.appSmooth.delay(Double(min(index, 6)) * 0.03), value: filteredAndSorted.count)
                             .animation(.appSmooth.delay(Double(min(index, 6)) * 0.03), value: appState.dashboardHasAppeared)
+                            .animation(.appCrisp, value: filteredAndSorted.count)
                     }
                 }
 
@@ -215,7 +226,12 @@ struct ApplicationView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.interactively)
-            .environment(\.editMode, .constant(isEditMode ? .active : .inactive))
+            .onChange(of: appState.scrollToTopTrigger) { _, _ in
+                withAnimation(.appSmooth) {
+                    proxy.scrollTo("appListTop", anchor: .top)
+                }
+            }
+            } // ScrollViewReader
 
             // Bulk Actions Bar
             if isEditMode && !selectedJobIDs.isEmpty {

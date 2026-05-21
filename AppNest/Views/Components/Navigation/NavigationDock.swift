@@ -81,12 +81,14 @@ struct NavigationDock: View {
         
         // 1. Perform the 'Exit' logic (pop to root or reset states)
         if index == 0 {
-            // Exit logic for Apps tab
             if !appState.navigationPath.isEmpty {
                 AppHaptics.shared.medium()
                 withAnimation(.appSmooth) {
                     appState.navigationPath.removeLast(appState.navigationPath.count)
                 }
+            } else if isSameTab {
+                appState.scrollToTopTrigger += 1
+                AppHaptics.shared.light()
             }
         } else if index == 1 {
             // Exit logic for Add tab

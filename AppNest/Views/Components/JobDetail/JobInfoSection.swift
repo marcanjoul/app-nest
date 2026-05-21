@@ -47,24 +47,8 @@ struct JobInfoSection: View {
         return String(first).uppercased()
     }
 
-    private let titleBaseFontSize: CGFloat = 22
-    private let companyBaseFontSize: CGFloat = 12
-
-    @ViewBuilder
-    private func editableFieldBackground(isFocused: Bool, tint: Color? = nil) -> some View {
-        let strokeColor: Color = isFocused
-            ? (tint ?? Color.accentColor).opacity(0.55)
-            : Color.primary.opacity(0.12)
-        Capsule(style: .continuous)
-            .fill(Color.primary.opacity(isFocused ? 0.08 : 0.04))
-            .overlay(
-                Capsule(style: .continuous)
-                    .strokeBorder(strokeColor, lineWidth: 1)
-            )
-    }
-
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             PhotosPicker(selection: $pickerItem, matching: .images) {
                 ZStack {
                     // Fallback initial — dematerializes when logo lands
@@ -169,36 +153,41 @@ struct JobInfoSection: View {
                 withAnimation(.appFastOut) { isFetchingLogo = false }
             }
 
-            VStack(spacing: 6) {
+            VStack(spacing: 14) {
                 TextField("Position Title *", text: $position)
                     .multilineTextAlignment(.center)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.45)
-                    .truncationMode(.tail)
-                    .font(.system(size: titleBaseFontSize, weight: .bold, design: .rounded))
+                    .lineLimit(2)
+                    .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(Theme.textPrimary)
                     .focused($focused, equals: .position)
                     .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 7)
-                    .background(editableFieldBackground(isFocused: focused == .position))
+                    .padding(.horizontal, 4)
+                    .padding(.bottom, 9)
+                    .overlay(alignment: .bottom) {
+                        Rectangle()
+                            .fill(focused == .position ? Color.accentColor : Color.primary.opacity(0.12))
+                            .frame(height: focused == .position ? 2 : 1)
+                            .animation(.appCrisp, value: focused == .position)
+                    }
 
-                TextField("COMPANY NAME *", text: $companyName)
+                TextField("Company Name *", text: $companyName)
                     .multilineTextAlignment(.center)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .truncationMode(.tail)
-                    .font(.system(size: companyName.isEmpty ? companyBaseFontSize * 0.85 : companyBaseFontSize, weight: .medium, design: .rounded))
-                    .tracking(1.4)
-                    .foregroundStyle(Theme.textPrimary.opacity(0.6))
+                    .minimumScaleFactor(0.7)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.textSecondary)
                     .textInputAutocapitalization(.words)
                     .focused($focused, equals: .company)
-                    .frame(maxWidth: 220)
-                    .padding(.horizontal, companyName.isEmpty ? 10 : 12)
-                    .padding(.vertical, companyName.isEmpty ? 4 : 6)
-                    .background(editableFieldBackground(isFocused: focused == .company))
+                    .frame(maxWidth: 240)
+                    .padding(.bottom, 6)
+                    .overlay(alignment: .bottom) {
+                        Rectangle()
+                            .fill(focused == .company ? Color.accentColor : Color.primary.opacity(0.10))
+                            .frame(height: 1)
+                            .animation(.appCrisp, value: focused == .company)
+                    }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 28)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 8)

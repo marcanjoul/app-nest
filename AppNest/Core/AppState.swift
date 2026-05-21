@@ -25,6 +25,9 @@ class AppState {
     /// Tracks if the cycle list entrance animation has already played.
     var cycleListHasAppeared = false
 
+    /// Incrementing this scrolls ApplicationView back to the top.
+    var scrollToTopTrigger: Int = 0
+
     // MARK: - Share Extension Import
     var pendingJobImport: PendingJobImport?
     /// Raw email text from the share extension — triggers the email parse sheet.

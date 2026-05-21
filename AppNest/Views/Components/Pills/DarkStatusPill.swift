@@ -132,25 +132,29 @@ struct StatChip: View {
 
 struct SparkleView: View {
     @State private var animate = false
+    @State private var offsets: [(CGFloat, CGFloat)] = []
+    @State private var sizes: [CGFloat] = []
     let color: Color
 
     var body: some View {
         ZStack {
-            ForEach(0..<6) { i in
-                Image(systemName: "sparkles")
-                    .font(.system(size: CGFloat.random(in: 12...20)))
-                    .foregroundStyle(color)
-                    .offset(x: animate ? CGFloat.random(in: -30...30) : 0,
-                            y: animate ? CGFloat.random(in: -30...30) : 0)
-                    .scaleEffect(animate ? 0.2 : 1.2)
-                    .opacity(animate ? 0 : 1)
-                    .rotationEffect(.degrees(Double(i) * 60))
+            ForEach(0..<6, id: \.self) { i in
+                if i < offsets.count {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: sizes[i]))
+                        .foregroundStyle(color)
+                        .offset(x: animate ? offsets[i].0 : 0,
+                                y: animate ? offsets[i].1 : 0)
+                        .scaleEffect(animate ? 0.2 : 1.2)
+                        .opacity(animate ? 0 : 1)
+                        .rotationEffect(.degrees(Double(i) * 60))
+                }
             }
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 1.2)) {
-                animate = true
-            }
+            offsets = (0..<6).map { _ in (CGFloat.random(in: -30...30), CGFloat.random(in: -30...30)) }
+            sizes   = (0..<6).map { _ in CGFloat.random(in: 12...20) }
+            withAnimation(.easeOut(duration: 1.2)) { animate = true }
         }
     }
 }
@@ -162,10 +166,14 @@ struct DarkJobCardView: View {
     let job: JobApplication
     @State private var showCelebration = false
 
-    private var dateText: String {
+    private static let relativeDateFormatter: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
         f.unitsStyle = .abbreviated
-        return f.localizedString(for: job.dateApplied, relativeTo: Date())
+        return f
+    }()
+
+    private var dateText: String {
+        Self.relativeDateFormatter.localizedString(for: job.dateApplied, relativeTo: Date())
     }
 
     private var initial: String { String(job.companyName.prefix(1)).uppercased() }
