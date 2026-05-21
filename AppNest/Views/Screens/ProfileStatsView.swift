@@ -8,6 +8,7 @@ import UIKit
 /// stats about the user's applications: KPI summary, status breakdown,
 /// conversion funnel, and top companies.
 struct ProfileStatsView: View {
+    @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) private var appState
     @Query(sort: \JobApplication.dateApplied, order: .reverse) private var applications: [JobApplication]
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
@@ -77,14 +78,42 @@ struct ProfileStatsView: View {
                             topCompaniesSection
                         }
                     }
-                    .padding()
+                    .padding(.horizontal)
+                    .padding(.top)
+                    .padding(.bottom, 120)
                 }
             }
         }
-        .navigationTitle("Insights")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Color(UIColor.systemBackground), for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            HStack {
+                Button { dismiss() } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                        .frame(width: 40, height: 40)
+                        .background {
+                            Circle()
+                                .fill(.ultraThinMaterial)
+                                .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                        }
+                }
+                .buttonStyle(PressScaleButtonStyle())
+
+                Spacer()
+
+                Text("Insights")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Theme.textPrimary)
+
+                Spacer()
+
+                Color.clear.frame(width: 40, height: 40)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        }
         .onAppear {
             // Trigger progress animations on screen entry
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {

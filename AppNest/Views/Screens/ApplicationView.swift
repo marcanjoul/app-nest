@@ -120,60 +120,8 @@ struct ApplicationView: View {
                     }
                     .padding(.top, 16)
 
-                    HStack(spacing: 8) {
-                        cycleSelectorChip
-
-                        Spacer()
-
-                        if !applications.isEmpty {
-                            HStack(spacing: 0) {
-                                Button {
-                                    isShowingExportConfirmation = true
-                                    AppHaptics.shared.light()
-                                } label: {
-                                    Image(systemName: "square.and.arrow.up")
-                                        .font(.system(size: 13, weight: .semibold))
-                                        .foregroundStyle(Theme.textSecondary)
-                                        .frame(width: 38, height: 32)
-                                }
-                                .buttonStyle(PressScaleButtonStyle())
-
-                                Rectangle()
-                                    .fill(Color.primary.opacity(0.12))
-                                    .frame(width: 1, height: 16)
-
-                                Button {
-                                    withAnimation(.appSmooth) {
-                                        isEditMode.toggle()
-                                        if !isEditMode { selectedJobIDs.removeAll() }
-                                    }
-                                    AppHaptics.shared.light()
-                                } label: {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: isEditMode ? "checkmark" : "pencil")
-                                            .font(.system(size: 13, weight: .semibold))
-                                        if isEditMode {
-                                            Text("Done")
-                                                .font(.system(size: 12, weight: .semibold))
-                                                .transition(.opacity.combined(with: .scale(scale: 0.8)))
-                                        }
-                                    }
-                                    .foregroundStyle(isEditMode ? Color.accentColor : Theme.textSecondary)
-                                    .frame(minWidth: 38, height: 32)
-                                    .padding(.horizontal, isEditMode ? 4 : 0)
-                                }
-                                .buttonStyle(PressScaleButtonStyle())
-                                .animation(.appCrisp, value: isEditMode)
-                            }
-                            .background {
-                                Capsule()
-                                    .fill(Color.primary.opacity(0.06))
-                                    .overlay(Capsule().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
-                            }
-                            .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .trailing)))
-                        }
-                    }
-                    .padding(.top, 8)
+                    cycleSelectorChip
+                        .padding(.top, 8)
                 }
                 .opacity(appState.dashboardHasAppeared ? 1 : 0)
                 .offset(y: appState.dashboardHasAppeared ? 0 : 20)
@@ -618,7 +566,7 @@ struct ApplicationView: View {
     private func exportCSV() {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
-        let exportable = cycleFiltered.sorted { $0.dateApplied > $1.dateApplied }
+        let exportable = filteredAndSorted
         let header = "Company,Position,Type,Status,Season,Date Applied,Compensation,Currency,Resume,Notes\n"
         let rows = exportable.map { app -> String in
             let compensation: String = {
@@ -882,6 +830,10 @@ struct ApplicationView: View {
                     }
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
                 }
+
+                if !applications.isEmpty {
+                    headerActionButtons
+                }
             }
 
             // Type grid
@@ -953,6 +905,67 @@ struct ApplicationView: View {
             }
         )
         .opacity(count == 0 && !selectedStatuses.contains(status) ? 0.4 : 1.0)
+    }
+
+    // MARK: - Header Action Buttons
+
+    private var headerActionButtons: some View {
+        HStack(spacing: 0) {
+            exportButton
+            divider
+            editButton
+        }
+        .background {
+            Capsule()
+                .fill(Color.primary.opacity(0.06))
+                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+        }
+        .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .trailing)))
+    }
+
+    private var exportButton: some View {
+        Button {
+            isShowingExportConfirmation = true
+            AppHaptics.shared.light()
+        } label: {
+            Image(systemName: "square.and.arrow.up")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Theme.textSecondary)
+                .frame(width: 38, height: 32)
+        }
+        .buttonStyle(PressScaleButtonStyle())
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(Color.primary.opacity(0.12))
+            .frame(width: 1, height: 16)
+    }
+
+    private var editButton: some View {
+        Button {
+            withAnimation(.appSmooth) {
+                isEditMode.toggle()
+                if !isEditMode { selectedJobIDs.removeAll() }
+            }
+            AppHaptics.shared.light()
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: isEditMode ? "checkmark" : "pencil")
+                    .font(.system(size: 13, weight: .semibold))
+                if isEditMode {
+                    Text("Done")
+                        .font(.system(size: 12, weight: .semibold))
+                        .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                }
+            }
+            .foregroundStyle(isEditMode ? Color.accentColor : Theme.textSecondary)
+            .frame(minWidth: 38)
+            .frame(height: 32)
+            .padding(.horizontal, isEditMode ? 4 : 0)
+        }
+        .buttonStyle(PressScaleButtonStyle())
+        .animation(.appCrisp, value: isEditMode)
     }
 
     // MARK: - Cycle Chip
