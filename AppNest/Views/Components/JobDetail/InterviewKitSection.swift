@@ -56,10 +56,10 @@ struct InterviewKitSection: View {
     private func subLabel(icon: String, title: String) -> some View {
         HStack(spacing: 5) {
             Image(systemName: icon)
-                .font(.system(size: 11, weight: .semibold))
+                .appFont(11, weight: .semibold)
                 .foregroundStyle(Theme.textSecondary)
             Text(title)
-                .font(.system(size: 12, weight: .semibold))
+                .appFont(12, weight: .semibold)
                 .foregroundStyle(Theme.textSecondary)
         }
     }

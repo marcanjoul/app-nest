@@ -52,7 +52,7 @@ struct JobLinkSection: View {
                         if let url = resolvedURL { openURL(url) }
                     } label: {
                         Image(systemName: "arrow.up.right.circle.fill")
-                            .font(.system(size: 22))
+                            .appFont(22)
                             .foregroundStyle(Color.accentColor)
                     }
                     .buttonStyle(.plain)

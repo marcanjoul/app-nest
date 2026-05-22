@@ -43,16 +43,16 @@ struct ResumePreview: View {
     private var titleBar: some View {
         HStack(spacing: 8) {
             Image(systemName: "doc.text.fill")
-                .font(.system(size: 13, weight: .semibold))
+                .appFont(13, weight: .semibold)
                 .foregroundStyle(Color.accentColor)
             Text(fileName)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .appFont(14, weight: .semibold)
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .foregroundStyle(Theme.textPrimary)
             Spacer(minLength: 0)
             Image(systemName: "arrow.up.left.and.arrow.down.right")
-                .font(.system(size: 11, weight: .bold))
+                .appFont(11, weight: .bold)
                 .foregroundStyle(Theme.textSecondary)
         }
         .padding(.horizontal, 14)
@@ -68,7 +68,7 @@ struct ResumePreview: View {
     private var placeholder: some View {
         VStack(spacing: 12) {
             Image(systemName: "doc.text")
-                .font(.system(size: 36, weight: .semibold))
+                .appFont(36, weight: .semibold)
                 .foregroundStyle(Theme.textSecondary)
             Text("Unable to load preview")
                 .font(.caption)
@@ -111,7 +111,7 @@ struct FullscreenResumeViewer: View {
                 } else {
                     VStack(spacing: 12) {
                         Image(systemName: "doc.text")
-                            .font(.system(size: 44, weight: .semibold))
+                            .appFont(44, weight: .semibold)
                             .foregroundStyle(Theme.textSecondary)
                         Text("Unable to load this resume")
                             .font(.subheadline)

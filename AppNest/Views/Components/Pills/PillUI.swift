@@ -18,12 +18,12 @@ struct FilterToken: View {
         Button { action() } label: {
             HStack(spacing: 5) {
                 Image(systemName: icon)
-                    .font(.system(size: 10, weight: .bold))
+                    .appFont(10, weight: .bold)
                 Text(selectionSummary ?? label)
-                    .font(.system(size: 12, weight: .semibold))
+                    .appFont(12, weight: .semibold)
                     .lineLimit(1)
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 9, weight: .bold))
+                    .appFont(9, weight: .bold)
                     .rotationEffect(.degrees(isExpanded ? 180 : 0))
                     .animation(.appCrisp, value: isExpanded)
             }
@@ -60,9 +60,9 @@ struct CompactFilterChip: View {
         Button { action() } label: {
             HStack(spacing: 4) {
                 Image(systemName: icon)
-                    .font(.system(size: 10, weight: .bold))
+                    .appFont(10, weight: .bold)
                 Text(label)
-                    .font(.system(size: 11, weight: .semibold))
+                    .appFont(11, weight: .semibold)
                     .lineLimit(1)
             }
             .foregroundStyle(isSelected ? Color.white : color)
@@ -207,7 +207,7 @@ struct ResumePill: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: iconName)
-                    .font(.system(size: iconSize, weight: .semibold))
+                    .appFont(iconSize, weight: .semibold)
                 Text(title)
                     .font(textFont)
                     .lineLimit(1)

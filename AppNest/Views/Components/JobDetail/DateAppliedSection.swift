@@ -65,9 +65,9 @@ struct DateAppliedSection: View {
                     } label: {
                         HStack(spacing: 7) {
                             Image(systemName: "calendar.badge.plus")
-                                .font(.system(size: 14, weight: .semibold))
+                                .appFont(14, weight: .semibold)
                             Text("Select a date")
-                                .font(.system(size: 17, weight: .semibold))
+                                .appFont(17, weight: .semibold)
                         }
                         .foregroundStyle(accent)
                         .padding(.horizontal, 14)
@@ -114,14 +114,14 @@ struct DateAppliedSection: View {
                     Toggle(isOn: $reminderEnabled) {
                         HStack(spacing: 8) {
                             Image(systemName: "bell.badge.fill")
-                                .font(.system(size: 13, weight: .semibold))
+                                .appFont(13, weight: .semibold)
                                 .foregroundStyle(accent)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Remind me to apply")
-                                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                    .appFont(14, weight: .semibold)
                                     .foregroundStyle(Theme.textPrimary)
                                 Text("We'll send a notification on this date so you don't forget.")
-                                    .font(.system(size: 11, weight: .medium))
+                                    .appFont(11, weight: .medium)
                                     .foregroundStyle(Theme.textSecondary)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
@@ -132,11 +132,11 @@ struct DateAppliedSection: View {
                     if reminderEnabled && !permissionDenied {
                         HStack(spacing: 10) {
                             Image(systemName: "clock.fill")
-                                .font(.system(size: 13, weight: .semibold))
+                                .appFont(13, weight: .semibold)
                                 .foregroundStyle(accent)
                                 .frame(width: 16)
                             Text("Remind me at")
-                                .font(.system(size: 14, weight: .medium))
+                                .appFont(14, weight: .medium)
                                 .foregroundStyle(Theme.textPrimary)
                             Spacer()
                             DatePicker("", selection: $reminderTime, displayedComponents: .hourAndMinute)
@@ -149,10 +149,10 @@ struct DateAppliedSection: View {
                     if permissionDenied {
                         HStack(spacing: 6) {
                             Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.system(size: 11, weight: .semibold))
+                                .appFont(11, weight: .semibold)
                                 .foregroundStyle(Color.orange)
                             Text("Enable notifications in Settings to receive reminders.")
-                                .font(.system(size: 11, weight: .medium))
+                                .appFont(11, weight: .medium)
                                 .foregroundStyle(Theme.textSecondary)
                         }
                     }

@@ -75,18 +75,7 @@ struct EditImportRowView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             withAnimation(.appCrisp) { keyboardIsVisible = false }
         }
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button {
-                    UIApplication.shared.dismissKeyboard()
-                } label: {
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 14, weight: .semibold))
-                }
-                .accessibilityLabel("Dismiss keyboard")
-            }
-        }
+        .dismissKeyboardToolbar()
     }
 
     // MARK: - Floating nav bar
@@ -95,7 +84,7 @@ struct EditImportRowView: View {
         HStack {
             Button { dismiss() } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 14, weight: .semibold))
+                    .appFont(14, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                     .frame(width: 44, height: 44)
                     .background {
@@ -124,7 +113,7 @@ struct EditImportRowView: View {
                     dismiss()
                 } label: {
                     Text("Save Changes")
-                        .font(.system(size: 16, weight: .semibold))
+                        .appFont(16, weight: .semibold)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 15)
@@ -169,7 +158,7 @@ struct EditImportRowView: View {
             AppHaptics.shared.light()
         } label: {
             Text(name)
-                .font(.system(size: 13, weight: .semibold))
+                .appFont(13, weight: .semibold)
                 .foregroundStyle(isSelected ? Color.accentColor : Theme.textSecondary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)

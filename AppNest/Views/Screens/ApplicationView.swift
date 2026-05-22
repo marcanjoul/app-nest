@@ -115,12 +115,12 @@ struct ApplicationView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("App Nest")
-                            .font(.system(size: 40, weight: .bold))
+                            .appFont(40, weight: .bold)
                             .foregroundStyle(Theme.textPrimary)
 
                         if !searchText.isEmpty {
                             Text("\(filteredAndSorted.count) results")
-                                .font(.system(size: 13, weight: .bold))
+                                .appFont(13, weight: .bold)
                                 .foregroundStyle(Color.accentColor)
                                 .transition(.opacity.combined(with: .move(edge: .leading)))
                         }
@@ -239,7 +239,7 @@ struct ApplicationView: View {
                 // Attribution Footer
                 VStack(spacing: 4) {
                     Text("Logos provided by Logo.dev")
-                        .font(.system(size: 10, weight: .semibold))
+                        .appFont(10, weight: .semibold)
                         .foregroundStyle(Theme.textTertiary.opacity(0.6))
                 }
                 .frame(maxWidth: .infinity)
@@ -307,7 +307,7 @@ struct ApplicationView: View {
                             }
                         }
                     }
-                    .font(.system(size: 12, weight: .semibold))
+                    .appFont(12, weight: .semibold)
                     .padding(.top, 12)
                     .padding(.bottom, 100)
                     .background(.ultraThinMaterial)
@@ -325,16 +325,16 @@ struct ApplicationView: View {
                     HStack(spacing: 14) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Removed \(pending.companyName)")
-                                .font(.system(size: 15, weight: .semibold))
+                                .appFont(15, weight: .semibold)
                                 .foregroundStyle(.white)
                             Text("The application has been deleted.")
-                                .font(.system(size: 13))
+                                .appFont(13)
                                 .foregroundStyle(.white.opacity(0.7))
                         }
                         Spacer()
                         Button(action: undoDelete) {
                             Text("Undo")
-                                .font(.system(size: 14, weight: .bold))
+                                .appFont(14, weight: .bold)
                                 .foregroundStyle(Color.accentColor)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 8)
@@ -383,6 +383,7 @@ struct ApplicationView: View {
         }
         .animation(.appSmooth, value: pendingDeleteJob != nil)
         .toolbar(.hidden, for: .navigationBar)
+        .dismissKeyboardToolbar()
         .onAppear {
             appState.dashboardHasAppeared = true
         }
@@ -508,7 +509,7 @@ struct ApplicationView: View {
     private var selectionToolbar: some View {
         HStack(spacing: 8) {
             Text("\(selectedJobIDs.count) selected")
-                .font(.system(size: 14, weight: .bold))
+                .appFont(14, weight: .bold)
                 .foregroundStyle(Theme.textPrimary)
             
             Spacer()
@@ -524,7 +525,7 @@ struct ApplicationView: View {
                 AppHaptics.shared.light()
             }
             .buttonStyle(PressScaleButtonStyle())
-            .font(.system(size: 13, weight: .bold))
+            .appFont(13, weight: .bold)
             .foregroundStyle(Color.accentColor)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
@@ -664,7 +665,7 @@ struct ApplicationView: View {
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(isSearchFocused ? Color.accentColor : Theme.textSecondary)
-                    .font(.system(size: 15, weight: .medium))
+                    .appFont(15, weight: .medium)
 
                 TextField("Search company, position...", text: $searchText)
                     .foregroundStyle(Theme.textPrimary)
@@ -712,7 +713,7 @@ struct ApplicationView: View {
                 } label: {
                     ZStack(alignment: .topTrailing) {
                         Image(systemName: "line.3.horizontal.decrease.circle")
-                            .font(.system(size: 18, weight: .semibold))
+                            .appFont(18, weight: .semibold)
                             .foregroundStyle(sortOption == .dateNewest ? Theme.textPrimary : Color.accentColor)
                             .frame(width: 44, height: 44)
                             .background(.ultraThinMaterial)
@@ -859,7 +860,7 @@ struct ApplicationView: View {
                         AppHaptics.shared.light()
                     } label: {
                         Text("Clear")
-                            .font(.system(size: 12, weight: .semibold))
+                            .appFont(12, weight: .semibold)
                             .foregroundStyle(Theme.textSecondary)
                     }
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
@@ -999,7 +1000,7 @@ struct ApplicationView: View {
             AppHaptics.shared.light()
         } label: {
             Image(systemName: "square.and.arrow.up")
-                .font(.system(size: 13, weight: .semibold))
+                .appFont(13, weight: .semibold)
                 .foregroundStyle(Theme.textSecondary)
                 .frame(width: 44, height: 44)
         }
@@ -1023,10 +1024,10 @@ struct ApplicationView: View {
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: isEditMode ? "checkmark" : "pencil")
-                    .font(.system(size: 13, weight: .semibold))
+                    .appFont(13, weight: .semibold)
                 if isEditMode {
                     Text("Done")
-                        .font(.system(size: 12, weight: .semibold))
+                        .appFont(12, weight: .semibold)
                         .transition(.opacity.combined(with: .scale(scale: 0.8)))
                 }
             }
@@ -1049,7 +1050,7 @@ struct ApplicationView: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: appState.selectedCycleID != nil ? "tray.fill" : "tray.2.fill")
-                    .font(.system(size: 11, weight: .bold))
+                    .appFont(11, weight: .bold)
                 
                 Group {
                     if let id = appState.selectedCycleID,
@@ -1059,10 +1060,10 @@ struct ApplicationView: View {
                         Text("All Applications")
                     }
                 }
-                .font(.system(size: 14, weight: .bold))
+                .appFont(14, weight: .bold)
                 
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 10, weight: .black))
+                    .appFont(10, weight: .black)
                     .opacity(0.5)
             }
             .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : Theme.textSecondary)
@@ -1091,7 +1092,7 @@ struct ApplicationView: View {
     private var emptyState: some View {
         VStack(spacing: 20) {
             Image(systemName: "tray.fill")
-                .font(.system(size: 52))
+                .appFont(52)
                 .foregroundStyle(Theme.textSecondary.opacity(0.4))
             
             VStack(spacing: 8) {
@@ -1114,7 +1115,7 @@ struct ApplicationView: View {
     private var emptyCycleState: some View {
         VStack(spacing: 20) {
             Image(systemName: "folder.badge.questionmark")
-                .font(.system(size: 52))
+                .appFont(52)
                 .foregroundStyle(Theme.textSecondary.opacity(0.4))
             
             VStack(spacing: 8) {
@@ -1140,7 +1141,7 @@ struct ApplicationView: View {
             appState.selectedTab = 1 // Navigate to Add tab
         } label: {
             Label("Add a Job", systemImage: "plus")
-                .font(.system(size: 15, weight: .bold))
+                .appFont(15, weight: .bold)
                 .foregroundStyle(.white)
                 .padding(.horizontal, 22)
                 .padding(.vertical, 14)
@@ -1158,10 +1159,10 @@ struct ApplicationView: View {
         VStack(spacing: 14) {
             if searchText.isEmpty {
                 Image(systemName: "line.3.horizontal.decrease.circle")
-                    .font(.system(size: 40))
+                    .appFont(40)
                     .foregroundStyle(Theme.textSecondary.opacity(0.5))
                 Text("No applications match these filters")
-                    .font(.system(size: 16, weight: .semibold))
+                    .appFont(16, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                     .multilineTextAlignment(.center)
                 Button("Clear Filters") {
@@ -1176,7 +1177,7 @@ struct ApplicationView: View {
                     }
                     AppHaptics.shared.light()
                 }
-                .font(.system(size: 14, weight: .semibold))
+                .appFont(14, weight: .semibold)
                 .foregroundStyle(Color.accentColor)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 7)
@@ -1188,17 +1189,17 @@ struct ApplicationView: View {
                 .buttonStyle(PressScaleButtonStyle())
             } else {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 40))
+                    .appFont(40)
                     .foregroundStyle(Theme.textSecondary.opacity(0.5))
                 Text("No results for \"\(searchText)\"")
-                    .font(.system(size: 16, weight: .semibold))
+                    .appFont(16, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                 HStack(spacing: 10) {
                     Button("Clear Search") {
                         searchText = ""
                         AppHaptics.shared.light()
                     }
-                    .font(.system(size: 14, weight: .semibold))
+                    .appFont(14, weight: .semibold)
                     .foregroundStyle(Color.accentColor)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 7)
@@ -1220,7 +1221,7 @@ struct ApplicationView: View {
                             }
                             AppHaptics.shared.light()
                         }
-                        .font(.system(size: 14, weight: .semibold))
+                        .appFont(14, weight: .semibold)
                         .foregroundStyle(Theme.textSecondary)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 7)

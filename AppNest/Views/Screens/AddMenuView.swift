@@ -88,6 +88,7 @@ struct AddMenuView: View {
         }
         .navigationTitle("Add a Job")
         .navigationBarTitleDisplayMode(.large)
+        .dismissKeyboardToolbar()
         .sheet(isPresented: Binding(
             get: { isPresentingManualAdd },
             set: { isPresentingManualAdd = $0; appState.isPresentingSheet = $0 }
@@ -166,7 +167,7 @@ struct AddMenuView: View {
                     subtitle: "Extract details from an email."
                 ) {
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 14, weight: .semibold))
+                        .appFont(14, weight: .semibold)
                         .foregroundStyle(Theme.textSecondary.opacity(0.6))
                         .rotationEffect(.degrees(isShowingEmailParse ? -180 : 0))
                 }
@@ -190,7 +191,7 @@ struct AddMenuView: View {
                                     } label: {
                                         HStack(spacing: 4) {
                                             Image(systemName: "pencil")
-                                                .font(.system(size: 10, weight: .semibold))
+                                                .appFont(10, weight: .semibold)
                                             Text("Edit")
                                                 .font(.caption.weight(.semibold))
                                         }
@@ -210,7 +211,7 @@ struct AddMenuView: View {
                                 }
 
                                 Text(vm.buildHighlightedString(vm.emailText, spans: vm.highlights))
-                                    .font(.system(size: 13))
+                                    .appFont(13)
                                     .lineLimit(vm.isHighlightExpanded ? nil : 3)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .foregroundStyle(Theme.textSecondary)
@@ -266,7 +267,7 @@ struct AddMenuView: View {
                                 HStack(spacing: 8) {
                                     Image(systemName: vm.hasResult ? "arrow.clockwise.circle.fill" : "sparkles")
                                     Text(vm.hasResult ? "Re-parse" : "Parse Email")
-                                        .font(.system(size: 16, weight: .semibold))
+                                        .appFont(16, weight: .semibold)
                                 }
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
@@ -316,7 +317,7 @@ struct AddMenuView: View {
                                     isEmailEditorFocused = true
                                 } label: {
                                     Text("Parse New Email")
-                                        .font(.system(size: 14, weight: .semibold))
+                                        .appFont(14, weight: .semibold)
                                         .foregroundStyle(Theme.textPrimary)
                                         .frame(maxWidth: .infinity)
                                         .frame(height: 44)
@@ -332,7 +333,7 @@ struct AddMenuView: View {
                                     }
                                 } label: {
                                     Text("Done")
-                                        .font(.system(size: 14, weight: .semibold))
+                                        .appFont(14, weight: .semibold)
                                         .foregroundStyle(Theme.textPrimary)
                                         .frame(maxWidth: .infinity)
                                         .frame(height: 44)
@@ -387,7 +388,7 @@ struct AddMenuView: View {
                     subtitle: "Auto-extract company and role."
                 ) {
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 14, weight: .semibold))
+                        .appFont(14, weight: .semibold)
                         .foregroundStyle(Theme.textSecondary.opacity(0.6))
                         .rotationEffect(.degrees(isShowingPasteLink ? -180 : 0))
                 }
@@ -401,7 +402,7 @@ struct AddMenuView: View {
                     HStack(spacing: 12) {
                         TextField("https://...", text: $pasteLinkURL)
                             .focused($isTextFieldFocused)
-                            .font(.system(size: 15))
+                            .appFont(15)
                             .foregroundStyle(Theme.textPrimary)
                             .padding(12)
                             .background(Color.primary.opacity(0.04))
@@ -424,7 +425,7 @@ struct AddMenuView: View {
                                     Text("Parse")
                                 }
                             }
-                            .font(.system(size: 15, weight: .bold))
+                            .appFont(15, weight: .bold)
                             .foregroundStyle(.white)
                             .frame(width: 72, height: 44)
                             .background(pasteLinkURL.isEmpty ? Color.secondary.opacity(0.3) : Color.purple)
@@ -441,15 +442,15 @@ struct AddMenuView: View {
                     if showLinkedInError {
                         HStack(alignment: .top, spacing: 10) {
                             Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.system(size: 14))
+                                .appFont(14)
                                 .foregroundStyle(Color.orange)
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("LinkedIn Links Not Supported")
-                                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                    .appFont(13, weight: .semibold)
                                     .foregroundStyle(Theme.textPrimary)
                                 Text("LinkedIn obscures job details in their URLs. Please open the actual application link or add manually.")
-                                    .font(.system(size: 12))
+                                    .appFont(12)
                                     .foregroundStyle(Theme.textSecondary)
                                     .lineSpacing(2)
                             }
@@ -484,7 +485,7 @@ struct AddMenuView: View {
         Button(action: action) {
             CardRowHeader(icon: icon, iconColor: color, title: title, subtitle: subtitle) {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
+                    .appFont(14, weight: .semibold)
                     .foregroundStyle(Theme.textSecondary.opacity(0.4))
             }
             .glassCard(cornerRadius: Theme.cardRadius)

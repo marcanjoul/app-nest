@@ -63,7 +63,7 @@ struct CyclePickerSheet: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Done") { isPresented = false }
-                    .font(.system(size: 14, weight: .semibold))
+                    .appFont(14, weight: .semibold)
                     .foregroundStyle(Color.accentColor)
             }
         }
@@ -192,17 +192,17 @@ struct CyclePickerSheet: View {
                     .fill(circleFill)
                     .frame(width: 36, height: 36)
                 Image(systemName: icon)
-                    .font(.system(size: 13, weight: .bold))
+                    .appFont(13, weight: .bold)
                     .foregroundStyle(iconColor)
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .appFont(15, weight: .semibold)
                     .foregroundStyle(titleColor)
                 if let subtitle {
                     Text(subtitle)
-                        .font(.system(size: 12, weight: .medium))
+                        .appFont(12, weight: .medium)
                         .foregroundStyle(Theme.textSecondary)
                 }
             }

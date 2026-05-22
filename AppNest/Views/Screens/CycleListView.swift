@@ -81,7 +81,7 @@ struct CycleListView: View {
                     isAddingCycle = true
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 14, weight: .bold))
+                        .appFont(14, weight: .bold)
                         .foregroundStyle(Color.accentColor)
                 }
             }
@@ -125,7 +125,7 @@ struct CycleListView: View {
     private var emptyState: some View {
         VStack(spacing: 14) {
             Image(systemName: "tray.2.fill")
-                .font(.system(size: 44))
+                .appFont(44)
                 .foregroundStyle(Theme.textSecondary.opacity(0.45))
             Text("No cycles yet")
                 .font(.title3.weight(.semibold))
@@ -140,7 +140,7 @@ struct CycleListView: View {
                 isAddingCycle = true
             } label: {
                 Label("New Cycle", systemImage: "plus")
-                    .font(.system(size: 14, weight: .semibold))
+                    .appFont(14, weight: .semibold)
                     .foregroundStyle(.white)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 11)
@@ -201,16 +201,16 @@ struct CycleRow: View {
             HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(cycle.name)
-                        .font(.system(size: 16, weight: .semibold))
+                        .appFont(16, weight: .semibold)
                         .foregroundStyle(isActive ? Color.accentColor : Theme.textPrimary)
                         .animation(.appCrisp, value: isActive)
                     Text("\(cycle.applications.count) application\(cycle.applications.count == 1 ? "" : "s")")
-                        .font(.system(size: 12, weight: .medium))
+                        .appFont(12, weight: .medium)
                         .foregroundStyle(Theme.textSecondary)
                 }
                 Spacer()
                 Image(systemName: "checkmark")
-                    .font(.system(size: 12, weight: .bold))
+                    .appFont(12, weight: .bold)
                     .foregroundStyle(Color.accentColor)
                     .opacity(isActive ? 1 : 0)
                     .scaleEffect(isActive ? 1 : 0.9)

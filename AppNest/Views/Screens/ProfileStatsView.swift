@@ -90,7 +90,7 @@ struct ProfileStatsView: View {
             HStack {
                 Button { dismiss() } label: {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 14, weight: .semibold))
+                        .appFont(14, weight: .semibold)
                         .foregroundStyle(Theme.textPrimary)
                         .frame(width: 40, height: 40)
                         .background {
@@ -104,7 +104,7 @@ struct ProfileStatsView: View {
                 Spacer()
 
                 Text("Insights")
-                    .font(.system(size: 16, weight: .semibold))
+                    .appFont(16, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
 
                 Spacer()
@@ -128,7 +128,7 @@ struct ProfileStatsView: View {
         VStack(spacing: 14) {
             HStack {
                 Label("Summary", systemImage: "chart.bar.xaxis")
-                    .font(.system(size: 15, weight: .semibold))
+                    .appFont(15, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                 Spacer()
             }
@@ -173,7 +173,7 @@ struct ProfileStatsView: View {
         VStack(spacing: 14) {
             HStack {
                 Label("Status Breakdown", systemImage: "list.bullet.rectangle")
-                    .font(.system(size: 15, weight: .semibold))
+                    .appFont(15, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                 Spacer()
             }
@@ -201,7 +201,7 @@ struct ProfileStatsView: View {
         return VStack(spacing: 14) {
             HStack {
                 Label("Conversion Funnel", systemImage: "arrow.down.right.circle")
-                    .font(.system(size: 15, weight: .semibold))
+                    .appFont(15, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                 Spacer()
             }
@@ -250,7 +250,7 @@ struct ProfileStatsView: View {
         VStack(spacing: 14) {
             HStack {
                 Label("Top Companies", systemImage: "building.2.fill")
-                    .font(.system(size: 15, weight: .semibold))
+                    .appFont(15, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                 Spacer()
             }
@@ -275,7 +275,7 @@ struct ProfileStatsView: View {
     private var emptyState: some View {
         VStack(spacing: 14) {
             Image(systemName: "chart.bar.xaxis")
-                .font(.system(size: 44, weight: .semibold))
+                .appFont(44, weight: .semibold)
                 .foregroundStyle(Theme.textSecondary.opacity(0.5))
             Text("No insights yet")
                 .font(.title3.weight(.semibold))
@@ -307,15 +307,15 @@ private struct StatsKPITile: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 10, weight: .bold))
+                    .appFont(10, weight: .bold)
                 Text(label.uppercased())
-                    .font(.system(size: 10, weight: .bold))
+                    .appFont(10, weight: .bold)
                     .tracking(0.5)
             }
             .foregroundStyle(tint)
 
             Text(value)
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .appFont(26, weight: .bold)
                 .foregroundStyle(Theme.textPrimary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -343,11 +343,11 @@ private struct StatusBreakdownRow: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(status.rawValue)
-                    .font(.system(size: 13, weight: .medium))
+                    .appFont(13, weight: .medium)
                     .foregroundStyle(Theme.textPrimary)
                 Spacer()
                 Text("\(count)")
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .appFont(13, weight: .bold)
                     .foregroundStyle(Theme.textSecondary)
             }
 
@@ -384,7 +384,7 @@ private struct FunnelRow: View {
                     .fill(tint.opacity(0.12))
                     .frame(width: 32, height: 32)
                 Image(systemName: icon)
-                    .font(.system(size: 13, weight: .bold))
+                    .appFont(13, weight: .bold)
                     .foregroundStyle(tint)
             }
             .background {
@@ -405,11 +405,11 @@ private struct FunnelRow: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text(title)
-                        .font(.system(size: 14, weight: .semibold))
+                        .appFont(14, weight: .semibold)
                         .foregroundStyle(Theme.textPrimary)
                     Spacer()
                     Text("\(count)")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .appFont(14, weight: .bold)
                         .foregroundStyle(Theme.textSecondary)
                 }
 
@@ -461,7 +461,7 @@ private struct TopCompanyRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Text("\(rank)")
-                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .appFont(12, weight: .bold)
                 .foregroundStyle(Theme.textTertiary)
                 .frame(width: 14)
 
@@ -470,14 +470,14 @@ private struct TopCompanyRow: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             Text(name)
-                .font(.system(size: 14, weight: .semibold))
+                .appFont(14, weight: .semibold)
                 .foregroundStyle(Theme.textPrimary)
                 .lineLimit(1)
 
             Spacer()
 
             Text("\(count) app\(count == 1 ? "" : "s")")
-                .font(.system(size: 11, weight: .semibold))
+                .appFont(11, weight: .semibold)
                 .foregroundStyle(Theme.textSecondary)
                 .padding(.horizontal, 9)
                 .padding(.vertical, 4)
@@ -502,7 +502,7 @@ private struct TopCompanyRow: View {
         ZStack {
             Theme.avatarFill(for: name)
             Text(initial)
-                .font(.system(size: 14, weight: .bold))
+                .appFont(14, weight: .bold)
                 .foregroundStyle(.white)
         }
     }

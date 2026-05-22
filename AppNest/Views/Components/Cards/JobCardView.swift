@@ -41,14 +41,14 @@ struct JobCardView: View {
                         .scaledToFill()
                 } else {
                     Text(initial)
-                        .font(.system(size: 20, weight: .bold))
+                        .appFont(20, weight: .bold)
                         .foregroundStyle(avatarColors.foreground)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(avatarColors.background)
                 }
                 #else
                 Text(initial)
-                    .font(.system(size: 20, weight: .bold))
+                    .appFont(20, weight: .bold)
                     .foregroundStyle(avatarColors.foreground)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(avatarColors.background)
@@ -71,7 +71,7 @@ struct JobCardView: View {
                             .fill(reminderBadgeColor)
                             .frame(width: 20, height: 20)
                         Image(systemName: "bell.fill")
-                            .font(.system(size: 9, weight: .bold))
+                            .appFont(9, weight: .bold)
                             .foregroundStyle(.white)
                     }
                     .offset(x: 4, y: 4)
@@ -81,13 +81,13 @@ struct JobCardView: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 Text(job.position)
-                    .font(.system(size: 16, weight: .bold))
+                    .appFont(16, weight: .bold)
                     .foregroundStyle(.primary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                     
                 Text(job.companyName)
-                    .font(.system(size: 14, weight: .medium))
+                    .appFont(14, weight: .medium)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 

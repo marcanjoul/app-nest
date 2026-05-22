@@ -48,7 +48,7 @@ struct PillPickerSheet<T: CaseIterable & RawRepresentable & Hashable>: View
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .bold))
+                    .appFont(14, weight: .bold)
                     .foregroundStyle(isSelected ? .white : color)
                 Text(option.rawValue)
                     .font(.system(size: 14, weight: isSelected ? .bold : .semibold))
@@ -57,7 +57,7 @@ struct PillPickerSheet<T: CaseIterable & RawRepresentable & Hashable>: View
                 Spacer(minLength: 0)
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 11, weight: .bold))
+                        .appFont(11, weight: .bold)
                         .foregroundStyle(.white.opacity(0.75))
                         .transition(.scale(scale: 0.4).combined(with: .opacity))
                 }

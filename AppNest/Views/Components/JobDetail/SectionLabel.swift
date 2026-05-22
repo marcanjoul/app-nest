@@ -10,19 +10,19 @@ struct SectionLabel: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.system(size: Theme.sectionLabelSize - 1, weight: .black))
+                .appFont(Theme.sectionLabelSize - 1, weight: .black)
                 .foregroundStyle(Color.accentColor.opacity(0.8))
             
             HStack(spacing: 2) {
                 Text(title)
-                    .font(.system(size: Theme.sectionLabelSize, weight: .bold))
+                    .appFont(Theme.sectionLabelSize, weight: .bold)
                     .tracking(Theme.sectionLabelSpacing)
                     .textCase(.uppercase)
                     .foregroundStyle(Theme.textSecondary)
                 
                 if isRequired {
                     Text("*")
-                        .font(.system(size: Theme.sectionLabelSize, weight: .bold))
+                        .appFont(Theme.sectionLabelSize, weight: .bold)
                         .foregroundStyle(Color.orange)
                         .accessibilityLabel("Required")
                 }

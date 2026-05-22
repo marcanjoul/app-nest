@@ -13,6 +13,7 @@ struct SwipeActionRow<Content: View>: View {
     let trailingActions: [SwipeAction]
     let isEditMode: Bool
     var cornerRadius: CGFloat = Theme.cardRadius
+    var onActionTriggered: (() -> Void)? = nil
     @ViewBuilder let content: () -> Content
 
     @GestureState private var dragOffset: CGFloat = 0
@@ -90,8 +91,8 @@ struct SwipeActionRow<Content: View>: View {
         HStack(spacing: 12) {
             if isLeading { Spacer().frame(width: 18) }
             
-            Image(systemName: action.icon).font(.system(size: 20, weight: .bold))
-            Text(action.title).font(.system(size: 14, weight: .bold))
+            Image(systemName: action.icon).appFont(20, weight: .bold)
+            Text(action.title).appFont(14, weight: .bold)
             
             if !isLeading { Spacer().frame(width: 18) }
         }
@@ -116,6 +117,7 @@ struct SwipeActionRow<Content: View>: View {
     private func triggerAction(on actions: [SwipeAction], offset: CGFloat) {
         let absOffset = abs(offset)
         let index = min(Int(absOffset / actionThreshold), actions.count - 1)
+        onActionTriggered?()
         actions[index].action()
         AppHaptics.shared.medium()
     }

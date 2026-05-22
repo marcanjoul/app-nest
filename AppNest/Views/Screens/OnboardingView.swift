@@ -31,7 +31,7 @@ struct OnboardingView: View {
                                     .frame(width: 160, height: 160)
                                     .blur(radius: 10)
                                 Image(systemName: page.icon)
-                                    .font(.system(size: 52, weight: .semibold))
+                                    .appFont(52, weight: .semibold)
                                     .foregroundStyle(page.color)
                                     .shadow(color: page.color.opacity(0.24), radius: 12, y: 4)
                             }
@@ -80,7 +80,7 @@ struct OnboardingView: View {
                     }
                 } label: {
                     Text(currentPage < pages.count - 1 ? "Continue" : "Get Started")
-                        .font(.system(size: 17, weight: .semibold))
+                        .appFont(17, weight: .semibold)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
@@ -98,7 +98,7 @@ struct OnboardingView: View {
                         AppHaptics.shared.light()
                         hasCompletedOnboarding = true
                     }
-                    .font(.system(size: 15, weight: .medium))
+                    .appFont(15, weight: .medium)
                     .foregroundStyle(Theme.textSecondary)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 11)

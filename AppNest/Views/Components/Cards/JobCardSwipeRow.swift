@@ -9,26 +9,7 @@ struct JobCardSwipeRow: View {
     let onToggleSelection: () -> Void
 
     @Environment(AppState.self) private var appState
-
-
-    private var pipeline: [SwipeAction] {
-        let all: [ApplicationStatus] = [.toApply, .applied, .interview, .offer]
-        guard let s = job.status, let idx = all.firstIndex(of: s) else { return [] }
-        let remaining = Array(all.dropFirst(idx + 1))
-        
-        return remaining.map { status in
-            let style = Theme.statusStyle(for: status)
-            return SwipeAction(
-                title: status.rawValue,
-                icon: style.iconName,
-                color: style.tintColor
-            ) {
-                withAnimation(.appSmooth) {
-                    job.status = status
-                }
-            }
-        }
-    }
+    @State private var swipeJustFired = false
 
     private var trailingActions: [SwipeAction] {
         [
@@ -45,7 +26,7 @@ struct JobCardSwipeRow: View {
         HStack(spacing: 0) {
             Button { onToggleSelection() } label: {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 22, weight: .medium))
+                    .appFont(22, weight: .medium)
                     .foregroundStyle(isSelected ? Color.accentColor : Theme.textSecondary.opacity(0.5))
                     .contentTransition(.symbolEffect(.replace.downUp))
                     .animation(.appCrisp, value: isSelected)
@@ -61,15 +42,21 @@ struct JobCardSwipeRow: View {
             .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isEditMode)
 
             SwipeActionRow(
-                leadingActions: isEditMode ? [] : pipeline,
+                leadingActions: [],
                 trailingActions: isEditMode ? [] : trailingActions,
                 isEditMode: isEditMode,
-                cornerRadius: 16
+                cornerRadius: 16,
+                onActionTriggered: {
+                    swipeJustFired = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                        swipeJustFired = false
+                    }
+                }
             ) {
                 Button {
                     if isEditMode {
                         onToggleSelection()
-                    } else {
+                    } else if !swipeJustFired {
                         AppHaptics.shared.light()
                         appState.selectedJob = job
                     }

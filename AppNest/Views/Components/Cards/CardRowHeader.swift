@@ -16,16 +16,16 @@ struct CardRowHeader<Trailing: View>: View {
                     .fill(iconColor.opacity(0.15))
                     .frame(width: 48, height: 48)
                 Image(systemName: icon)
-                    .font(.system(size: 20, weight: .semibold))
+                    .appFont(20, weight: .semibold)
                     .foregroundStyle(iconColor)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .appFont(17, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                 Text(subtitle)
-                    .font(.system(size: 12))
+                    .appFont(12)
                     .foregroundStyle(Theme.textSecondary)
                     .lineLimit(1)
             }

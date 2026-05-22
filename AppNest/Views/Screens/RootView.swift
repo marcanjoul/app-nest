@@ -42,17 +42,17 @@ struct RootView: View {
             withAnimation(.appCrisp) { isKeyboardVisible = false }
         }
         .sheet(item: $bindableAppState.selectedJob) { job in
-            JobDetailView(job: job)
-                .presentationDetents([.large])
+            JobDetailView(job: job, isSheetPresentation: true)
+                .presentationDetents([.fraction(0.90)])
                 .presentationCornerRadius(28)
-                .presentationDragIndicator(.hidden)
+                .presentationDragIndicator(.visible)
         }
         .tint(Theme.accent)
         .scaleEffect(appState.isPresentingSheet ? 0.95 : 1.0)
         .blur(radius: appState.isPresentingSheet ? 2 : 0)
         .overlay {
             if appState.isPresentingSheet {
-                Color.black.opacity(0.15)
+                Color.black.opacity(0.5)
                     .ignoresSafeArea()
             }
         }

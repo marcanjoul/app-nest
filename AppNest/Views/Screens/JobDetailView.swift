@@ -51,6 +51,7 @@ struct JobDetailView: View {
     @State private var keyboardIsVisible = false
     @State private var scrollTargetSection: FormSection?
     @State private var contentAppeared = false
+    var isSheetPresentation: Bool = false
 
     private enum FormSection: Hashable {
         case info, type, status
@@ -119,9 +120,10 @@ struct JobDetailView: View {
         status == .interview || status == .offer
     }
 
-    init(job: JobApplication?, prefillCompany: String = "", prefillPosition: String = "", prefillURL: String = "", prefillType: ApplicationType? = nil, prefillStatus: ApplicationStatus? = nil) {
+    init(job: JobApplication?, prefillCompany: String = "", prefillPosition: String = "", prefillURL: String = "", prefillType: ApplicationType? = nil, prefillStatus: ApplicationStatus? = nil, isSheetPresentation: Bool = false) {
         self.csvRow = nil
         self.job = job
+        self.isSheetPresentation = isSheetPresentation
         _companyName            = State(initialValue: job?.companyName ?? prefillCompany)
         _companyLogoImageData   = State(initialValue: job?.companyLogoImageData)
         _position               = State(initialValue: job?.position ?? prefillPosition)
@@ -227,7 +229,7 @@ struct JobDetailView: View {
             AppHaptics.shared.light()
         } label: {
             Text(name)
-                .font(.system(size: 13, weight: .semibold))
+                .appFont(13, weight: .semibold)
                 .foregroundStyle(isSelected ? Color.accentColor : Theme.textSecondary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
@@ -270,7 +272,7 @@ struct JobDetailView: View {
                             resetToOriginal()
                         } label: {
                             Text("Cancel")
-                                .font(.system(size: 14, weight: .semibold))
+                                .appFont(14, weight: .semibold)
                                 .foregroundStyle(Theme.textPrimary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 13)
@@ -293,7 +295,7 @@ struct JobDetailView: View {
                         }
                     } label: {
                         Text(saveButtonLabel)
-                            .font(.system(size: 14, weight: .semibold))
+                            .appFont(14, weight: .semibold)
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 13)
@@ -720,21 +722,9 @@ struct JobDetailView: View {
         .safeAreaInset(edge: .top, spacing: 0) {
             floatingNavBar
         }
+        .interactiveDismissDisabled(isSheetPresentation && !isNewApplication && hasChanges)
         .toolbar(.hidden, for: .navigationBar)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button {
-                    #if canImport(UIKit)
-                    UIApplication.shared.dismissKeyboard()
-                    #endif
-                } label: {
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 14, weight: .semibold))
-                }
-                .accessibilityLabel("Dismiss keyboard")
-            }
-        }
+        .dismissKeyboardToolbar()
         .confirmationDialog(
             "Delete this application?",
             isPresented: $isShowingDeleteConfirmation,
@@ -765,28 +755,30 @@ struct JobDetailView: View {
 
     private var floatingNavBar: some View {
         HStack(spacing: 10) {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: isNewApplication ? "xmark" : "chevron.left")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Theme.textPrimary)
-                    .frame(width: 44, height: 44)
-                    .background {
-                        Circle()
-                            .fill(.ultraThinMaterial)
-                            .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
-                    }
+            if !isSheetPresentation || isNewApplication {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: isNewApplication ? "xmark" : "chevron.left")
+                        .appFont(14, weight: .semibold)
+                        .foregroundStyle(Theme.textPrimary)
+                        .frame(width: 44, height: 44)
+                        .background {
+                            Circle()
+                                .fill(.ultraThinMaterial)
+                                .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                        }
+                }
+                .buttonStyle(PressScaleButtonStyle())
+                .accessibilityLabel(isNewApplication ? "Cancel" : "Back")
             }
-            .buttonStyle(PressScaleButtonStyle())
-            .accessibilityLabel(isNewApplication ? "Cancel" : "Back")
 
             Spacer()
 
             HStack(spacing: 10) {
                 Button { isShowingLogoAttribution.toggle() } label: {
                     Image(systemName: "info.circle")
-                        .font(.system(size: 15, weight: .medium))
+                        .appFont(15, weight: .medium)
                         .foregroundStyle(Theme.textSecondary)
                         .frame(width: 44, height: 44)
                         .background {
@@ -811,7 +803,7 @@ struct JobDetailView: View {
                 if !isNewApplication {
                     Button { isShowingDeleteConfirmation = true } label: {
                         Image(systemName: "trash")
-                            .font(.system(size: 14, weight: .bold))
+                            .appFont(14, weight: .bold)
                             .foregroundStyle(Theme.destructive)
                             .frame(width: 44, height: 44)
                             .background {
@@ -826,7 +818,7 @@ struct JobDetailView: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.top, 10)
+        .padding(.top, 20)
         .padding(.bottom, 8)
     }
 

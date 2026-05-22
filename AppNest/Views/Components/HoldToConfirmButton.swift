@@ -32,9 +32,9 @@ struct HoldToConfirmButton: View {
                 // Label
                 HStack(spacing: 10) {
                     Image(systemName: icon)
-                        .font(.system(size: 15, weight: .bold))
+                        .appFont(15, weight: .bold)
                     Text(title)
-                        .font(.system(size: 15, weight: .bold))
+                        .appFont(15, weight: .bold)
                 }
                 .foregroundStyle(progress > 0.5 ? .white : color)
                 .frame(maxWidth: .infinity)

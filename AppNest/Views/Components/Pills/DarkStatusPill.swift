@@ -21,9 +21,9 @@ struct DarkStatusPill: View {
     var body: some View {
         HStack(spacing: 5) {
             Image(systemName: style.iconName)
-                .font(.system(size: 12, weight: .semibold))
+                .appFont(12, weight: .semibold)
             Text(displayText)
-                .font(.system(size: 13, weight: .semibold))
+                .appFont(13, weight: .semibold)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
@@ -50,10 +50,10 @@ struct DarkTypeTag: View {
         HStack(spacing: 4) {
             if let icon {
                 Image(systemName: icon)
-                    .font(.system(size: 11, weight: .bold))
+                    .appFont(11, weight: .bold)
             }
             Text(text)
-                .font(.system(size: 12, weight: .bold))
+                .appFont(12, weight: .bold)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
@@ -98,17 +98,17 @@ struct StatChip: View {
         } label: {
             HStack(spacing: 7) {
                 Image(systemName: style.iconName)
-                    .font(.system(size: 11, weight: .bold))
+                    .appFont(11, weight: .bold)
                     .foregroundStyle(isSelected ? Color.white : style.tintColor)
 
                 Text("\(number)")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .appFont(16, weight: .bold)
                     .foregroundStyle(isSelected ? Color.white : Theme.textPrimary)
                     .contentTransition(.numericText())
                     .animation(.appCrisp, value: number)
 
                 Text(label)
-                    .font(.system(size: 11, weight: .semibold))
+                    .appFont(11, weight: .semibold)
                     .foregroundStyle(isSelected ? Color.white.opacity(0.88) : Theme.textSecondary)
                     .lineLimit(1)
             }
@@ -208,19 +208,19 @@ struct DarkJobCardView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(job.position)
-                    .font(.system(size: 16, weight: .bold))
+                    .appFont(16, weight: .bold)
                     .foregroundStyle(Theme.textPrimary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
 
                 HStack {
                     Text(job.companyName)
-                        .font(.system(size: 14))
+                        .appFont(14)
                         .foregroundStyle(Theme.textSecondary)
                         .lineLimit(1)
                     Spacer()
                     Text(dateText)
-                        .font(.system(size: 11))
+                        .appFont(11)
                         .foregroundStyle(.secondary)
                 }
 
@@ -305,14 +305,14 @@ struct DarkJobCardView: View {
                 .background(Color.white.opacity(0.05))
         } else {
             Text(initial)
-                .font(.system(size: 20, weight: .bold))
+                .appFont(20, weight: .bold)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Theme.avatarFill(for: job.companyName))
         }
         #else
         Text(initial)
-            .font(.system(size: 20, weight: .bold))
+            .appFont(20, weight: .bold)
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Theme.avatarFill(for: job.companyName))

@@ -30,7 +30,7 @@ struct LocationSection: View {
             }
 
             TextField("City, state, or country", text: $location)
-                .font(.system(size: 15))
+                .appFont(15)
                 .foregroundStyle(Theme.textPrimary)
                 .tint(.accentColor)
                 .padding(.horizontal, 12)

@@ -56,7 +56,7 @@ struct JobInfoSection: View {
                         Circle()
                             .fill(accentTint)
                         Text(logoInitial)
-                            .font(.system(size: 40, weight: .heavy, design: .rounded))
+                            .appFont(40, weight: .heavy)
                             .foregroundStyle(.white)
                     }
                     .opacity(hasLogo ? 0 : 1)
@@ -97,7 +97,7 @@ struct JobInfoSection: View {
                             .fill(Color(UIColor.systemBackground))
                             .frame(width: 24, height: 24)
                         Image(systemName: "camera.fill")
-                            .font(.system(size: 10, weight: .bold))
+                            .appFont(10, weight: .bold)
                             .foregroundStyle(.white)
                             .frame(width: 20, height: 20)
                             .background(Circle().fill(accentTint))
@@ -155,11 +155,14 @@ struct JobInfoSection: View {
 
             VStack(spacing: 14) {
                 TextField("Position Title *", text: $position)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .font(.system(size: 24, weight: .bold))
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.4)
+                    .appFont(24, weight: .bold)
                     .foregroundStyle(Theme.textPrimary)
                     .focused($focused, equals: .position)
+                    .submitLabel(.next)
+                    .onSubmit { focused = .company }
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 4)
                     .padding(.bottom, 9)
@@ -171,14 +174,16 @@ struct JobInfoSection: View {
                     }
 
                 TextField("Company Name *", text: $companyName)
-                    .multilineTextAlignment(.center)
+                    .multilineTextAlignment(.leading)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                    .font(.system(size: 13, weight: .semibold))
+                    .minimumScaleFactor(0.5)
+                    .appFont(13, weight: .semibold)
                     .foregroundStyle(Theme.textSecondary)
                     .textInputAutocapitalization(.words)
                     .focused($focused, equals: .company)
-                    .frame(maxWidth: 240)
+                    .submitLabel(.done)
+                    .onSubmit { focused = nil }
+                    .frame(maxWidth: .infinity)
                     .padding(.bottom, 6)
                     .overlay(alignment: .bottom) {
                         Rectangle()
@@ -187,7 +192,11 @@ struct JobInfoSection: View {
                             .animation(.appCrisp, value: focused == .company)
                     }
             }
-            .padding(.horizontal, 28)
+            .onChange(of: focused) { _, newFocus in
+                if newFocus != .position { position = position.trimmingCharacters(in: .whitespaces) }
+                if newFocus != .company { companyName = companyName.trimmingCharacters(in: .whitespaces) }
+            }
+            .padding(.horizontal, 16)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 8)

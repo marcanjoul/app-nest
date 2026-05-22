@@ -1,5 +1,27 @@
 import SwiftUI
 
+// MARK: - Scaled Font
+
+struct ScaledSystemFont: ViewModifier {
+    @ScaledMetric private var scaledSize: CGFloat
+    private let weight: Font.Weight
+
+    init(_ size: CGFloat, weight: Font.Weight = .regular) {
+        self._scaledSize = ScaledMetric(wrappedValue: size)
+        self.weight = weight
+    }
+
+    func body(content: Content) -> some View {
+        content.font(.system(size: scaledSize, weight: weight))
+    }
+}
+
+extension View {
+    func appFont(_ size: CGFloat, weight: Font.Weight = .regular) -> some View {
+        modifier(ScaledSystemFont(size, weight: weight))
+    }
+}
+
 // MARK: - Glass Card
 
 struct GlassCard: ViewModifier {
@@ -86,6 +108,31 @@ extension UIApplication {
     }
 }
 #endif
+
+struct DismissKeyboardToolbar: ViewModifier {
+    func body(content: Content) -> some View {
+        content.toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button {
+                    #if canImport(UIKit)
+                    UIApplication.shared.dismissKeyboard()
+                    #endif
+                } label: {
+                    Image(systemName: "chevron.down")
+                        .appFont(14, weight: .semibold)
+                }
+                .accessibilityLabel("Dismiss keyboard")
+            }
+        }
+    }
+}
+
+extension View {
+    func dismissKeyboardToolbar() -> some View {
+        modifier(DismissKeyboardToolbar())
+    }
+}
 
 // MARK: - Swipe-Back Gesture (re-enabled when nav bar is hidden)
 

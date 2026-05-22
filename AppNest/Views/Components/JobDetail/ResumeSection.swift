@@ -95,7 +95,7 @@ struct ResumeSection: View {
                     if resumes.count > 1 {
                         Button(action: onViewAll) {
                             Label("Select Another", systemImage: "tray.full")
-                                .font(.system(size: 13, weight: .semibold))
+                                .appFont(13, weight: .semibold)
                                 .foregroundStyle(Color.accentColor)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
@@ -112,7 +112,7 @@ struct ResumeSection: View {
                         Spacer()
                         Button(action: onPick) {
                             Image(systemName: "plus")
-                                .font(.system(size: 16, weight: .bold))
+                                .appFont(16, weight: .bold)
                                 .foregroundStyle(Color.accentColor)
                                 .frame(width: 34, height: 34)
                                 .background(Circle().fill(Color.accentColor.opacity(0.12)))
@@ -122,7 +122,7 @@ struct ResumeSection: View {
 
                         Button(role: .destructive, action: onClear) {
                             Image(systemName: "trash")
-                                .font(.system(size: 14, weight: .semibold))
+                                .appFont(14, weight: .semibold)
                                 .foregroundStyle(hasAttachedResume ? Theme.destructive : Theme.destructive.opacity(0.35))
                                 .frame(width: 34, height: 34)
                                 .background(Circle().fill(Theme.destructive.opacity(hasAttachedResume ? 0.10 : 0.04)))
@@ -164,7 +164,7 @@ struct ResumeLibrarySheet: View {
                             } label: {
                                 HStack(spacing: 12) {
                                     Image(systemName: resume.isDefault ? "star.fill" : "doc.text.fill")
-                                        .font(.system(size: 14, weight: .semibold))
+                                        .appFont(14, weight: .semibold)
                                         .foregroundStyle(resume.isDefault ? Color(red: 0.96, green: 0.73, blue: 0.28) : Theme.textSecondary)
                                         .frame(width: 30, height: 30)
                                         .background(Circle().fill(Color.primary.opacity(0.06)))
@@ -187,7 +187,7 @@ struct ResumeLibrarySheet: View {
 
                                     if isAttached {
                                         Image(systemName: "checkmark.circle.fill")
-                                            .font(.system(size: 18, weight: .semibold))
+                                            .appFont(18, weight: .semibold)
                                             .foregroundStyle(Color(red: 0.30, green: 0.80, blue: 0.45))
                                     }
                                 }

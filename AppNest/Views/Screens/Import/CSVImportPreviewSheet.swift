@@ -89,7 +89,7 @@ struct CSVImportPreviewSheet: View {
                             }
                             AppHaptics.shared.light()
                         }
-                        .font(.system(size: 14, weight: .bold))
+                        .appFont(14, weight: .bold)
                         .foregroundStyle(Color.accentColor)
                     }
                 }
@@ -170,7 +170,7 @@ struct CSVImportPreviewSheet: View {
             if !selectedRows.isEmpty {
                 HStack {
                     Text("\(selectedRows.count) selected")
-                        .font(.system(size: 12, weight: .bold))
+                        .appFont(12, weight: .bold)
                         .foregroundStyle(Theme.textSecondary)
                     Spacer()
                 }
@@ -189,15 +189,15 @@ struct CSVImportPreviewSheet: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: .bold))
+                    .appFont(12, weight: .bold)
                     .foregroundStyle(isSelected ? .white : color)
                 
                 Text("\(count)")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .appFont(16, weight: .bold)
                     .foregroundStyle(isSelected ? .white : Theme.textPrimary)
                 
                 Text(filter.rawValue)
-                    .font(.system(size: 11, weight: .semibold))
+                    .appFont(11, weight: .semibold)
                     .foregroundStyle(isSelected ? .white.opacity(0.9) : Theme.textSecondary)
             }
             .padding(.horizontal, 12)
@@ -216,7 +216,7 @@ struct CSVImportPreviewSheet: View {
     private var emptyRowsView: some View {
         VStack(spacing: 14) {
             Image(systemName: "doc.text.magnifyingglass")
-                .font(.system(size: 44))
+                .appFont(44)
                 .foregroundStyle(Theme.textSecondary.opacity(0.4))
             Text("No rows found")
                 .font(.title3.weight(.semibold))
@@ -233,15 +233,15 @@ struct CSVImportPreviewSheet: View {
     private var noFilterResultsView: some View {
         VStack(spacing: 12) {
             Image(systemName: activeFilter == .ready ? "checkmark.circle" : "sparkles")
-                .font(.system(size: 32))
+                .appFont(32)
                 .foregroundStyle(Theme.textSecondary.opacity(0.4))
             Text(activeFilter == .ready ? "Nothing to import" : "All rows are ready")
-                .font(.system(size: 15, weight: .medium))
+                .appFont(15, weight: .medium)
                 .foregroundStyle(Theme.textSecondary)
             Button("Show All") {
                 withAnimation(.appSmooth) { activeFilter = .all }
             }
-            .font(.system(size: 14, weight: .semibold))
+            .appFont(14, weight: .semibold)
             .foregroundStyle(Color.accentColor)
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
@@ -260,7 +260,7 @@ struct CSVImportPreviewSheet: View {
             finalizeImport()
         } label: {
             Text("Import")
-                .font(.system(size: 17, weight: .bold))
+                .appFont(17, weight: .bold)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
@@ -288,7 +288,7 @@ struct CSVImportPreviewSheet: View {
                 AppHaptics.shared.light()
             } label: {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 22))
+                    .appFont(22)
                     .foregroundStyle(isSelected ? Color.accentColor : Theme.textTertiary)
             }
             .buttonStyle(.plain)
@@ -307,7 +307,7 @@ struct CSVImportPreviewSheet: View {
                     Circle()
                         .fill(avatarColors.background)
                     Text(initial.isEmpty ? "?" : initial)
-                        .font(.system(size: 14, weight: .bold))
+                        .appFont(14, weight: .bold)
                         .foregroundStyle(avatarColors.foreground)
                 }
             }
@@ -321,11 +321,11 @@ struct CSVImportPreviewSheet: View {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(r.position.isEmpty ? "Missing Position" : r.position)
-                            .font(.system(size: 15, weight: .semibold))
+                            .appFont(15, weight: .semibold)
                             .foregroundStyle(r.position.isEmpty ? .orange : Theme.textPrimary)
                             .lineLimit(1)
                         Text(r.companyName.isEmpty ? "Missing Company" : r.companyName)
-                            .font(.system(size: 13, weight: .medium))
+                            .appFont(13, weight: .medium)
                             .foregroundStyle(r.companyName.isEmpty ? .orange : Theme.textSecondary)
                             .lineLimit(1)
                         
@@ -346,7 +346,7 @@ struct CSVImportPreviewSheet: View {
                     Spacer()
                     
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 11, weight: .semibold))
+                        .appFont(11, weight: .semibold)
                         .foregroundStyle(Theme.textTertiary.opacity(0.6))
                 }
             }
@@ -384,7 +384,7 @@ struct CSVImportPreviewSheet: View {
 
     private func badge(_ label: String, color: Color) -> some View {
         Text(label)
-            .font(.system(size: 10, weight: .bold))
+            .appFont(10, weight: .bold)
             .foregroundStyle(color)
             .padding(.horizontal, 7)
             .padding(.vertical, 3)

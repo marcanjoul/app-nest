@@ -108,20 +108,7 @@ struct ProfileView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .toolbar(.hidden, for: .navigationBar)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button {
-                    #if canImport(UIKit)
-                    UIApplication.shared.dismissKeyboard()
-                    #endif
-                } label: {
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 14, weight: .semibold))
-                }
-                .accessibilityLabel("Dismiss keyboard")
-            }
-        }
+        .dismissKeyboardToolbar()
         .sheet(isPresented: $isShowingDocumentPicker) {
             ProfileDocumentPicker { result in
                 if case .success(let picked) = result {
@@ -186,7 +173,7 @@ struct ProfileView: View {
                                 .fill(Color.accentColor)
                                 .frame(width: 26, height: 26)
                             Image(systemName: "camera.fill")
-                                .font(.system(size: 11, weight: .bold))
+                                .appFont(11, weight: .bold)
                                 .foregroundStyle(.white)
                         }
                         .shadow(color: Color.accentColor.opacity(0.28), radius: 4, y: 2)
@@ -210,7 +197,7 @@ struct ProfileView: View {
                     text: $profileDisplayName,
                     prompt: Text("Your Name").foregroundColor(Theme.textSecondary)
                 )
-                .font(.system(size: 26, weight: .bold))
+                .appFont(26, weight: .bold)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Theme.textPrimary)
                 .tint(.accentColor)
@@ -224,7 +211,7 @@ struct ProfileView: View {
                 }
 
                 Text("\(totalCount) application\(totalCount == 1 ? "" : "s")")
-                    .font(.system(size: 13, weight: .medium))
+                    .appFont(13, weight: .medium)
                     .foregroundStyle(Theme.textTertiary)
             }
         }
@@ -255,11 +242,11 @@ struct ProfileView: View {
             Theme.avatarFill(for: avatarGradientKey)
             if profileInitial.isEmpty {
                 Image(systemName: "person.fill")
-                    .font(.system(size: 34, weight: .bold))
+                    .appFont(34, weight: .bold)
                     .foregroundStyle(.white.opacity(0.88))
             } else {
                 Text(profileInitial)
-                    .font(.system(size: 36, weight: .heavy, design: .rounded))
+                    .appFont(36, weight: .heavy)
                     .foregroundStyle(.white)
             }
         }
@@ -271,7 +258,7 @@ struct ProfileView: View {
         Button { isShowingCyclePicker = true } label: {
             HStack(spacing: 5) {
                 Image(systemName: appState.selectedCycleID != nil ? "tray.fill" : "tray.2.fill")
-                    .font(.system(size: 10, weight: .semibold))
+                    .appFont(10, weight: .semibold)
                 Group {
                     if let id = appState.selectedCycleID,
                        let cycle = cycles.first(where: { $0.id == id }) {
@@ -280,10 +267,10 @@ struct ProfileView: View {
                         Text("All Applications")
                     }
                 }
-                .font(.system(size: 12, weight: .semibold))
+                .appFont(12, weight: .semibold)
                 .lineLimit(1)
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 9, weight: .bold))
+                    .appFont(9, weight: .bold)
             }
             .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : Theme.textSecondary)
             .padding(.horizontal, 11)
@@ -310,7 +297,7 @@ struct ProfileView: View {
                     SectionLabel(icon: "chart.bar.fill", title: "Pipeline")
                     Spacer()
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .bold))
+                        .appFont(12, weight: .bold)
                         .foregroundStyle(Theme.textSecondary.opacity(0.6))
                 }
 
@@ -324,16 +311,16 @@ struct ProfileView: View {
                         
                         VStack(spacing: 4) {
                             Image(systemName: style.iconName)
-                                .font(.system(size: 10, weight: .black))
+                                .appFont(10, weight: .black)
                                 .foregroundStyle(c > 0 ? style.tintColor : Theme.textTertiary.opacity(0.6))
                             
                             Text("\(c)")
-                                .font(.system(size: 20, weight: .bold, design: .rounded))
+                                .appFont(20, weight: .bold)
                                 .foregroundStyle(c > 0 ? Theme.textPrimary : Theme.textTertiary)
                                 .contentTransition(.numericText())
                             
                             Text(pipelineLabel(for: status))
-                                .font(.system(size: 8, weight: .black))
+                                .appFont(8, weight: .black)
                                 .foregroundStyle(c > 0 ? Theme.textSecondary : Theme.textTertiary.opacity(0.8))
                                 .textCase(.uppercase)
                                 .lineLimit(1)
@@ -405,7 +392,7 @@ struct ProfileView: View {
                                 setDefaultResume(resume)
                             } label: {
                                 Image(systemName: resume.isDefault ? "star.fill" : "star")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .appFont(16, weight: .semibold)
                                     .foregroundStyle(resume.isDefault ? Color.yellow : Theme.textTertiary)
                                     .frame(width: 34, height: 34)
                                     .background(Circle().fill(Color.primary.opacity(0.06)))
@@ -417,7 +404,7 @@ struct ProfileView: View {
                                 resumePendingDeletion = resume
                             } label: {
                                 Image(systemName: "trash")
-                                    .font(.system(size: 14, weight: .semibold))
+                                    .appFont(14, weight: .semibold)
                                     .foregroundStyle(Theme.destructive)
                                     .frame(width: 34, height: 34)
                                     .background(Circle().fill(Theme.destructive.opacity(0.10)))
@@ -430,7 +417,7 @@ struct ProfileView: View {
                     HStack(spacing: 14) {
                         Button { isShowingDocumentPicker = true } label: {
                             Label("Add Resume", systemImage: "plus")
-                                .font(.system(size: 13, weight: .semibold))
+                                .appFont(13, weight: .semibold)
                                 .foregroundStyle(Color.accentColor)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
@@ -445,7 +432,7 @@ struct ProfileView: View {
                         if resumes.count > 5 {
                             Button { isShowingResumeManager = true } label: {
                                 Label("View All", systemImage: "tray.full")
-                                    .font(.system(size: 13, weight: .semibold))
+                                    .appFont(13, weight: .semibold)
                                     .foregroundStyle(Color.accentColor)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 6)
@@ -488,7 +475,7 @@ struct ProfileView: View {
             VStack(spacing: 0) {
                 Toggle(isOn: $hapticsEnabled) {
                     Label("Haptic Feedback", systemImage: "waveform")
-                        .font(.system(size: 15, weight: .medium))
+                        .appFont(15, weight: .medium)
                 }
                 .padding(.vertical, 12)
 
@@ -498,7 +485,7 @@ struct ProfileView: View {
                     isShowingResetConfirmation = true
                 } label: {
                     Label("Reset All Data", systemImage: "trash.fill")
-                        .font(.system(size: 15, weight: .medium))
+                        .appFont(15, weight: .medium)
                         .foregroundStyle(Theme.destructive)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -508,7 +495,7 @@ struct ProfileView: View {
             let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
             let build   = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
             Text("AppNest \(version) (\(build))")
-                .font(.system(size: 11, weight: .medium))
+                .appFont(11, weight: .medium)
                 .foregroundStyle(Theme.textTertiary)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, 4)
@@ -617,16 +604,16 @@ private struct ActivityHeatmapView: View {
             
             HStack {
                 Text("Last 90 days")
-                    .font(.system(size: 10, weight: .medium))
+                    .appFont(10, weight: .medium)
                     .foregroundStyle(Theme.textTertiary)
                 Spacer()
                 HStack(spacing: 4) {
-                    Text("Less").font(.system(size: 8))
+                    Text("Less").appFont(8)
                     Rectangle().fill(heatmapColor(for: 0)).frame(width: 8, height: 8).cornerRadius(1)
                     Rectangle().fill(heatmapColor(for: 1)).frame(width: 8, height: 8).cornerRadius(1)
                     Rectangle().fill(heatmapColor(for: 2)).frame(width: 8, height: 8).cornerRadius(1)
                     Rectangle().fill(heatmapColor(for: 3)).frame(width: 8, height: 8).cornerRadius(1)
-                    Text("More").font(.system(size: 8))
+                    Text("More").appFont(8)
                 }
                 .foregroundStyle(Theme.textTertiary)
             }
@@ -717,7 +704,7 @@ private struct ResumeManagerSheet: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: onUpload)
                     } label: {
                         Image(systemName: "plus")
-                            .font(.system(size: 14, weight: .bold))
+                            .appFont(14, weight: .bold)
                     }
                     .accessibilityLabel("Upload resume")
                 }
@@ -742,7 +729,7 @@ private struct ResumeManagerSheet: View {
 
             Button { onSetDefault(resume) } label: {
                 Image(systemName: resume.isDefault ? "star.fill" : "star")
-                    .font(.system(size: 16, weight: .semibold))
+                    .appFont(16, weight: .semibold)
                     .foregroundStyle(resume.isDefault ? Color.yellow : Theme.textTertiary)
                     .frame(width: 34, height: 34)
                     .background(Circle().fill(Color.primary.opacity(0.06)))
@@ -753,7 +740,7 @@ private struct ResumeManagerSheet: View {
 
             Button(role: .destructive) { onRequestDelete(resume) } label: {
                 Image(systemName: "trash")
-                    .font(.system(size: 14, weight: .semibold))
+                    .appFont(14, weight: .semibold)
                     .foregroundStyle(Theme.destructive)
                     .frame(width: 34, height: 34)
                     .background(Circle().fill(Theme.destructive.opacity(0.10)))

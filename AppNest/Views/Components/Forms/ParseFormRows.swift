@@ -16,7 +16,7 @@ struct EditableFieldRow: View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 11, weight: .semibold))
+                    .appFont(11, weight: .semibold)
                     .foregroundStyle(isEmpty ? .orange : Theme.textSecondary)
                     .frame(width: 14)
                 Text(label)

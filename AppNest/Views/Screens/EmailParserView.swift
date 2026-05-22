@@ -75,15 +75,8 @@ struct EmailParserView: View {
             ToolbarItem(placement: .topBarLeading) {
                 Button("Cancel") { dismiss() }
             }
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                    #if canImport(UIKit)
-                    UIApplication.shared.dismissKeyboard()
-                    #endif
-                }
-            }
         }
+        .dismissKeyboardToolbar()
         .onAppear {
             withAnimation(.appSmooth.delay(0.1)) { cardAppeared = true }
             if let text = initialText, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -108,7 +101,7 @@ struct EmailParserView: View {
             // Header row
             HStack(alignment: .center) {
                 Label("Paste Email", systemImage: "envelope.open.fill")
-                    .font(.system(size: 15, weight: .semibold))
+                    .appFont(15, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
 
                 Spacer()
@@ -122,7 +115,7 @@ struct EmailParserView: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
-                                .font(.system(size: 11, weight: .semibold))
+                                .appFont(11, weight: .semibold)
                             Text("Edit email")
                                 .font(.caption.weight(.medium))
                         }
@@ -141,7 +134,7 @@ struct EmailParserView: View {
                         withAnimation(.appCrisp) { vm.emailText = "" }
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 18))
+                            .appFont(18)
                             .foregroundStyle(Theme.textSecondary)
                     }
                 }
@@ -151,12 +144,12 @@ struct EmailParserView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     if vm.isHighlightExpanded {
                         Text(vm.buildHighlightedString(vm.emailText, spans: vm.highlights))
-                            .font(.system(size: 13))
+                            .appFont(13)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .foregroundStyle(Theme.textSecondary)
                     } else {
                         Text(vm.buildHighlightedString(vm.emailText, spans: vm.highlights))
-                            .font(.system(size: 13))
+                            .appFont(13)
                             .lineLimit(3)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .foregroundStyle(Theme.textSecondary)
@@ -230,7 +223,7 @@ struct EmailParserView: View {
                         Image(systemName: vm.hasResult ? "arrow.clockwise.circle.fill" : "sparkles")
                             .transition(.scale.combined(with: .opacity))
                         Text(vm.hasResult ? "Re-parse" : "Parse Email")
-                            .font(.system(size: 16, weight: .semibold))
+                            .appFont(16, weight: .semibold)
                             .animation(.none, value: vm.isParsing)
                     }
                     .foregroundStyle(.white)

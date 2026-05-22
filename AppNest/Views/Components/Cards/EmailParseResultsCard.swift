@@ -52,7 +52,7 @@ struct EmailParseResultsCard: View {
     private var header: some View {
         HStack {
             Label("Review & Edit", systemImage: "square.and.pencil")
-                .font(.system(size: 15, weight: .semibold))
+                .appFont(15, weight: .semibold)
                 .foregroundStyle(Theme.textPrimary)
 
             Spacer()
@@ -76,7 +76,7 @@ struct EmailParseResultsCard: View {
                         .fill(Theme.avatarFill(for: vm.editCompany.isEmpty ? "?" : vm.editCompany))
                     let initial = vm.editCompany.trimmingCharacters(in: .whitespaces).first.map { String($0).uppercased() } ?? "?"
                     Text(initial)
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .appFont(24, weight: .bold)
                         .foregroundStyle(.white)
                         .opacity(vm.fetchedLogoData == nil ? 1 : 0)
                     if let data = vm.fetchedLogoData, let ui = UIImage(data: data) {
@@ -108,7 +108,7 @@ struct EmailParseResultsCard: View {
                             .fill(Color.accentColor)
                             .frame(width: 20, height: 20)
                         Image(systemName: "pencil")
-                            .font(.system(size: 10, weight: .bold))
+                            .appFont(10, weight: .bold)
                             .foregroundStyle(.white)
                     }
                     .shadow(color: Color.accentColor.opacity(0.28), radius: 4, y: 2)
@@ -211,7 +211,7 @@ struct EmailParseResultsCard: View {
                     vm.saveSuccess ? "Added!" : "Add to Applications",
                     systemImage: vm.saveSuccess ? "checkmark.circle.fill" : "plus.circle.fill"
                 )
-                .font(.system(size: 16, weight: .bold))
+                .appFont(16, weight: .bold)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
@@ -231,7 +231,7 @@ struct EmailParseResultsCard: View {
 
             Button(action: onCancel) {
                 Text("Cancel")
-                    .font(.system(size: 16, weight: .bold))
+                    .appFont(16, weight: .bold)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
