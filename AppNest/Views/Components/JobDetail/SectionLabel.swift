@@ -6,12 +6,13 @@ struct SectionLabel: View {
     let icon: String
     let title: String
     var isRequired: Bool = false
+    var color: Color = Color.accentColor
 
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: icon)
                 .appFont(Theme.sectionLabelSize - 1, weight: .black)
-                .foregroundStyle(Color.accentColor.opacity(0.8))
+                .foregroundStyle(color.opacity(0.8))
             
             HStack(spacing: 2) {
                 Text(title)

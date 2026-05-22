@@ -1076,7 +1076,7 @@ struct ApplicationView: View {
     private var emptyState: some View {
         VStack(spacing: 20) {
             Image(systemName: "tray.fill")
-                .appFont(52)
+                .appFont(48)
                 .foregroundStyle(Theme.textSecondary.opacity(0.4))
             
             VStack(spacing: 8) {
@@ -1099,7 +1099,7 @@ struct ApplicationView: View {
     private var emptyCycleState: some View {
         VStack(spacing: 20) {
             Image(systemName: "folder.badge.questionmark")
-                .appFont(52)
+                .appFont(48)
                 .foregroundStyle(Theme.textSecondary.opacity(0.4))
             
             VStack(spacing: 8) {
@@ -1143,7 +1143,7 @@ struct ApplicationView: View {
         VStack(spacing: 14) {
             if searchText.isEmpty {
                 Image(systemName: "line.3.horizontal.decrease.circle")
-                    .appFont(40)
+                    .appFont(48)
                     .foregroundStyle(Theme.textSecondary.opacity(0.5))
                 Text("No applications match these filters")
                     .appFont(16, weight: .semibold)
@@ -1173,7 +1173,7 @@ struct ApplicationView: View {
                 .buttonStyle(PressScaleButtonStyle())
             } else {
                 Image(systemName: "magnifyingglass")
-                    .appFont(40)
+                    .appFont(48)
                     .foregroundStyle(Theme.textSecondary.opacity(0.5))
                 Text("No results for \"\(searchText)\"")
                     .appFont(16, weight: .semibold)

@@ -256,9 +256,9 @@ struct ProfileView: View {
 
     private var profileCycleChip: some View {
         Button { isShowingCyclePicker = true } label: {
-            HStack(spacing: 5) {
+            HStack(spacing: 6) {
                 Image(systemName: appState.selectedCycleID != nil ? "tray.fill" : "tray.2.fill")
-                    .appFont(10, weight: .semibold)
+                    .appFont(11, weight: .bold)
                 Group {
                     if let id = appState.selectedCycleID,
                        let cycle = cycles.first(where: { $0.id == id }) {
@@ -267,14 +267,14 @@ struct ProfileView: View {
                         Text("All Applications")
                     }
                 }
-                .appFont(12, weight: .semibold)
+                .appFont(13, weight: .bold)
                 .lineLimit(1)
                 Image(systemName: "chevron.down")
-                    .appFont(9, weight: .bold)
+                    .appFont(10, weight: .black)
             }
             .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : Theme.textSecondary)
-            .padding(.horizontal, 11)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
             .background(
                 Capsule()
                     .fill(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.11) : Color.primary.opacity(0.07))
@@ -421,19 +421,9 @@ struct ProfileView: View {
                     }
 
                     HStack(spacing: 14) {
-                        Button { isShowingDocumentPicker = true } label: {
-                            Label("Add Resume", systemImage: "plus")
-                                .appFont(13, weight: .semibold)
-                                .foregroundStyle(Color.accentColor)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(
-                                    Capsule()
-                                        .fill(Color.accentColor.opacity(0.10))
-                                        .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1))
-                                )
+                        ResumePill(title: "Add Resume", style: .add) {
+                            isShowingDocumentPicker = true
                         }
-                        .buttonStyle(PressScaleButtonStyle())
 
                         if resumes.count > 5 {
                             Button { isShowingResumeManager = true } label: {
@@ -497,7 +487,7 @@ struct ProfileView: View {
             .glassCard()
 
             VStack(alignment: .leading, spacing: 12) {
-                SectionLabel(icon: "exclamationmark.triangle.fill", title: "Danger Zone")
+                SectionLabel(icon: "exclamationmark.triangle.fill", title: "Danger Zone", color: Theme.destructive)
 
                 Button(role: .destructive) {
                     isShowingResetConfirmation = true
