@@ -21,11 +21,7 @@ struct AppNestApp: App {
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
                     if let pending = PendingJobImport.consume() {
-                        if let emailText = pending.rawEmailText {
-                            appState.pendingEmailText = emailText
-                        } else {
-                            appState.pendingJobImport = pending
-                        }
+                        appState.pendingJobImport = pending
                     }
                 }
             }

@@ -9,8 +9,6 @@ struct PendingJobImport: Codable, Equatable {
     var status: ApplicationStatus?
     var season: ApplicationSeason?
     var notes: String?
-    /// When set, the main app should open the email parse flow with this text instead of inserting directly.
-    var rawEmailText: String?
 
     static let groupID = "group.com.example.mark.appnest"
     static let defaultsKey = "pendingJobImport"

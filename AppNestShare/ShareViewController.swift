@@ -96,6 +96,138 @@ private enum ShareJobSeason: String, CaseIterable {
     }
 }
 
+// MARK: - Email parser (Foundation-only, no SwiftData dependency)
+
+private struct ShareEmailParser {
+
+    struct Result {
+        var companyName: String?
+        var position: String?
+        var jobType: ShareJobType?
+        var status: ShareJobStatus?
+    }
+
+    func parse(_ text: String) -> Result {
+        Result(
+            companyName: extractCompany(from: text),
+            position:    extractPosition(from: text),
+            jobType:     extractJobType(from: text),
+            status:      extractStatus(from: text)
+        )
+    }
+
+    // MARK: Company
+
+    private func extractCompany(from text: String) -> String? {
+        let patterns = [
+            #"(?:joining|join)\s+(?:our\s+team\s+at\s+|the\s+team\s+at\s+)?([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
+            #"(?:role|position|opportunity|internship|job)\s+(?:at|with)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
+            #"(?:apply|applied|applying)\s+(?:to|for)\s+.+?\s+at\s+([A-Z][A-Za-z0-9&®\s\.]+?)(?:\s+on\b|\s+via\b|\s+through\b|\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
+            #"(?:apply|applied|applying)\s+(?:to|at|for)\s+(?!the\b|a\b|an\b)([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+through\b|\s+via\b|\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
+            #"(?:application|applying|applied)\s+to\s+([A-Z][A-Za-z0-9&\.]+(?:\s+[A-Z][A-Za-z0-9&\.]+){0,2})(?:'s)?\b"#,
+            #"(?:welcome to|offer from)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
+            #"(?:here\s+at|team\s+at)\s+([A-Z][A-Za-z0-9&\.]+(?:\s+[A-Z][A-Za-z0-9&\.]+){0,2})\b"#,
+            #"(?:interest in|interested in)\s+(?!joining\b|applying\b|working\b)([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
+        ]
+        for pattern in patterns {
+            guard let raw = capture(pattern, in: text), raw.first?.isUppercase == true else { continue }
+            var s = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+                       .trimmingCharacters(in: CharacterSet(charactersIn: ".,;:®™"))
+            for prefix in ["position ", "role ", "the position ", "the role ", "the "] {
+                if s.lowercased().hasPrefix(prefix) { s = String(s.dropFirst(prefix.count)) }
+            }
+            if let r = s.range(of: #"\s*-\s*\d{4,}$"#, options: .regularExpression) { s = String(s[..<r.lowerBound]) }
+            s = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !s.isEmpty && s.count < 100 { return s }
+        }
+        return nil
+    }
+
+    // MARK: Position
+
+    private func extractPosition(from text: String) -> String? {
+        let patterns = [
+            // "applied/applying for/to [POSITION]" — flexible terminators
+            #"(?:\bapply\b|application|applied|applying)\s+(?:for|to)\s+(?:the\s+)?(.+?)(?:\s+(?:position|role)\b|\s+(?:at|@)\s+|\s+with\s+(?=[A-Z])|\s+and\s+(?=(?:we|i|they|the|our|a|an|you)\b)|[.,\n]|$)"#,
+            // "applied for/to [POSITION] at/with [COMPANY]"
+            #"(?:application|applied|applying)\s+(?:for|to)\s+(?:the\s+)?(.+?)\s+(?:at|with|@)\s+"#,
+            // "interest in [the] [POSITION] role/position" — rejection/status emails
+            #"interest\s+in\s+(?:the\s+)?(.+?)\s+(?:role|position)\b"#,
+            // "the [POSITION] role/position at [COMPANY]"
+            #"the\s+(.+?)\s+(?:role|position)\s+(?:at|with|@)\s+[A-Z]"#,
+            // "interview you for [POSITION]"
+            #"interview(?:ing)?\s+you\s+for\s+(?:the\s+)?(.+?)(?:\s+(?:at|with|@)\s+|,|\.\s|\n|$)"#,
+            // "offer [you] [the] [POSITION] role/position"
+            #"offer\s+(?:you\s+)?(?:the\s+)?(.+?)\s+(?:role|position)"#,
+            // label: "role:" / "position:" / "job title:" / "title:"
+            #"(?:role|position|job title|title)\s*:\s*(.+?)(?:\n|$)"#,
+            // "position/role of [POSITION]"
+            #"(?:role|position)\s+of\s+(.+?)(?:\s+(?:at|with|@)\s+|[.,\n]|$)"#,
+            // "as a/an [POSITION] at/with"
+            #"as\s+an?\s+(.+?)\s+(?:at|with|@)\s+[A-Z]"#,
+        ]
+        for pattern in patterns {
+            guard let raw = capture(pattern, in: text) else { continue }
+            var s = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+                       .trimmingCharacters(in: CharacterSet(charactersIn: ".,;:"))
+            for noise in ["for the ", "for a ", "for an ", "the ", "our ", "a ", "an "] {
+                if s.lowercased().hasPrefix(noise) { s = String(s.dropFirst(noise.count)).trimmingCharacters(in: .whitespacesAndNewlines); break }
+            }
+            for suffix in [" role", " position"] {
+                if s.lowercased().hasSuffix(suffix) { s = String(s.dropLast(suffix.count)).trimmingCharacters(in: .whitespacesAndNewlines); break }
+            }
+            if !s.isEmpty && s.count < 100 { return s }
+        }
+        return nil
+    }
+
+    // MARK: Job Type
+
+    private func extractJobType(from text: String) -> ShareJobType? {
+        let lower = text.lowercased()
+        if lower.contains("internship") || lower.contains(" intern ") || lower.contains(" intern\n") { return .internship }
+        if lower.contains("co-op") || lower.contains("coop") || lower.contains("co op")              { return .coop }
+        if lower.contains("part-time") || lower.contains("part time")                                { return .partTime }
+        if lower.contains("full-time") || lower.contains("full time")                                { return .fullTime }
+        if lower.contains("contract position") || lower.contains("contractor")                       { return .contract }
+        if lower.contains("temporary position") || lower.contains("temporary role")                  { return .temporary }
+        return nil
+    }
+
+    // MARK: Status
+
+    private func extractStatus(from text: String) -> ShareJobStatus? {
+        let lower = text.lowercased()
+        for p in ["pleased to offer", "we'd like to offer", "offer letter", "welcome to the team", "welcome aboard", "extend an offer"] {
+            if lower.contains(p) { return .offer }
+        }
+        for p in ["unfortunately", "not moving forward", "will not be moving", "regret to inform",
+                  "unable to offer", "after careful consideration", "not been selected", "have not been selected"] {
+            if lower.contains(p) { return .rejected }
+        }
+        for p in ["schedule an interview", "interview invitation", "like to interview", "next round",
+                  "phone screen", "technical interview", "selected for an interview", "invite you to interview"] {
+            if lower.contains(p) { return .interview }
+        }
+        for p in ["thank you for applying", "application received", "successfully submitted",
+                  "we have received your application", "confirm your application"] {
+            if lower.contains(p) { return .applied }
+        }
+        return nil
+    }
+
+    // MARK: Helper
+
+    private func capture(_ pattern: String, in text: String) -> String? {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { return nil }
+        let ns = NSRange(text.startIndex..., in: text)
+        guard let match = regex.firstMatch(in: text, options: [], range: ns),
+              match.numberOfRanges > 1,
+              let r = Range(match.range(at: 1), in: text) else { return nil }
+        return String(text[r])
+    }
+}
+
 // MARK: - Pending import model (mirrors AppNest/Models/PendingJobImport.swift)
 
 struct SharePendingImport: Codable {
@@ -106,7 +238,6 @@ struct SharePendingImport: Codable {
     var status: String?
     var season: String?
     var notes: String?
-    var rawEmailText: String?
 }
 
 // MARK: - View controller
@@ -116,17 +247,22 @@ class ShareViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         let scheme: ColorScheme = traitCollection.userInterfaceStyle == .dark ? .dark : .light
-        extractJobInfo { [weak self] pending, rawURL, emailText in
+        Task { @MainActor [weak self] in
             guard let self else { return }
+            let (pending, rawURL, emailText) = await self.extractJobInfo()
             let rootView: AnyView
             if let emailText {
-                rootView = AnyView(EmailShareConfirmView(
-                    emailText: emailText,
-                    onConfirm: { [weak self] in
-                        self?.saveAndDismiss(SharePendingImport(
-                            companyName: "", position: "", rawEmailText: emailText
-                        ))
-                    },
+                let parsed = ShareEmailParser().parse(emailText)
+                let pending = SharePendingImport(
+                    companyName: parsed.companyName ?? "",
+                    position:    parsed.position ?? "",
+                    jobType:     parsed.jobType?.rawValue,
+                    status:      parsed.status?.rawValue
+                )
+                let model = ShareViewModel(initial: pending, rawURL: nil)
+                rootView = AnyView(ShareView(
+                    model: model,
+                    onSave: { [weak self] saved in self?.saveAndDismiss(saved) },
                     onCancel: { [weak self] in
                         self?.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
                     }
@@ -158,16 +294,15 @@ class ShareViewController: UIViewController {
 
     // MARK: - Extraction
 
-    private func extractJobInfo(completion: @escaping (SharePendingImport, URL?, String?) -> Void) {
+    @MainActor
+    private func extractJobInfo() async -> (SharePendingImport, URL?, String?) {
         guard let items = extensionContext?.inputItems as? [NSExtensionItem] else {
-            completion(SharePendingImport(companyName: "", position: "", sourceURL: nil), nil, nil)
-            return
+            return (SharePendingImport(companyName: "", position: "", sourceURL: nil), nil, nil)
         }
 
         var foundURL: URL?
         var foundEmailText: String?
         var pageTitle: String?
-        let group = DispatchGroup()
 
         for item in items {
             if pageTitle == nil {
@@ -175,9 +310,7 @@ class ShareViewController: UIViewController {
             }
             for provider in item.attachments ?? [] {
                 if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
-                    group.enter()
-                    provider.loadItem(forTypeIdentifier: UTType.url.identifier) { data, _ in
-                        defer { group.leave() }
+                    if let data = try? await provider.loadItem(forTypeIdentifier: UTType.url.identifier) {
                         if let url = data as? URL, url.scheme?.hasPrefix("http") == true {
                             foundURL = url
                         } else if let str = data as? String, str.hasPrefix("http"),
@@ -186,32 +319,25 @@ class ShareViewController: UIViewController {
                         }
                     }
                 } else if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
-                    group.enter()
-                    provider.loadItem(forTypeIdentifier: UTType.plainText.identifier) { data, _ in
-                        defer { group.leave() }
-                        if let str = data as? String {
-                            if str.hasPrefix("http"), let url = URL(string: str.components(separatedBy: .whitespacesAndNewlines).first ?? "") {
-                                foundURL = foundURL ?? url
-                            } else if str.contains("\n") || str.count > 200 {
-                                // Multi-line or long text is an email body, not a page title
-                                foundEmailText = foundEmailText ?? str
-                            } else if pageTitle == nil {
-                                pageTitle = str
-                            }
+                    if let data = try? await provider.loadItem(forTypeIdentifier: UTType.plainText.identifier),
+                       let str = data as? String {
+                        if str.hasPrefix("http"), let url = URL(string: str.components(separatedBy: .whitespacesAndNewlines).first ?? "") {
+                            foundURL = foundURL ?? url
+                        } else if str.contains("\n") || str.count > 200 {
+                            foundEmailText = foundEmailText ?? str
+                        } else if pageTitle == nil {
+                            pageTitle = str
                         }
                     }
                 }
             }
         }
 
-        group.notify(queue: .main) {
-            // Email text takes priority over URL when both are present
-            if let emailText = foundEmailText, foundURL == nil {
-                completion(SharePendingImport(companyName: "", position: ""), nil, emailText)
-            } else {
-                let parsed = Self.parseJobInfo(title: pageTitle, url: foundURL)
-                completion(parsed, foundURL, nil)
-            }
+        if let emailText = foundEmailText, foundURL == nil {
+            return (SharePendingImport(companyName: "", position: ""), nil, emailText)
+        } else {
+            let parsed = Self.parseJobInfo(title: pageTitle, url: foundURL)
+            return (parsed, foundURL, nil)
         }
     }
 
@@ -411,8 +537,11 @@ private final class ShareViewModel {
         companyName = initial.companyName
         position    = initial.position
         sourceURL   = rawURL
-        jobType     = Self.detectJobType(from: initial.position)
-        season      = Self.detectSeason(from: initial.position)
+        jobType     = initial.jobType.flatMap { ShareJobType(rawValue: $0) }
+                   ?? Self.detectJobType(from: initial.position)
+        status      = initial.status.flatMap { ShareJobStatus(rawValue: $0) }
+        season      = initial.season.flatMap { ShareJobSeason(rawValue: $0) }
+                   ?? Self.detectSeason(from: initial.position)
 
         if companyName.isEmpty && position.isEmpty, rawURL != nil {
             isFetchingTitle = true
@@ -465,7 +594,7 @@ private final class ShareViewModel {
         }
         guard let url else { return }
 
-        var request = URLRequest(url: url, timeoutInterval: 10)
+        var request = URLRequest(url: url, timeoutInterval: 5)
         // Desktop Chrome UA — more broadly accepted than mobile Safari by job boards
         request.setValue(
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -1040,140 +1169,3 @@ private struct ShareView: View {
     }
 }
 
-// MARK: - Email Share Confirm View
-
-private struct EmailShareConfirmView: View {
-    @Environment(\.displayScale) private var displayScale
-    let emailText: String
-    let onConfirm: () -> Void
-    let onCancel: () -> Void
-
-    var body: some View {
-        ZStack {
-            Color(uiColor: .systemBackground).ignoresSafeArea()
-            RadialGradient(
-                colors: [Color.orange.opacity(0.08), .clear],
-                center: UnitPoint(x: 1.2, y: -0.1),
-                startRadius: 0,
-                endRadius: 340
-            )
-            .ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                Capsule()
-                    .fill(Color.primary.opacity(0.15))
-                    .frame(width: 32, height: 4)
-                    .padding(.top, 10)
-                    .padding(.bottom, 6)
-
-                HStack {
-                    Button(action: onCancel) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(.primary)
-                            .frame(width: 40, height: 40)
-                            .background {
-                                Circle()
-                                    .fill(.ultraThinMaterial)
-                                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
-                            }
-                    }
-                    Spacer()
-                    HStack(spacing: 7) {
-                        appIconView
-                            .frame(width: 24, height: 24)
-                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                        Text("App Nest")
-                            .font(.system(size: 16, weight: .semibold))
-                    }
-                    .foregroundStyle(.primary)
-                    Spacer()
-                    Color.clear.frame(width: 40, height: 40)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 14)
-
-                Divider().opacity(0.10)
-
-                ScrollView {
-                    VStack(spacing: 20) {
-                        VStack(spacing: 12) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.orange.opacity(0.12))
-                                    .frame(width: 80, height: 80)
-                                Image(systemName: "envelope.open.fill")
-                                    .font(.system(size: 34))
-                                    .foregroundStyle(Color.orange)
-                            }
-                            Text("Email Detected")
-                                .font(.system(size: 22, weight: .bold, design: .rounded))
-                            Text("App Nest will parse this email to extract the company, position, and application status.")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 8)
-                        }
-                        .padding(.top, 16)
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Label("Email Preview", systemImage: "envelope")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                            Text(emailText)
-                                .font(.system(size: 13))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(6)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .padding(14)
-                        .background {
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(.ultraThinMaterial)
-                                .overlay {
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .strokeBorder(Color.primary.opacity(0.07), lineWidth: 1)
-                                }
-                        }
-                        .shadow(color: .black.opacity(0.06), radius: 8, y: 3)
-                    }
-                    .padding()
-                }
-
-                VStack(spacing: 10) {
-                    Button(action: onConfirm) {
-                        Text("Parse in App Nest")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 15)
-                            .background {
-                                Capsule()
-                                    .fill(Color.orange)
-                                    .shadow(color: Color.orange.opacity(0.30), radius: 12, y: 4)
-                            }
-                    }
-                    Button(action: onCancel) {
-                        Text("Cancel")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundStyle(.secondary)
-                            .padding(.vertical, 8)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 28)
-                .padding(.top, 8)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var appIconView: some View {
-        if let icon = loadShareExtensionAppIcon(displayScale: displayScale) {
-            Image(uiImage: icon).resizable().scaledToFill()
-        } else {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(Color(red: 0.73, green: 0.97, blue: 0.91))
-        }
-    }
-}

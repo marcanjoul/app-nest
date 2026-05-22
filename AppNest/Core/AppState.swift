@@ -33,8 +33,6 @@ class AppState {
 
     // MARK: - Share Extension Import
     var pendingJobImport: PendingJobImport?
-    /// Raw email text from the share extension — triggers the email parse sheet.
-    var pendingEmailText: String?
 
     init() {
         selectedCycleID = UserDefaults.standard.string(forKey: "appnest.selectedCycleID")
