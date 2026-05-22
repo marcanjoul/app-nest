@@ -9,6 +9,7 @@ struct JobInfoSection: View {
     @Binding var companyLogoImageData: Data?
     @Binding var position: String
     @Binding var pickerItem: PhotosPickerItem?
+    var onAutoFetchStateChanged: ((Bool) -> Void)? = nil
 
     private enum Field: Hashable { case position, company }
     @FocusState private var focused: Field?
@@ -113,6 +114,7 @@ struct JobInfoSection: View {
                             companyLogoImageData = data
                             isLogoAutoFetched = false
                         }
+                        onAutoFetchStateChanged?(false)
                         AppHaptics.shared.success()
                     }
                 }
@@ -124,6 +126,7 @@ struct JobInfoSection: View {
                             companyLogoImageData = nil
                             isLogoAutoFetched = false
                         }
+                        onAutoFetchStateChanged?(false)
                         AppHaptics.shared.light()
                     } label: {
                         Label("Remove Logo", systemImage: "trash")
@@ -136,6 +139,7 @@ struct JobInfoSection: View {
                         companyLogoImageData = nil
                         isLogoAutoFetched = false
                     }
+                    onAutoFetchStateChanged?(false)
                 }
                 guard companyLogoImageData == nil else { return }
                 let trimmed = companyName.trimmingCharacters(in: .whitespaces)
@@ -148,6 +152,7 @@ struct JobInfoSection: View {
                         companyLogoImageData = data
                         isLogoAutoFetched = true
                     }
+                    onAutoFetchStateChanged?(true)
                     AppHaptics.shared.light()
                 }
                 withAnimation(.appFastOut) { isFetchingLogo = false }
@@ -191,10 +196,6 @@ struct JobInfoSection: View {
                             .frame(height: 1)
                             .animation(.appCrisp, value: focused == .company)
                     }
-            }
-            .onChange(of: focused) { _, newFocus in
-                if newFocus != .position { position = position.trimmingCharacters(in: .whitespaces) }
-                if newFocus != .company { companyName = companyName.trimmingCharacters(in: .whitespaces) }
             }
             .padding(.horizontal, 16)
         }

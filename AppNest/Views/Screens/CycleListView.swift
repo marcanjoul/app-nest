@@ -25,33 +25,16 @@ struct CycleListView: View {
             } else {
                 List {
                     ForEach(Array(cycles.enumerated()), id: \.element.id) { index, cycle in
-                        SwipeActionRow(
-                            leadingActions: [],
-                            trailingActions: [
-                                SwipeAction(
-                                    title: "Rename",
-                                    icon: "pencil",
-                                    color: Color.accentColor,
-                                    action: {
-                                        cycleToRename = cycle
-                                        renameText = cycle.name
-                                    }
-                                ),
-                                SwipeAction(
-                                    title: "Delete",
-                                    icon: "trash.fill",
-                                    color: Theme.destructive,
-                                    action: { cycleToDelete = cycle }
-                                )
-                            ],
-                            isEditMode: false
-                        ) {
-                            CycleRow(
-                                cycle: cycle,
-                                isActive: appState.selectedCycleID == cycle.id,
-                                onSelect: { selectCycle(cycle) }
-                            )
-                        }
+                        CycleSwipeRow(
+                            cycle: cycle,
+                            isActive: appState.selectedCycleID == cycle.id,
+                            onSelect: { selectCycle(cycle) },
+                            onRename: {
+                                cycleToRename = cycle
+                                renameText = cycle.name
+                            },
+                            onDelete: { cycleToDelete = cycle }
+                        )
                         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
@@ -189,48 +172,81 @@ struct CycleListView: View {
     }
 }
 
+// MARK: - Cycle Swipe Row
+
+struct CycleSwipeRow: View {
+    let cycle: JobCycle
+    let isActive: Bool
+    let onSelect: () -> Void
+    let onRename: () -> Void
+    let onDelete: () -> Void
+
+    @State private var swipeJustFired = false
+
+    var body: some View {
+        SwipeActionRow(
+            leadingActions: [],
+            trailingActions: [
+                SwipeAction(title: "Rename", icon: "pencil", color: Color.accentColor, action: onRename),
+                SwipeAction(title: "Delete", icon: "trash.fill", color: Theme.destructive, action: onDelete)
+            ],
+            isEditMode: false,
+            cornerRadius: 16,
+            onActionTriggered: {
+                swipeJustFired = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { swipeJustFired = false }
+            }
+        ) {
+            Button {
+                guard !swipeJustFired else { return }
+                AppHaptics.shared.light()
+                onSelect()
+            } label: {
+                CycleRow(cycle: cycle, isActive: isActive)
+            }
+            .buttonStyle(CardPressButtonStyle())
+        }
+    }
+}
+
 // MARK: - Cycle Row
 
 struct CycleRow: View {
     let cycle: JobCycle
     let isActive: Bool
-    let onSelect: () -> Void
 
     var body: some View {
-        Button(action: onSelect) {
-            HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(cycle.name)
-                        .appFont(16, weight: .semibold)
-                        .foregroundStyle(isActive ? Color.accentColor : Theme.textPrimary)
-                        .animation(.appCrisp, value: isActive)
-                    Text("\(cycle.applications.count) application\(cycle.applications.count == 1 ? "" : "s")")
-                        .appFont(12, weight: .medium)
-                        .foregroundStyle(Theme.textSecondary)
-                }
-                Spacer()
-                Image(systemName: "checkmark")
-                    .appFont(12, weight: .bold)
-                    .foregroundStyle(Color.accentColor)
-                    .opacity(isActive ? 1 : 0)
-                    .scaleEffect(isActive ? 1 : 0.9)
-                    .animation(.appBouncy, value: isActive)
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(cycle.name)
+                    .appFont(16, weight: .semibold)
+                    .foregroundStyle(isActive ? Color.accentColor : Theme.textPrimary)
+                    .animation(.appCrisp, value: isActive)
+                Text("\(cycle.applications.count) application\(cycle.applications.count == 1 ? "" : "s")")
+                    .appFont(12, weight: .medium)
+                    .foregroundStyle(Theme.textSecondary)
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 15)
-            .background {
-                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                    .fill(Theme.cardFill)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                            .strokeBorder(
-                                isActive ? Color.accentColor.opacity(0.45) : Theme.cardBorder,
-                                lineWidth: isActive ? 1.5 : 1
-                            )
-                    )
-            }
+            Spacer()
+            Image(systemName: "checkmark")
+                .appFont(12, weight: .bold)
+                .foregroundStyle(Color.accentColor)
+                .opacity(isActive ? 1 : 0)
+                .scaleEffect(isActive ? 1 : 0.9)
+                .animation(.appBouncy, value: isActive)
         }
-        .buttonStyle(PressScaleButtonStyle())
+        .padding(.horizontal, 18)
+        .padding(.vertical, 15)
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Theme.cardFill)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(
+                            isActive ? Color.accentColor.opacity(0.45) : Theme.cardBorder,
+                            lineWidth: isActive ? 1.5 : 1
+                        )
+                )
+        }
         .animation(.appCrisp, value: isActive)
     }
 }

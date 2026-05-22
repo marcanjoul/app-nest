@@ -51,6 +51,7 @@ struct JobDetailView: View {
     @State private var keyboardIsVisible = false
     @State private var scrollTargetSection: FormSection?
     @State private var contentAppeared = false
+    @State private var isLogoAutoFetched = false
     var isSheetPresentation: Bool = false
 
     private enum FormSection: Hashable {
@@ -72,7 +73,7 @@ struct JobDetailView: View {
             return orig.hour != cur.hour || orig.minute != cur.minute
         }()
         return companyName          != job.companyName
-            || companyLogoImageData != job.companyLogoImageData
+            || (!isLogoAutoFetched && companyLogoImageData != job.companyLogoImageData)
             || position             != job.position
             || type                 != job.jobType
             || status               != job.status
@@ -308,7 +309,7 @@ struct JobDetailView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
-                .padding(.bottom, 100)
+                .padding(.bottom, 16)
                 .background(Color(UIColor.systemBackground))
             }
             .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -320,6 +321,7 @@ struct JobDetailView: View {
         guard let job else { return }
         companyName          = job.companyName
         companyLogoImageData = job.companyLogoImageData
+        isLogoAutoFetched    = false
         position             = job.position
         type                 = job.jobType
         status               = job.status
@@ -446,7 +448,8 @@ struct JobDetailView: View {
             companyName: $companyName,
             companyLogoImageData: $companyLogoImageData,
             position: $position,
-            pickerItem: $pickerItem
+            pickerItem: $pickerItem,
+            onAutoFetchStateChanged: { isLogoAutoFetched = $0 }
         )
         .id(FormSection.info)
         .modifier(ShakeEffect(animatableData: shakingSection == .info ? 1 : 0))
@@ -830,9 +833,9 @@ struct JobDetailView: View {
         let wantsReminder = status == .toApply && reminderEnabled
 
         if let job {
-            job.companyName         = companyName
+            job.companyName         = companyName.trimmingCharacters(in: .whitespaces)
             job.companyLogoImageData = companyLogoImageData
-            job.position            = position
+            job.position            = position.trimmingCharacters(in: .whitespaces)
             job.jobType             = type
             job.status              = status
             job.season              = season
