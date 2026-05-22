@@ -15,6 +15,7 @@ struct CyclePickerSheet: View {
     @State private var isAddingCycle = false
     @State private var isRenamingCycle = false
     @State private var isConfirmingDelete = false
+    @State private var isDuplicateNameAlertShowing = false
     @State private var cycleToEdit: JobCycle?
     @State private var newCycleName  = ""
 

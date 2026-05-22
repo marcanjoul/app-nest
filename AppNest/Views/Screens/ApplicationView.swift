@@ -127,8 +127,6 @@ struct ApplicationView: View {
                     }
                     .padding(.top, 16)
 
-                    cycleSelectorChip
-                        .padding(.top, 8)
                 }
                 .opacity(appState.dashboardHasAppeared ? 1 : 0)
                 .offset(y: appState.dashboardHasAppeared ? 0 : 20)
@@ -169,6 +167,22 @@ struct ApplicationView: View {
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .selectionDisabled()
+
+                // Cycle chip + actions
+                HStack {
+                    cycleSelectorChip
+                    Spacer()
+                    if !applications.isEmpty {
+                        headerActionButtons
+                    }
+                }
+                .opacity(appState.dashboardHasAppeared ? 1 : 0)
+                .offset(y: appState.dashboardHasAppeared ? 0 : 8)
+                .animation(.appSmooth.delay(0.18), value: appState.dashboardHasAppeared)
+                .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .selectionDisabled()
 
                 // Content
                 if cycleFiltered.isEmpty && !applications.isEmpty && appState.selectedCycleID != nil {
@@ -951,12 +965,6 @@ struct ApplicationView: View {
                 ))
             }
 
-            if !applications.isEmpty {
-                HStack {
-                    Spacer()
-                    headerActionButtons
-                }
-            }
         }
     }
 
@@ -1068,7 +1076,7 @@ struct ApplicationView: View {
             }
             .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : Theme.textSecondary)
             .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .frame(height: 44)
             .background {
                 Capsule()
                     .fill(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.12) : Theme.cardFill)
