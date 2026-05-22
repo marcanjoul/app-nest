@@ -16,7 +16,7 @@ An iOS app for tracking job and internship applications, built with SwiftUI.
 | | |
 |---|---|
 | **Applications** | Company, position, type, status, season, compensation, notes, resume attachment |
-| **Swipe to advance** | Swipe right to move a card through the pipeline; swipe left to delete with undo |
+| **Swipe to delete** | Swipe left on any card to delete; tap the card to open the full detail sheet |
 | **Cycles** | Group applications by search period (e.g. "Summer 2026", "Full-Time 2027") |
 | **Bulk actions** | Edit Mode for mass delete or move-to-cycle |
 
@@ -32,6 +32,7 @@ An iOS app for tracking job and internship applications, built with SwiftUI.
 ### Per-Application Tools
 | | |
 |---|---|
+| **Detail sheet** | Tap any card to open a 90% sheet with drag-to-dismiss; save bar only appears on actual changes |
 | **Interview Kit** | Per-application Company Research and Interview Prep note editors inside the job detail view |
 | **Application Reminders** | Schedule local push notifications to follow up on any application |
 
@@ -55,6 +56,7 @@ An iOS app for tracking job and internship applications, built with SwiftUI.
 | Logo Lookup | Logo.dev API |
 | Architecture | Hybrid: `@Query` for reactive data + `@Observable` ViewModel for complex form state |
 | Design System | Adaptive light/dark theme — flat design, no gradients, no button shadows; Emil-motion principles |
+| Accessibility | Dynamic Type via `@ScaledMetric`-backed `appFont()` modifier; 44pt minimum touch targets |
 
 ---
 
