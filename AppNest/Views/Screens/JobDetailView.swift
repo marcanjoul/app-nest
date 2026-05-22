@@ -644,6 +644,21 @@ struct JobDetailView: View {
                 dateAppliedSectionView
                 locationSectionView
             }
+
+            HStack(spacing: 10) {
+                Rectangle()
+                    .fill(Color.primary.opacity(0.08))
+                    .frame(height: 1)
+                Text("OPTIONAL")
+                    .appFont(11, weight: .bold)
+                    .tracking(0.8)
+                    .foregroundStyle(Theme.textTertiary.opacity(0.6))
+                Rectangle()
+                    .fill(Color.primary.opacity(0.08))
+                    .frame(height: 1)
+            }
+            .padding(.horizontal, 4)
+
             Group {
                 jobLinkSectionView
                 compensationSectionView

@@ -167,11 +167,16 @@ struct ApplicationView: View {
                     .selectionDisabled()
 
                 // Cycle chip + actions
-                HStack {
-                    cycleSelectorChip
-                    Spacer()
-                    if !applications.isEmpty {
-                        headerActionButtons
+                VStack(spacing: 10) {
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.07))
+                        .frame(height: 1)
+                    HStack {
+                        cycleSelectorChip
+                        Spacer()
+                        if !applications.isEmpty {
+                            headerActionButtons
+                        }
                     }
                 }
                 .opacity(appState.dashboardHasAppeared ? 1 : 0)

@@ -296,6 +296,9 @@ struct ProfileView: View {
                 HStack {
                     SectionLabel(icon: "chart.bar.fill", title: "Pipeline")
                     Spacer()
+                    Text("\(totalCount)")
+                        .appFont(15, weight: .bold)
+                        .foregroundStyle(Color.accentColor.opacity(0.75))
                     Image(systemName: "chevron.right")
                         .appFont(12, weight: .bold)
                         .foregroundStyle(Theme.textSecondary.opacity(0.6))
@@ -351,6 +354,10 @@ struct ProfileView: View {
             }
             .padding(18)
             .glassCard()
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .strokeBorder(Color.accentColor.opacity(0.18), lineWidth: 1.5)
+            )
         }
         .buttonStyle(.plain)
     }
@@ -468,17 +475,29 @@ struct ProfileView: View {
     // MARK: - Settings
 
     private var settingsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SectionLabel(icon: "gearshape.fill", title: "Settings")
+        VStack(spacing: 14) {
+            VStack(alignment: .leading, spacing: 16) {
+                SectionLabel(icon: "gearshape.fill", title: "Settings")
 
-            VStack(spacing: 0) {
                 Toggle(isOn: $hapticsEnabled) {
                     Label("Haptic Feedback", systemImage: "waveform")
                         .appFont(15, weight: .medium)
                 }
-                .padding(.vertical, 12)
+                .padding(.vertical, 4)
 
-                Divider().opacity(0.4)
+                let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+                let build   = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
+                Text("AppNest \(version) (\(build))")
+                    .appFont(11, weight: .medium)
+                    .foregroundStyle(Theme.textTertiary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 4)
+            }
+            .padding(18)
+            .glassCard()
+
+            VStack(alignment: .leading, spacing: 12) {
+                SectionLabel(icon: "exclamationmark.triangle.fill", title: "Danger Zone")
 
                 Button(role: .destructive) {
                     isShowingResetConfirmation = true
@@ -488,19 +507,18 @@ struct ProfileView: View {
                         .foregroundStyle(Theme.destructive)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 12)
+                .padding(.vertical, 4)
             }
-
-            let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
-            let build   = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
-            Text("AppNest \(version) (\(build))")
-                .appFont(11, weight: .medium)
-                .foregroundStyle(Theme.textTertiary)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 4)
+            .padding(18)
+            .background {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Theme.destructive.opacity(0.05))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .strokeBorder(Theme.destructive.opacity(0.18), lineWidth: 1)
+                    )
+            }
         }
-        .padding(18)
-        .glassCard()
     }
 
     // MARK: - Helpers
