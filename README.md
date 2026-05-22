@@ -6,9 +6,30 @@ An iOS app for tracking job and internship applications, built with SwiftUI.
 
 ## Demo GIFs
 
-| Manual Entry | Parse Link | Parse Email | Import CSV |
-|:---:|:---:|:---:|:---:|
-| ![](<Demo GIFs/manual entry.gif>) | ![](<Demo GIFs/parse link.gif>) | ![](<Demo GIFs/parse email.gif>) | ![](<Demo GIFs/import csv.gif>) |
+<table>
+  <tr>
+    <td align="center">
+      <details><summary>Manual Entry</summary>
+        <img src="Demo%20GIFs/manual%20entry.gif" alt="Manual Entry">
+      </details>
+    </td>
+    <td align="center">
+      <details><summary>Parse Link</summary>
+        <img src="Demo%20GIFs/parse%20link.gif" alt="Parse Link">
+      </details>
+    </td>
+    <td align="center">
+      <details><summary>Parse Email</summary>
+        <img src="Demo%20GIFs/parse%20email.gif" alt="Parse Email">
+      </details>
+    </td>
+    <td align="center">
+      <details><summary>Import CSV</summary>
+        <img src="Demo%20GIFs/import%20csv.gif" alt="Import CSV">
+      </details>
+    </td>
+  </tr>
+</table>
 
 ---
 
