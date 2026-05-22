@@ -212,7 +212,7 @@ struct ApplicationView: View {
                 } else {
                     if isEditMode {
                         selectionToolbar
-                            .listRowInsets(EdgeInsets(top: 4, leading: 24, bottom: 10, trailing: 24))
+                            .listRowInsets(EdgeInsets(top: 4, leading: 20, bottom: 10, trailing: 20))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
                             .selectionDisabled()
@@ -1081,10 +1081,10 @@ struct ApplicationView: View {
             
             VStack(spacing: 8) {
                 Text("No applications yet")
-                    .font(.title3.weight(.bold))
+                    .appFont(20, weight: .bold)
                     .foregroundStyle(Theme.textPrimary)
                 Text("Track your first job manually, paste a link, or import from a CSV.")
-                    .font(.subheadline)
+                    .appFont(14)
                     .foregroundStyle(Theme.textSecondary)
                     .multilineTextAlignment(.center)
             }
@@ -1104,10 +1104,10 @@ struct ApplicationView: View {
             
             VStack(spacing: 8) {
                 Text("No apps in this cycle")
-                    .font(.title3.weight(.bold))
+                    .appFont(20, weight: .bold)
                     .foregroundStyle(Theme.textPrimary)
                 Text("You haven't added any jobs to this search cycle yet.")
-                    .font(.subheadline)
+                    .appFont(14)
                     .foregroundStyle(Theme.textSecondary)
                     .multilineTextAlignment(.center)
             }
@@ -1140,7 +1140,7 @@ struct ApplicationView: View {
     }
 
     private var noResultsState: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 20) {
             if searchText.isEmpty {
                 Image(systemName: "line.3.horizontal.decrease.circle")
                     .appFont(48)
@@ -1161,10 +1161,10 @@ struct ApplicationView: View {
                     }
                     AppHaptics.shared.light()
                 }
-                .appFont(14, weight: .semibold)
+                .appFont(13, weight: .semibold)
                 .foregroundStyle(Color.accentColor)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 7)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
                 .background(
                     Capsule()
                         .fill(Color.accentColor.opacity(0.10))
@@ -1183,10 +1183,10 @@ struct ApplicationView: View {
                         searchText = ""
                         AppHaptics.shared.light()
                     }
-                    .appFont(14, weight: .semibold)
+                    .appFont(13, weight: .semibold)
                     .foregroundStyle(Color.accentColor)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 7)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
                     .background(
                         Capsule()
                             .fill(Color.accentColor.opacity(0.10))
@@ -1205,10 +1205,10 @@ struct ApplicationView: View {
                             }
                             AppHaptics.shared.light()
                         }
-                        .appFont(14, weight: .semibold)
+                        .appFont(13, weight: .semibold)
                         .foregroundStyle(Theme.textSecondary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 7)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
                         .background(
                             Capsule()
                                 .fill(Color.primary.opacity(0.06))

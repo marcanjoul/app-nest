@@ -292,7 +292,7 @@ struct ProfileView: View {
 
     private var pipelineSection: some View {
         NavigationLink(destination: ProfileStatsView()) {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 16) {
                 HStack {
                     SectionLabel(icon: "chart.bar.fill", title: "Pipeline")
                     Spacer()
@@ -340,7 +340,7 @@ struct ProfileView: View {
                         
                         if i < pipelineStatuses.count - 1 {
                             Rectangle()
-                                .fill(Color.primary.opacity(0.06))
+                                .fill(Color.primary.opacity(0.12))
                                 .frame(width: 1, height: 30)
                         }
                     }
@@ -367,11 +367,8 @@ struct ProfileView: View {
     // MARK: - Resume Section
 
     private var resumeSection: some View {
-        VStack(spacing: 14) {
-            HStack {
-                SectionLabel(icon: "doc.richtext.fill", title: "Resumes")
-                Spacer()
-            }
+        VStack(spacing: 16) {
+            SectionLabel(icon: "doc.richtext.fill", title: "Resumes")
 
             if resumes.isEmpty {
                 HStack {
@@ -490,7 +487,7 @@ struct ProfileView: View {
             .padding(18)
             .glassCard()
 
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 16) {
                 SectionLabel(icon: "exclamationmark.triangle.fill", title: "Danger Zone", color: Theme.destructive)
 
                 Button(role: .destructive) {

@@ -6,7 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-
 /* Begin PBXFileReference section */
 		147237C52E75AF4D00192B0B /* AppNest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AppNest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */

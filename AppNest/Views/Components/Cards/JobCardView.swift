@@ -1,181 +1,205 @@
 import SwiftUI
+import SwiftData
 #if canImport(UIKit)
 import UIKit
 #endif
 
-struct JobCardView: View {
+// MARK: - Sparkle Animation
+
+struct SparkleView: View {
+    @State private var animate = false
+    @State private var offsets: [(CGFloat, CGFloat)] = []
+    @State private var sizes: [CGFloat] = []
+    let color: Color
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<6, id: \.self) { i in
+                if i < offsets.count {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: sizes[i]))
+                        .foregroundStyle(color)
+                        .offset(x: animate ? offsets[i].0 : 0,
+                                y: animate ? offsets[i].1 : 0)
+                        .scaleEffect(animate ? 0.2 : 1.2)
+                        .opacity(animate ? 0 : 1)
+                        .rotationEffect(.degrees(Double(i) * 60))
+                }
+            }
+        }
+        .onAppear {
+            offsets = (0..<6).map { _ in (CGFloat.random(in: -30...30), CGFloat.random(in: -30...30)) }
+            sizes   = (0..<6).map { _ in CGFloat.random(in: 12...20) }
+            withAnimation(.easeOut(duration: 1.2)) { animate = true }
+        }
+    }
+}
+
+// MARK: - Job Card View
+
+/// Full glassmorphic job application card with avatar, status pill, and type tag.
+struct DarkJobCardView: View {
     let job: JobApplication
+    @State private var showCelebration = false
+    @State private var showStatusMenu = false
+    @State private var showTypeMenu = false
 
-    private var appliedRelativeText: String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .short
-        return formatter.localizedString(for: job.dateApplied, relativeTo: Date())
-    }
-    
-    private var avatarColors: (background: Color, foreground: Color) {
-        Theme.avatarColor(for: job.companyName)
-    }
-    
-    private var initial: String {
-        String(job.companyName.prefix(1)).uppercased()
-    }
+    private static let relativeDateFormatter: RelativeDateTimeFormatter = {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .abbreviated
+        return f
+    }()
 
-    private var showReminderBadge: Bool {
-        job.status == .toApply && job.reminderEnabled
+    private var dateText: String {
+        Self.relativeDateFormatter.localizedString(for: job.dateApplied, relativeTo: Date())
     }
 
-    private var reminderBadgeColor: Color {
-        job.dateApplied <= Date() ? .orange : Color.accentColor
-    }
-
-    @State private var isFetchingLogo = false
+    private var initial: String { String(job.companyName.prefix(1)).uppercased() }
 
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
-            // Company avatar — image or letter fallback
-            Group {
-                #if canImport(UIKit)
-                if let data = job.companyLogoImageData, let ui = UIImage(data: data) {
-                    Image(uiImage: ui)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    Text(initial)
-                        .appFont(20, weight: .bold)
-                        .foregroundStyle(avatarColors.foreground)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(avatarColors.background)
-                }
-                #else
-                Text(initial)
-                    .appFont(20, weight: .bold)
-                    .foregroundStyle(avatarColors.foreground)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(avatarColors.background)
-                #endif
-            }
-            .frame(width: 60, height: 60)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .background {
-                if isFetchingLogo {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color.primary.opacity(0.12))
-                        .shimmer()
-                }
-            }
-            .opacity(isFetchingLogo ? 0.8 : 1.0)
-            .overlay(alignment: .bottomTrailing) {
-                if showReminderBadge {
-                    ZStack {
-                        Circle()
-                            .fill(reminderBadgeColor)
-                            .frame(width: 20, height: 20)
-                        Image(systemName: "bell.fill")
-                            .appFont(9, weight: .bold)
-                            .foregroundStyle(.white)
+            avatarView
+                .frame(width: 60, height: 60)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .shadow(color: .black.opacity(0.20), radius: 4, y: 2)
+                .overlay {
+                    if showCelebration {
+                        SparkleView(color: Color(red: 0.30, green: 0.80, blue: 0.45))
+                            .transition(.opacity)
+                            .onAppear {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                    showCelebration = false
+                                }
+                            }
                     }
-                    .offset(x: 4, y: 4)
-                    .transition(.scale.combined(with: .opacity))
                 }
-            }
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(job.position)
                     .appFont(16, weight: .bold)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(Theme.textPrimary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
-                    
-                Text(job.companyName)
-                    .appFont(14, weight: .medium)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
 
-                HStack(spacing: 4) {
+                HStack {
+                    Text(job.companyName)
+                        .appFont(14)
+                        .foregroundStyle(Theme.textSecondary)
+                        .lineLimit(1)
+                    Spacer()
+                    Text(dateText)
+                        .appFont(11)
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack(spacing: 6) {
                     if let status = job.status {
-                        let style = Theme.tagStyle(for: status)
-                        StatusPill(text: status.rawValue, background: style.background, foreground: style.foreground)
+                        DarkStatusPill(status: status)
+                            .onLongPressGesture(minimumDuration: 0.35) {
+                                AppHaptics.shared.medium()
+                                showStatusMenu = true
+                            }
+                            .sheet(isPresented: $showStatusMenu) {
+                                PillPickerSheet(
+                                    current: job.status,
+                                    colorFor: { $0.color },
+                                    iconFor: { $0.iconName }
+                                ) { newStatus in
+                                    withAnimation(.appSmooth) { job.status = newStatus }
+                                }
+                                .presentationDetents([.height(290)])
+                                .presentationCornerRadius(24)
+                                .presentationDragIndicator(.hidden)
+                                .presentationBackground(.ultraThinMaterial)
+                            }
                     }
-                    if let season = job.season {
-                        let style = Theme.tagStyle(for: season)
-                        StatusPill(text: season.rawValue, background: style.background, foreground: style.foreground)
+                    if let type = job.jobType {
+                        DarkTypeTag(text: type.rawValue, icon: type.iconName, color: type.color)
+                            .onLongPressGesture(minimumDuration: 0.35) {
+                                AppHaptics.shared.medium()
+                                showTypeMenu = true
+                            }
+                            .sheet(isPresented: $showTypeMenu) {
+                                PillPickerSheet(
+                                    current: job.jobType,
+                                    colorFor: { $0.color },
+                                    iconFor: { $0.iconName }
+                                ) { newType in
+                                    withAnimation(.appSmooth) { job.jobType = newType }
+                                }
+                                .presentationDetents([.height(240)])
+                                .presentationCornerRadius(24)
+                                .presentationDragIndicator(.hidden)
+                                .presentationBackground(.ultraThinMaterial)
+                            }
                     }
                 }
                 .padding(.top, 2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-
-            VStack(alignment: .trailing, spacing: 4) {
-                Image(systemName: "chevron.right")
-                    .appFont(12, weight: .bold)
-                    .foregroundStyle(Theme.textTertiary)
-
-                Spacer()
-
-                Text(appliedRelativeText)
-                    .appFont(11, weight: .medium)
-                    .foregroundStyle(Theme.textSecondary.opacity(0.6))
-            }
         }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(.secondarySystemGroupedBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color(.separator).opacity(0.3), lineWidth: 0.5)
-        )
-        .animation(.appCrisp, value: showReminderBadge)
-        .animation(.appSmooth, value: isFetchingLogo)
+        .padding(16)
+        .glassCard(cornerRadius: Theme.cardRadius)
         .task(id: job.companyName) {
             guard job.companyLogoImageData == nil else { return }
             let trimmed = job.companyName.trimmingCharacters(in: .whitespaces)
             guard trimmed.count >= 2 else { return }
-            
-            isFetchingLogo = true
             if let data = await LogoFetcher.fetchLogoData(for: trimmed) {
                 await MainActor.run {
                     withAnimation(.appSmooth) {
                         job.companyLogoImageData = data
-                        isFetchingLogo = false
                     }
                 }
-            } else {
-                isFetchingLogo = false
             }
         }
+        .onChange(of: job.status) { old, new in
+            if new == .offer && old != .offer {
+                showCelebration = true
+                AppHaptics.shared.success()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var avatarView: some View {
+        #if canImport(UIKit)
+        if let data = job.companyLogoImageData, let ui = UIImage(data: data) {
+            Image(uiImage: ui)
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.white.opacity(0.05))
+        } else {
+            Text(initial)
+                .appFont(20, weight: .bold)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Theme.avatarFill(for: job.companyName))
+        }
+        #else
+        Text(initial)
+            .appFont(20, weight: .bold)
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Theme.avatarFill(for: job.companyName))
+        #endif
     }
 }
 
 #Preview {
-    VStack(spacing: 10) {
-        JobCardView(job: JobApplication(
-            companyName: "Google",
-            position: "Software Engineering Intern - 2026",
-            jobType: .internship,
-            status: .applied,
-            season: .summer,
-            dateApplied: Date().addingTimeInterval(-86_400 * 10)
-        ))
-        JobCardView(job: JobApplication(
-            companyName: "Apple",
-            position: "iOS Engineer Intern",
-            jobType: .internship,
-            status: .interview,
-            season: .summer,
-            dateApplied: Date().addingTimeInterval(-86_400 * 5)
-        ))
-        JobCardView(job: JobApplication(
-            companyName: "Meta",
-            position: "SDE Intern",
-            jobType: .internship,
-            status: .rejected,
-            season: .summer,
-            dateApplied: Date().addingTimeInterval(-86_400 * 20)
-        ))
+    ZStack {
+        AmbientBackground()
+        VStack {
+            DarkJobCardView(job: JobApplication(
+                companyName: "Google",
+                position: "Product Design Intern",
+                jobType: .internship,
+                status: .applied,
+                season: .summer,
+                dateApplied: Date()
+            ))
+        }
+        .padding()
     }
-    .padding()
-    .background(Color(.systemGroupedBackground))
-    .modelContainer(for: [JobApplication.self, ResumeDocument.self], inMemory: true)
+    .background(AmbientBackground())
 }

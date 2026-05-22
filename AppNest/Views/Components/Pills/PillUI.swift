@@ -35,8 +35,8 @@ struct FilterToken: View {
                     .fill(isActive ? Color.accentColor.opacity(0.10) : Color.primary.opacity(0.06))
                     .overlay(
                         Capsule().strokeBorder(
-                            isActive ? Color.accentColor.opacity(0.25) : Color.primary.opacity(isExpanded ? 0.15 : 0.09),
-                            lineWidth: isExpanded ? 1.2 : 0.8
+                            isActive ? Color.accentColor.opacity(0.25) : Color.primary.opacity(isExpanded ? 0.18 : 0.14),
+                            lineWidth: isExpanded ? 1.2 : 1.0
                         )
                     )
             )
