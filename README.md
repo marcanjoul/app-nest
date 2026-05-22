@@ -74,7 +74,7 @@ An iOS app for tracking job and internship applications, built with SwiftUI.
 | NLP / Parsing | Apple NaturalLanguage (NLTagger) + Regex + NSDataDetector |
 | Logo Lookup | Logo.dev API |
 | Architecture | Hybrid: `@Query` for reactive data + `@Observable` ViewModel for complex form state |
-| Design System | Adaptive light/dark theme — flat design, no gradients, no button shadows; Emil-motion principles |
+| Design System | Adaptive light/dark theme — flat design |
 | Accessibility | Dynamic Type via `@ScaledMetric`-backed `appFont()` modifier; 44pt minimum touch targets |
 
 ---
