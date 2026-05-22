@@ -31,9 +31,6 @@ class AppState {
     /// Incrementing this scrolls ApplicationView back to the top.
     var scrollToTopTrigger: Int = 0
 
-    // MARK: - Share Extension Import
-    var pendingJobImport: PendingJobImport?
-
     init() {
         selectedCycleID = UserDefaults.standard.string(forKey: "appnest.selectedCycleID")
             .flatMap(UUID.init(uuidString:))

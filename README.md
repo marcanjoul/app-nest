@@ -26,6 +26,8 @@ An iOS app for tracking job and internship applications, built with SwiftUI.
   </tr>
 </table>
 
+> **Note:** Manual entry GIF coming soon.
+
 ---
 
 
@@ -44,9 +46,8 @@ An iOS app for tracking job and internship applications, built with SwiftUI.
 |---|---|
 | **Central Add Hub** | Unified "Add Job" tab featuring inline ATS link parsing, email parsing, CSV import, and manual entry |
 | **ATS Link Parsing** | Paste Greenhouse, Lever, Ashby, or Workday links to auto-extract company and position |
-| **Share Extension** | Share any job URL from Safari — auto-parses company, position, job type, and season |
 | **CSV Import** | Flexible mapper handles any column naming; preview and edit before committing |
-| **Email Parsing** | Paste a confirmation email — on-device AI extracts company, position, status, and compensation |
+| **Email Parsing** | Paste a confirmation email — on-device NLP extracts company, position, status, and compensation |
 
 ### Per-Application Tools
 | | |
@@ -87,15 +88,12 @@ AppNest uses a hybrid architecture. Views query the database directly via `@Quer
 AppNest/
 ├── Core/                 # Entry point, AppState, and API Config
 ├── Design System/        # Adaptive theme, motion curves, and haptics
-├── Models/               # SwiftData @Models + NotificationManager + PendingJobImport
+├── Models/               # SwiftData @Models + NotificationManager
 ├── ViewModels/           # @Observable classes for complex form state (EmailParseViewModel)
 ├── Views/
 │   ├── Screens/          # Main application screens (Application, Profile, etc.)
 │   └── Components/       # Atomic UI elements (Pills, Cards, Forms, Modular Form Sections)
 └── Assets.xcassets       # Static assets, branding, and color tokens
-
-AppNestShare/
-└── ShareViewController.swift  # Self-contained share extension (UIKit host + SwiftUI popup)
 ```
 ---
 

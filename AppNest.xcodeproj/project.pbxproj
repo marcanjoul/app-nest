@@ -6,20 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		14F487112FBB552900075E5C /* AppNestShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 14F487072FBB552900075E5C /* AppNestShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-/* End PBXBuildFile section */
-
-/* Begin PBXContainerItemProxy section */
-		14F4870F2FBB552900075E5C /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 147237BD2E75AF4D00192B0B /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 14F487062FBB552900075E5C;
-			remoteInfo = AppNestShare;
-		};
-/* End PBXContainerItemProxy section */
-
 /* Begin PBXCopyFilesBuildPhase section */
 		14F487122FBB552900075E5C /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -27,7 +13,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				14F487112FBB552900075E5C /* AppNestShare.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -36,18 +21,7 @@
 
 /* Begin PBXFileReference section */
 		147237C52E75AF4D00192B0B /* AppNest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AppNest.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		14F487072FBB552900075E5C /* AppNestShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AppNestShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		14F487152FBB552900075E5C /* Exceptions for "AppNestShare" folder in "AppNestShare" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 14F487062FBB552900075E5C /* AppNestShare */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		147237C72E75AF4D00192B0B /* AppNest */ = {
@@ -57,9 +31,6 @@
 		};
 		14F487082FBB552900075E5C /* AppNestShare */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				14F487152FBB552900075E5C /* Exceptions for "AppNestShare" folder in "AppNestShare" target */,
-			);
 			path = AppNestShare;
 			sourceTree = "<group>";
 		};
@@ -67,13 +38,6 @@
 
 /* Begin PBXFrameworksBuildPhase section */
 		147237C22E75AF4D00192B0B /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		14F487042FBB552900075E5C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -96,7 +60,6 @@
 			isa = PBXGroup;
 			children = (
 				147237C52E75AF4D00192B0B /* AppNest.app */,
-				14F487072FBB552900075E5C /* AppNestShare.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -116,7 +79,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				14F487102FBB552900075E5C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				147237C72E75AF4D00192B0B /* AppNest */,
@@ -127,28 +89,6 @@
 			productName = AppNest;
 			productReference = 147237C52E75AF4D00192B0B /* AppNest.app */;
 			productType = "com.apple.product-type.application";
-		};
-		14F487062FBB552900075E5C /* AppNestShare */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 14F487162FBB552900075E5C /* Build configuration list for PBXNativeTarget "AppNestShare" */;
-			buildPhases = (
-				14F487032FBB552900075E5C /* Sources */,
-				14F487042FBB552900075E5C /* Frameworks */,
-				14F487052FBB552900075E5C /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				14F487082FBB552900075E5C /* AppNestShare */,
-			);
-			name = AppNestShare;
-			packageProductDependencies = (
-			);
-			productName = AppNestShare;
-			productReference = 14F487072FBB552900075E5C /* AppNestShare.appex */;
-			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -162,9 +102,6 @@
 				TargetAttributes = {
 					147237C42E75AF4D00192B0B = {
 						CreatedOnToolsVersion = 16.4;
-					};
-					14F487062FBB552900075E5C = {
-						CreatedOnToolsVersion = 26.5;
 					};
 				};
 			};
@@ -183,20 +120,12 @@
 			projectRoot = "";
 			targets = (
 				147237C42E75AF4D00192B0B /* AppNest */,
-				14F487062FBB552900075E5C /* AppNestShare */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		147237C32E75AF4D00192B0B /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		14F487052FBB552900075E5C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -213,22 +142,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		14F487032FBB552900075E5C /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		14F487102FBB552900075E5C /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 14F487062FBB552900075E5C /* AppNestShare */;
-			targetProxy = 14F4870F2FBB552900075E5C /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		147237CE2E75AF4E00192B0B /* Debug */ = {
@@ -422,66 +336,6 @@
 			};
 			name = Release;
 		};
-		14F487132FBB552900075E5C /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = AppNestShare/AppNestShare.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 77FCC765M8;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = AppNestShare/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = AppNestShare;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.mark.AppNest.AppNestShare;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		14F487142FBB552900075E5C /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = AppNestShare/AppNestShare.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 77FCC765M8;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = AppNestShare/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = AppNestShare;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.mark.AppNest.AppNestShare;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -499,15 +353,6 @@
 			buildConfigurations = (
 				147237D12E75AF4E00192B0B /* Debug */,
 				147237D22E75AF4E00192B0B /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		14F487162FBB552900075E5C /* Build configuration list for PBXNativeTarget "AppNestShare" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				14F487132FBB552900075E5C /* Debug */,
-				14F487142FBB552900075E5C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

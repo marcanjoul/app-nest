@@ -467,23 +467,6 @@ struct ApplicationView: View {
                 AppHaptics.shared.light()
             }
         }
-        .onChange(of: appState.pendingJobImport) { _, pending in
-            guard let pending else { return }
-            appState.selectedJob = nil
-            let job = JobApplication(
-                companyName: pending.companyName,
-                position: pending.position,
-                jobType: pending.jobType,
-                status: pending.status ?? .toApply,
-                season: pending.season,
-                dateApplied: Date(),
-                jobURL: pending.sourceURL,
-                jobNotes: pending.notes
-            )
-            modelContext.insert(job)
-            try? modelContext.save()
-            appState.pendingJobImport = nil
-        }
         .alert("Import CSV", isPresented: $isShowingImportConfirmation) {
             Button("Select File") { isImportingCSV = true }
             Button("Cancel", role: .cancel) {}
