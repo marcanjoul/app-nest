@@ -10,7 +10,6 @@ struct JobCardSwipeRow: View {
 
     @Environment(AppState.self) private var appState
 
-    @State private var isSwiping = false
 
     private var pipeline: [SwipeAction] {
         let all: [ApplicationStatus] = [.toApply, .applied, .interview, .offer]

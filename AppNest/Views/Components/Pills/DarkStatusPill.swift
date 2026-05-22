@@ -21,15 +21,15 @@ struct DarkStatusPill: View {
     var body: some View {
         HStack(spacing: 5) {
             Image(systemName: style.iconName)
-                .font(.system(size: 11, weight: .semibold))
-            Text(displayText)
                 .font(.system(size: 12, weight: .semibold))
+            Text(displayText)
+                .font(.system(size: 13, weight: .semibold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
         .foregroundStyle(style.tintColor)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 8)
         .background(
             Capsule()
                 .fill(style.fillColor)
@@ -50,16 +50,16 @@ struct DarkTypeTag: View {
         HStack(spacing: 4) {
             if let icon {
                 Image(systemName: icon)
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(size: 11, weight: .bold))
             }
             Text(text)
-                .font(.system(size: 11, weight: .bold))
+                .font(.system(size: 12, weight: .bold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
         .foregroundStyle(color)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 5)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
         .background(
             Capsule()
                 .fill(color.opacity(0.08))
@@ -167,6 +167,8 @@ struct SparkleView: View {
 struct DarkJobCardView: View {
     let job: JobApplication
     @State private var showCelebration = false
+    @State private var showStatusMenu = false
+    @State private var showTypeMenu = false
 
     private static let relativeDateFormatter: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
@@ -224,23 +226,33 @@ struct DarkJobCardView: View {
                 HStack(spacing: 6) {
                     if let status = job.status {
                         DarkStatusPill(status: status)
-                            .contextMenu {
+                            .onLongPressGesture(minimumDuration: 0.35) {
+                                AppHaptics.shared.medium()
+                                showStatusMenu = true
+                            }
+                            .confirmationDialog("Change Status", isPresented: $showStatusMenu, titleVisibility: .visible) {
                                 ForEach(ApplicationStatus.allCases, id: \.self) { s in
-                                    Button {
-                                        withAnimation(.appSmooth) {
-                                            job.status = s
-                                        }
+                                    Button(s.rawValue) {
+                                        withAnimation(.appSmooth) { job.status = s }
                                         AppHaptics.shared.light()
-                                    } label: {
-                                        let style = Theme.statusStyle(for: s)
-                                        Label(s.rawValue, systemImage: style.iconName)
                                     }
-                                    .disabled(s == status)
                                 }
                             }
                     }
                     if let type = job.jobType {
                         DarkTypeTag(text: type.rawValue, icon: type.iconName, color: type.color)
+                            .onLongPressGesture(minimumDuration: 0.35) {
+                                AppHaptics.shared.medium()
+                                showTypeMenu = true
+                            }
+                            .confirmationDialog("Change Type", isPresented: $showTypeMenu, titleVisibility: .visible) {
+                                ForEach(ApplicationType.allCases, id: \.self) { t in
+                                    Button(t.rawValue) {
+                                        withAnimation(.appSmooth) { job.jobType = t }
+                                        AppHaptics.shared.light()
+                                    }
+                                }
+                            }
                     }
                 }
                 .padding(.top, 2)
