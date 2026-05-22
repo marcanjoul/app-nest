@@ -11,6 +11,7 @@ struct EditImportRowView: View {
 
     @State private var pickerItem: PhotosPickerItem? = nil
     @State private var reminderEnabled = false
+    @State private var keyboardIsVisible = false
     @State private var reminderTime: Date = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: Date()) ?? Date()
 
     private var isSeasonAllowed: Bool {
@@ -66,7 +67,13 @@ struct EditImportRowView: View {
             floatingNavBar
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            saveBar
+            if !keyboardIsVisible { saveBar }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            withAnimation(.appCrisp) { keyboardIsVisible = true }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            withAnimation(.appCrisp) { keyboardIsVisible = false }
         }
     }
 

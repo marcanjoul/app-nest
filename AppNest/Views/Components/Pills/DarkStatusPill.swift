@@ -196,6 +196,7 @@ struct DarkJobCardView: View {
                 .overlay {
                     if showCelebration {
                         SparkleView(color: Color(red: 0.30, green: 0.80, blue: 0.45))
+                            .transition(.opacity)
                             .onAppear {
                                 // Automatically reset after animation to prevent repetitive triggers
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
@@ -230,13 +231,18 @@ struct DarkJobCardView: View {
                                 AppHaptics.shared.medium()
                                 showStatusMenu = true
                             }
-                            .confirmationDialog("Change Status", isPresented: $showStatusMenu, titleVisibility: .visible) {
-                                ForEach(ApplicationStatus.allCases, id: \.self) { s in
-                                    Button(s.rawValue) {
-                                        withAnimation(.appSmooth) { job.status = s }
-                                        AppHaptics.shared.light()
-                                    }
+                            .sheet(isPresented: $showStatusMenu) {
+                                PillPickerSheet(
+                                    current: job.status,
+                                    colorFor: { $0.color },
+                                    iconFor: { $0.iconName }
+                                ) { newStatus in
+                                    withAnimation(.appSmooth) { job.status = newStatus }
                                 }
+                                .presentationDetents([.height(290)])
+                                .presentationCornerRadius(24)
+                                .presentationDragIndicator(.hidden)
+                                .presentationBackground(.ultraThinMaterial)
                             }
                     }
                     if let type = job.jobType {
@@ -245,13 +251,18 @@ struct DarkJobCardView: View {
                                 AppHaptics.shared.medium()
                                 showTypeMenu = true
                             }
-                            .confirmationDialog("Change Type", isPresented: $showTypeMenu, titleVisibility: .visible) {
-                                ForEach(ApplicationType.allCases, id: \.self) { t in
-                                    Button(t.rawValue) {
-                                        withAnimation(.appSmooth) { job.jobType = t }
-                                        AppHaptics.shared.light()
-                                    }
+                            .sheet(isPresented: $showTypeMenu) {
+                                PillPickerSheet(
+                                    current: job.jobType,
+                                    colorFor: { $0.color },
+                                    iconFor: { $0.iconName }
+                                ) { newType in
+                                    withAnimation(.appSmooth) { job.jobType = newType }
                                 }
+                                .presentationDetents([.height(240)])
+                                .presentationCornerRadius(24)
+                                .presentationDragIndicator(.hidden)
+                                .presentationBackground(.ultraThinMaterial)
                             }
                     }
                 }

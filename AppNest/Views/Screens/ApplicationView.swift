@@ -692,7 +692,7 @@ struct ApplicationView: View {
             .frame(height: 44)
             .background(.ultraThinMaterial)
             .clipShape(Capsule())
-            .overlay(Capsule().strokeBorder(isSearchFocused ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08), lineWidth: 1))
+            .overlay(Capsule().strokeBorder(isSearchFocused ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08), lineWidth: isSearchFocused ? 2 : 1))
             .frame(maxWidth: .infinity)
             .animation(.appBubbly, value: isSearchFocused)
 
@@ -890,7 +890,10 @@ struct ApplicationView: View {
                         .frame(maxWidth: .infinity)
                     }
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.97, anchor: .top)))
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.97, anchor: .top)),
+                    removal: .opacity.combined(with: .scale(scale: 0.97, anchor: .top))
+                ))
             }
 
             // Season row
@@ -914,7 +917,10 @@ struct ApplicationView: View {
                         .frame(maxWidth: .infinity)
                     }
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.97, anchor: .top)))
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.97, anchor: .top)),
+                    removal: .opacity.combined(with: .scale(scale: 0.97, anchor: .top))
+                ))
             }
 
             // Work mode row
@@ -938,7 +944,10 @@ struct ApplicationView: View {
                         .frame(maxWidth: .infinity)
                     }
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.97, anchor: .top)))
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.97, anchor: .top)),
+                    removal: .opacity.combined(with: .scale(scale: 0.97, anchor: .top))
+                ))
             }
 
             if !applications.isEmpty {

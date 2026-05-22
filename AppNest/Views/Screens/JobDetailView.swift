@@ -48,6 +48,7 @@ struct JobDetailView: View {
     @State private var isConfirmingResumeClear = false
     @State private var isShowingLogoAttribution = false
     @State private var shakeMissingFields = false
+    @State private var keyboardIsVisible = false
     @State private var scrollTargetSection: FormSection?
     @State private var contentAppeared = false
 
@@ -708,7 +709,13 @@ struct JobDetailView: View {
             )
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            saveBar
+            if !keyboardIsVisible { saveBar }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            withAnimation(.appCrisp) { keyboardIsVisible = true }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            withAnimation(.appCrisp) { keyboardIsVisible = false }
         }
         .safeAreaInset(edge: .top, spacing: 0) {
             floatingNavBar
