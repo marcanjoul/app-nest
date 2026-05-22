@@ -104,7 +104,8 @@ struct AddMenuView: View {
                     job: nil,
                     prefillCompany: parsedData?.companyName ?? "",
                     prefillPosition: parsedData?.position ?? "",
-                    prefillURL: parsedData?.jobURL ?? ""
+                    prefillURL: parsedData?.jobURL ?? "",
+                    prefillType: parsedData?.jobType
                 )
             }
         }
@@ -502,18 +503,23 @@ struct AddMenuView: View {
         #endif
         AppHaptics.shared.medium()
         withAnimation(.appFastOut) { isParsing = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            let result = linkParser.parse(pasteLinkURL)
-            withAnimation(.appSmooth) {
-                isParsing = false
-                if result.isLinkedIn {
-                    showLinkedInError = true
-                } else {
-                    parsedData = result
-                    isPresentingParsedJob = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        pasteLinkURL = ""
-                        isShowingPasteLink = false
+        let url = pasteLinkURL
+        Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            let result = await linkParser.parse(url)
+            await MainActor.run {
+                withAnimation(.appSmooth) {
+                    isParsing = false
+                    if result.isLinkedIn {
+                        showLinkedInError = true
+                    } else {
+                        parsedData = result
+                        isPresentingParsedJob = true
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(300))
+                            pasteLinkURL = ""
+                            isShowingPasteLink = false
+                        }
                     }
                 }
             }

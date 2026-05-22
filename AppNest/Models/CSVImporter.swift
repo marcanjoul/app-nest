@@ -42,7 +42,7 @@ enum CSVImporter {
     // is to any anchor (cosine distance), the more confidently it maps to that field.
     private static let fieldSemanticAnchors: [(field: String, anchors: [String])] = [
         ("company",      ["company name", "employer", "organization", "company", "firm"]),
-        ("position",     ["position title", "job title", "role", "job role", "opening", "title"]),
+        ("position",     ["position title", "job title", "role", "job role", "opening", "title", "position", "positions"]),
         ("type",         ["job type", "employment type", "work type", "contract type", "position type"]),
         ("status",       ["application status", "status", "stage", "outcome", "hiring stage"]),
         ("season",       ["season", "term", "semester", "cohort", "cycle term"]),
@@ -59,7 +59,7 @@ enum CSVImporter {
     private static let fieldAliases: [(field: String, aliases: [String])] = [
         ("company",      ["company name", "company", "employer", "organization",
                           "company/organization", "firm", "org"]),
-        ("position",     ["job title", "position/role", "position", "job role",
+        ("position",     ["job title", "position/role", "position", "positions", "job role",
                           "posting title", "opening", "title", "role", "job", "name"]),
         ("type",         ["employment type", "job type", "contract type", "job category",
                           "work type", "position type", "employment", "type"]),

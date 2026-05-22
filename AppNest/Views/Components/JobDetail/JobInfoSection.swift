@@ -160,7 +160,7 @@ struct JobInfoSection: View {
 
             VStack(spacing: 14) {
                 TextField("Position Title *", text: $position)
-                    .multilineTextAlignment(.leading)
+                    .multilineTextAlignment(.center)
                     .lineLimit(1)
                     .minimumScaleFactor(0.4)
                     .appFont(24, weight: .bold)
@@ -179,7 +179,7 @@ struct JobInfoSection: View {
                     }
 
                 TextField("Company Name *", text: $companyName)
-                    .multilineTextAlignment(.leading)
+                    .multilineTextAlignment(.center)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
                     .appFont(13, weight: .semibold)
