@@ -12,9 +12,6 @@ struct RootView: View {
             TabView(selection: $bindableAppState.selectedTab) {
                 NavigationStack(path: $bindableAppState.navigationPath) {
                     ApplicationView()
-                        .navigationDestination(for: JobApplication.self) { job in
-                            JobDetailView(job: job)
-                        }
                 }
                 .toolbar(.hidden, for: .tabBar)
                 .tag(0)
@@ -43,6 +40,12 @@ struct RootView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             withAnimation(.appCrisp) { isKeyboardVisible = false }
+        }
+        .sheet(item: $bindableAppState.selectedJob) { job in
+            JobDetailView(job: job)
+                .presentationDetents([.large])
+                .presentationCornerRadius(28)
+                .presentationDragIndicator(.hidden)
         }
         .tint(Theme.accent)
         .scaleEffect(appState.isPresentingSheet ? 0.95 : 1.0)

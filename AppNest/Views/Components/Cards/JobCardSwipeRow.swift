@@ -71,7 +71,7 @@ struct JobCardSwipeRow: View {
                         onToggleSelection()
                     } else {
                         AppHaptics.shared.light()
-                        appState.navigationPath.append(job)
+                        appState.selectedJob = job
                     }
                 } label: {
                     DarkJobCardView(job: job)

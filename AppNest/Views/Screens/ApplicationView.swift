@@ -1001,9 +1001,10 @@ struct ApplicationView: View {
             Image(systemName: "square.and.arrow.up")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Theme.textSecondary)
-                .frame(width: 38, height: 32)
+                .frame(width: 44, height: 44)
         }
         .buttonStyle(PressScaleButtonStyle())
+        .accessibilityLabel("Export applications")
     }
 
     private var divider: some View {
@@ -1030,12 +1031,13 @@ struct ApplicationView: View {
                 }
             }
             .foregroundStyle(isEditMode ? Color.accentColor : Theme.textSecondary)
-            .frame(minWidth: 38)
-            .frame(height: 32)
+            .frame(minWidth: 44)
+            .frame(height: 44)
             .padding(.horizontal, isEditMode ? 4 : 0)
         }
         .buttonStyle(PressScaleButtonStyle())
         .animation(.appCrisp, value: isEditMode)
+        .accessibilityLabel(isEditMode ? "Done editing" : "Edit applications")
     }
 
     // MARK: - Cycle Chip

@@ -16,6 +16,9 @@ class AppState {
 
     /// Main navigation path for the Applications tab.
     var navigationPath = NavigationPath()
+
+    /// Job tapped from the list — presented as a fullScreenCover sliding up from bottom.
+    var selectedJob: JobApplication?
     
     /// Triggered when the user taps the 'Add' tab while already on it, or when switching away.
     var shouldResetAddMenu = false

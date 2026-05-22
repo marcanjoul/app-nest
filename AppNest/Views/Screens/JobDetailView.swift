@@ -771,7 +771,7 @@ struct JobDetailView: View {
                 Image(systemName: isNewApplication ? "xmark" : "chevron.left")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Theme.textPrimary)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 44, height: 44)
                     .background {
                         Circle()
                             .fill(.ultraThinMaterial)
@@ -788,7 +788,7 @@ struct JobDetailView: View {
                     Image(systemName: "info.circle")
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(Theme.textSecondary)
-                        .frame(width: 40, height: 40)
+                        .frame(width: 44, height: 44)
                         .background {
                             Circle()
                                 .fill(Theme.cardFill)
@@ -813,7 +813,7 @@ struct JobDetailView: View {
                         Image(systemName: "trash")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(Theme.destructive)
-                            .frame(width: 40, height: 40)
+                            .frame(width: 44, height: 44)
                             .background {
                                 Circle()
                                     .fill(Theme.destructive.opacity(0.10))

@@ -75,6 +75,18 @@ struct EditImportRowView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             withAnimation(.appCrisp) { keyboardIsVisible = false }
         }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button {
+                    UIApplication.shared.dismissKeyboard()
+                } label: {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .accessibilityLabel("Dismiss keyboard")
+            }
+        }
     }
 
     // MARK: - Floating nav bar
@@ -85,7 +97,7 @@ struct EditImportRowView: View {
                 Image(systemName: "xmark")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Theme.textPrimary)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 44, height: 44)
                     .background {
                         Circle()
                             .fill(.ultraThinMaterial)
