@@ -107,14 +107,14 @@ struct JobCardView: View {
 
             VStack(alignment: .trailing, spacing: 4) {
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.quaternary)
-                
+                    .appFont(12, weight: .bold)
+                    .foregroundStyle(Theme.textTertiary)
+
                 Spacer()
-                
+
                 Text(appliedRelativeText)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                    .appFont(11, weight: .medium)
+                    .foregroundStyle(Theme.textSecondary.opacity(0.6))
             }
         }
         .padding(14)

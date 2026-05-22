@@ -169,8 +169,10 @@ struct AddMenuView: View {
                     isProminent: true
                 ) {
                     Image(systemName: "chevron.down")
-                        .appFont(14, weight: .semibold)
-                        .foregroundStyle(Theme.textSecondary.opacity(0.6))
+                        .appFont(12, weight: .bold)
+                        .foregroundStyle(Theme.textSecondary.opacity(0.55))
+                        .frame(width: 28, height: 28)
+                        .background(Circle().fill(Color.primary.opacity(0.06)))
                         .rotationEffect(.degrees(isShowingEmailParse ? -180 : 0))
                 }
             }
@@ -391,8 +393,10 @@ struct AddMenuView: View {
                     isProminent: true
                 ) {
                     Image(systemName: "chevron.down")
-                        .appFont(14, weight: .semibold)
-                        .foregroundStyle(Theme.textSecondary.opacity(0.6))
+                        .appFont(12, weight: .bold)
+                        .foregroundStyle(Theme.textSecondary.opacity(0.55))
+                        .frame(width: 28, height: 28)
+                        .background(Circle().fill(Color.primary.opacity(0.06)))
                         .rotationEffect(.degrees(isShowingPasteLink ? -180 : 0))
                 }
             }
@@ -488,8 +492,10 @@ struct AddMenuView: View {
         Button(action: action) {
             CardRowHeader(icon: icon, iconColor: color, title: title, subtitle: subtitle) {
                 Image(systemName: "chevron.right")
-                    .appFont(14, weight: .semibold)
-                    .foregroundStyle(Theme.textSecondary.opacity(0.4))
+                    .appFont(12, weight: .bold)
+                    .foregroundStyle(Theme.textSecondary.opacity(0.55))
+                    .frame(width: 28, height: 28)
+                    .background(Circle().fill(Color.primary.opacity(0.06)))
             }
             .glassCard(cornerRadius: Theme.cardRadius)
         }

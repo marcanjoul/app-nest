@@ -757,66 +757,74 @@ struct JobDetailView: View {
     // MARK: - Floating Nav Bar
 
     private var floatingNavBar: some View {
-        HStack(spacing: 10) {
-            if !isSheetPresentation || isNewApplication {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: isNewApplication ? "xmark" : "chevron.left")
-                        .appFont(14, weight: .semibold)
-                        .foregroundStyle(Theme.textPrimary)
-                        .frame(width: 44, height: 44)
-                        .background {
-                            Circle()
-                                .fill(.ultraThinMaterial)
-                                .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
-                        }
-                }
-                .buttonStyle(PressScaleButtonStyle())
-                .accessibilityLabel(isNewApplication ? "Cancel" : "Back")
-            }
-
-            Spacer()
+        ZStack {
+            Text(isNewApplication ? "New Application" : companyName)
+                .appFont(14, weight: .semibold)
+                .foregroundStyle(Theme.textPrimary.opacity(0.65))
+                .lineLimit(1)
+                .frame(maxWidth: 180)
 
             HStack(spacing: 10) {
-                Button { isShowingLogoAttribution.toggle() } label: {
-                    Image(systemName: "info.circle")
-                        .appFont(15, weight: .medium)
-                        .foregroundStyle(Theme.textSecondary)
-                        .frame(width: 44, height: 44)
-                        .background {
-                            Circle()
-                                .fill(Theme.cardFill)
-                                .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
-                        }
-                }
-                .buttonStyle(PressScaleButtonStyle())
-                .popover(isPresented: $isShowingLogoAttribution, arrowEdge: .top) {
-                    HStack(spacing: 4) {
-                        Text("Company logos from").foregroundStyle(.secondary)
-                        Link("Logo.dev", destination: URL(string: "https://logo.dev")!)
-                    }
-                    .font(.footnote)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .presentationCompactAdaptation(.popover)
-                }
-                .accessibilityLabel("Logo attribution")
-
-                if !isNewApplication {
-                    Button { isShowingDeleteConfirmation = true } label: {
-                        Image(systemName: "trash")
-                            .appFont(14, weight: .bold)
-                            .foregroundStyle(Theme.destructive)
+                if !isSheetPresentation || isNewApplication {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: isNewApplication ? "xmark" : "chevron.left")
+                            .appFont(14, weight: .semibold)
+                            .foregroundStyle(Theme.textPrimary)
                             .frame(width: 44, height: 44)
                             .background {
                                 Circle()
-                                    .fill(Theme.destructive.opacity(0.10))
-                                    .overlay(Circle().strokeBorder(Theme.destructive.opacity(0.18), lineWidth: 1))
+                                    .fill(.ultraThinMaterial)
+                                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
                             }
                     }
                     .buttonStyle(PressScaleButtonStyle())
-                    .accessibilityLabel("Delete application")
+                    .accessibilityLabel(isNewApplication ? "Cancel" : "Back")
+                }
+
+                Spacer()
+
+                HStack(spacing: 10) {
+                    Button { isShowingLogoAttribution.toggle() } label: {
+                        Image(systemName: "info.circle")
+                            .appFont(15, weight: .medium)
+                            .foregroundStyle(Theme.textSecondary)
+                            .frame(width: 44, height: 44)
+                            .background {
+                                Circle()
+                                    .fill(Theme.cardFill)
+                                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                            }
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
+                    .popover(isPresented: $isShowingLogoAttribution, arrowEdge: .top) {
+                        HStack(spacing: 4) {
+                            Text("Company logos from").foregroundStyle(.secondary)
+                            Link("Logo.dev", destination: URL(string: "https://logo.dev")!)
+                        }
+                        .font(.footnote)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .presentationCompactAdaptation(.popover)
+                    }
+                    .accessibilityLabel("Logo attribution")
+
+                    if !isNewApplication {
+                        Button { isShowingDeleteConfirmation = true } label: {
+                            Image(systemName: "trash")
+                                .appFont(14, weight: .bold)
+                                .foregroundStyle(Theme.destructive)
+                                .frame(width: 44, height: 44)
+                                .background {
+                                    Circle()
+                                        .fill(Theme.destructive.opacity(0.10))
+                                        .overlay(Circle().strokeBorder(Theme.destructive.opacity(0.18), lineWidth: 1))
+                                }
+                        }
+                        .buttonStyle(PressScaleButtonStyle())
+                        .accessibilityLabel("Delete application")
+                    }
                 }
             }
         }

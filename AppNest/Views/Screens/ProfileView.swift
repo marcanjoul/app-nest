@@ -322,9 +322,8 @@ struct ProfileView: View {
                             Text(pipelineLabel(for: status))
                                 .appFont(10, weight: .semibold)
                                 .foregroundStyle(c > 0 ? Theme.textSecondary : Theme.textTertiary.opacity(0.8))
-                                .textCase(.uppercase)
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.85)
+                                .minimumScaleFactor(0.95)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
