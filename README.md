@@ -4,12 +4,6 @@ An iOS app for tracking job and internship applications, built with SwiftUI.
 
 ---
 
-## Screenshots
-
-> _Add screenshots or GIFs here_
-
----
-
 ## Features
 
 ### Tracking
