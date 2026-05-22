@@ -249,12 +249,12 @@ struct ResumePill: View {
 extension ApplicationType {
     var color: Color {
         switch self {
-        case .fullTime:   return Color(red: 0.35, green: 0.65, blue: 0.96)
+        case .fullTime:   return Color(red: 0.25, green: 0.48, blue: 0.88) // indigo — distinct from applied's sky blue
         case .partTime:   return Color(red: 0.96, green: 0.73, blue: 0.28)
-        case .internship: return Color(red: 0.93, green: 0.38, blue: 0.44)
+        case .internship: return Color(red: 0.18, green: 0.68, blue: 0.74) // teal — neutral, removes red/rejection read
         case .contract:   return Color(red: 0.62, green: 0.52, blue: 0.96)
-        case .Co_op:      return Color(red: 0.30, green: 0.80, blue: 0.45)
-        case .temporary:  return Color(red: 0.96, green: 0.52, blue: 0.62)
+        case .Co_op:      return Color(red: 0.25, green: 0.75, blue: 0.62) // mint — distinct from offer's bright green
+        case .temporary:  return Color(red: 0.94, green: 0.48, blue: 0.28) // coral — distinct from spring's pink
         }
     }
 
@@ -299,9 +299,9 @@ extension ApplicationStatus {
 extension WorkMode {
     var color: Color {
         switch self {
-        case .remote: return Color(red: 0.35, green: 0.65, blue: 0.96)
+        case .remote: return Color(red: 0.52, green: 0.62, blue: 0.92) // cornflower — distinct from applied's blue
         case .hybrid: return Color(red: 0.62, green: 0.52, blue: 0.96)
-        case .onSite: return Color(red: 0.30, green: 0.80, blue: 0.45)
+        case .onSite: return Color(red: 0.42, green: 0.66, blue: 0.52) // sage — distinct from offer's bright green
         }
     }
 
@@ -320,7 +320,7 @@ extension ApplicationSeason {
         case .spring: return Color(red: 0.96, green: 0.52, blue: 0.62)
         case .summer: return Color(red: 0.96, green: 0.73, blue: 0.28)
         case .fall:   return Color(red: 0.80, green: 0.46, blue: 0.20)
-        case .winter: return Color(red: 0.35, green: 0.65, blue: 0.96)
+        case .winter: return Color(red: 0.55, green: 0.80, blue: 0.96) // ice blue — distinct from applied's saturated blue
         }
     }
 

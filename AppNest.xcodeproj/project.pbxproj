@@ -6,18 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXCopyFilesBuildPhase section */
-		14F487122FBB552900075E5C /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-			);
-			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		147237C52E75AF4D00192B0B /* AppNest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AppNest.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -27,11 +15,6 @@
 		147237C72E75AF4D00192B0B /* AppNest */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = AppNest;
-			sourceTree = "<group>";
-		};
-		14F487082FBB552900075E5C /* AppNestShare */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = AppNestShare;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -51,7 +34,6 @@
 			isa = PBXGroup;
 			children = (
 				147237C72E75AF4D00192B0B /* AppNest */,
-				14F487082FBB552900075E5C /* AppNestShare */,
 				147237C62E75AF4D00192B0B /* Products */,
 			);
 			sourceTree = "<group>";
@@ -74,7 +56,6 @@
 				147237C12E75AF4D00192B0B /* Sources */,
 				147237C22E75AF4D00192B0B /* Frameworks */,
 				147237C32E75AF4D00192B0B /* Resources */,
-				14F487122FBB552900075E5C /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
