@@ -320,11 +320,11 @@ struct ProfileView: View {
                                 .contentTransition(.numericText())
                             
                             Text(pipelineLabel(for: status))
-                                .appFont(8, weight: .black)
+                                .appFont(10, weight: .semibold)
                                 .foregroundStyle(c > 0 ? Theme.textSecondary : Theme.textTertiary.opacity(0.8))
                                 .textCase(.uppercase)
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.7)
+                                .minimumScaleFactor(0.85)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)

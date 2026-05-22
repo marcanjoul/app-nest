@@ -7,22 +7,23 @@ struct CardRowHeader<Trailing: View>: View {
     let iconColor: Color
     let title: String
     let subtitle: String
+    var isProminent: Bool = false
     @ViewBuilder let trailing: () -> Trailing
 
     var body: some View {
         HStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .fill(iconColor.opacity(0.15))
-                    .frame(width: 48, height: 48)
+                    .fill(iconColor.opacity(isProminent ? 0.18 : 0.15))
+                    .frame(width: isProminent ? 56 : 48, height: isProminent ? 56 : 48)
                 Image(systemName: icon)
-                    .appFont(20, weight: .semibold)
+                    .appFont(isProminent ? 24 : 20, weight: .semibold)
                     .foregroundStyle(iconColor)
             }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .appFont(17, weight: .semibold)
+                    .appFont(isProminent ? 18 : 17, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                 Text(subtitle)
                     .appFont(12)

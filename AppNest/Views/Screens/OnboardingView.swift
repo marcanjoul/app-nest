@@ -24,16 +24,16 @@ struct OnboardingView: View {
                         VStack(spacing: 24) {
                             ZStack {
                                 Circle()
-                                    .fill(page.color.opacity(0.15))
-                                    .frame(width: 120, height: 120)
-                                Circle()
                                     .fill(page.color.opacity(0.08))
-                                    .frame(width: 160, height: 160)
-                                    .blur(radius: 10)
+                                    .frame(width: 210, height: 210)
+                                    .blur(radius: 28)
+                                Circle()
+                                    .fill(page.color.opacity(0.14))
+                                    .frame(width: 110, height: 110)
                                 Image(systemName: page.icon)
-                                    .appFont(52, weight: .semibold)
+                                    .appFont(56, weight: .semibold)
                                     .foregroundStyle(page.color)
-                                    .shadow(color: page.color.opacity(0.24), radius: 12, y: 4)
+                                    .shadow(color: page.color.opacity(0.30), radius: 16, y: 6)
                             }
 
                             VStack(spacing: 10) {

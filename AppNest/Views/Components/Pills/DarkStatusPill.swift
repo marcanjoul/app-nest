@@ -98,11 +98,11 @@ struct StatChip: View {
         } label: {
             HStack(spacing: 7) {
                 Image(systemName: style.iconName)
-                    .appFont(11, weight: .bold)
+                    .appFont(10, weight: .bold)
                     .foregroundStyle(isSelected ? Color.white : style.tintColor)
 
                 Text("\(number)")
-                    .appFont(16, weight: .bold)
+                    .appFont(20, weight: .bold)
                     .foregroundStyle(isSelected ? Color.white : Theme.textPrimary)
                     .contentTransition(.numericText())
                     .animation(.appCrisp, value: number)

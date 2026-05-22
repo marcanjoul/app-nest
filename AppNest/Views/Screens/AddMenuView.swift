@@ -165,7 +165,8 @@ struct AddMenuView: View {
                     icon: "envelope.open.fill",
                     iconColor: .orange,
                     title: "Parse Email",
-                    subtitle: "Extract details from an email."
+                    subtitle: "Extract details from an email.",
+                    isProminent: true
                 ) {
                     Image(systemName: "chevron.down")
                         .appFont(14, weight: .semibold)
@@ -386,7 +387,8 @@ struct AddMenuView: View {
                     icon: "link",
                     iconColor: .purple,
                     title: "Paste Job Link",
-                    subtitle: "Auto-extract company and role."
+                    subtitle: "Auto-extract company and role.",
+                    isProminent: true
                 ) {
                     Image(systemName: "chevron.down")
                         .appFont(14, weight: .semibold)
