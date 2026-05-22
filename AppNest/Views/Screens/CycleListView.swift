@@ -15,6 +15,8 @@ struct CycleListView: View {
     @State private var cycleToDelete: JobCycle?
     @State private var cycleToRename: JobCycle?
     @State private var renameText    = ""
+    @State private var isDuplicateNameAlertShowing = false
+    @State private var duplicateName = ""
 
     var body: some View {
         ZStack {
@@ -88,6 +90,11 @@ struct CycleListView: View {
         } message: {
             Text("Enter a new name for \"\(cycleToRename?.name ?? "")\".")
         }
+        .alert("Name Already Taken", isPresented: $isDuplicateNameAlertShowing) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("A cycle named \"\(duplicateName)\" already exists. Please choose a different name.")
+        }
         .confirmationDialog(
             "Delete \"\(cycleToDelete?.name ?? "")\"?",
             isPresented: Binding(get: { cycleToDelete != nil }, set: { if !$0 { cycleToDelete = nil } }),
@@ -147,6 +154,11 @@ struct CycleListView: View {
     private func createCycle() {
         let trimmed = newCycleName.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
+        guard !cycles.contains(where: { $0.name.localizedCaseInsensitiveCompare(trimmed) == .orderedSame }) else {
+            duplicateName = trimmed
+            isDuplicateNameAlertShowing = true
+            return
+        }
         let cycle = JobCycle(name: trimmed)
         modelContext.insert(cycle)
         appState.selectedCycleID = cycle.id
@@ -157,6 +169,11 @@ struct CycleListView: View {
     private func renameCycle() {
         let trimmed = renameText.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty, let cycle = cycleToRename else { return }
+        guard !cycles.contains(where: { $0.id != cycle.id && $0.name.localizedCaseInsensitiveCompare(trimmed) == .orderedSame }) else {
+            duplicateName = trimmed
+            isDuplicateNameAlertShowing = true
+            return
+        }
         cycle.name = trimmed
         try? modelContext.save()
         AppHaptics.shared.success()

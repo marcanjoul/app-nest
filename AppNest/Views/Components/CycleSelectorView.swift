@@ -84,6 +84,11 @@ struct CyclePickerSheet: View {
         } message: {
             Text("Enter a new name for this cycle.")
         }
+        .alert("Name Already Taken", isPresented: $isDuplicateNameAlertShowing) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("A cycle named \"\(newCycleName.trimmingCharacters(in: .whitespaces))\" already exists. Please choose a different name.")
+        }
         .confirmationDialog(
             "Delete \"\(cycleToEdit?.name ?? "")\"?",
             isPresented: $isConfirmingDelete,
@@ -232,6 +237,10 @@ struct CyclePickerSheet: View {
     private func createCycle() {
         let trimmed = newCycleName.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
+        guard !cycles.contains(where: { $0.name.localizedCaseInsensitiveCompare(trimmed) == .orderedSame }) else {
+            isDuplicateNameAlertShowing = true
+            return
+        }
         let cycle = JobCycle(name: trimmed)
         modelContext.insert(cycle)
         try? modelContext.save()
@@ -244,6 +253,10 @@ struct CyclePickerSheet: View {
         guard let cycle = cycleToEdit else { return }
         let trimmed = newCycleName.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
+        guard !cycles.contains(where: { $0.id != cycle.id && $0.name.localizedCaseInsensitiveCompare(trimmed) == .orderedSame }) else {
+            isDuplicateNameAlertShowing = true
+            return
+        }
         cycle.name = trimmed
         try? modelContext.save()
         AppHaptics.shared.success()
