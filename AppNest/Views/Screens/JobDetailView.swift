@@ -267,7 +267,7 @@ struct JobDetailView: View {
         if !isCSVMode && (hasChanges || isNewApplication || !missingFields.isEmpty) {
             VStack(spacing: 0) {
                 Divider().opacity(0.4)
-                HStack(spacing: 10) {
+                HStack(spacing: 18) {
                     if !isNewApplication {
                         Button {
                             resetToOriginal()
@@ -658,6 +658,7 @@ struct JobDetailView: View {
                     .frame(height: 1)
             }
             .padding(.horizontal, 4)
+            .padding(.top, 8)
 
             Group {
                 jobLinkSectionView

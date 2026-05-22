@@ -312,21 +312,23 @@ struct ProfileView: View {
                         let c = count(for: status)
                         let style = Theme.statusStyle(for: status)
                         
-                        VStack(spacing: 4) {
+                        VStack(spacing: 8) {
                             Image(systemName: style.iconName)
                                 .appFont(10, weight: .black)
                                 .foregroundStyle(c > 0 ? style.tintColor : Theme.textTertiary.opacity(0.6))
-                            
-                            Text("\(c)")
-                                .appFont(20, weight: .bold)
-                                .foregroundStyle(c > 0 ? Theme.textPrimary : Theme.textTertiary)
-                                .contentTransition(.numericText())
-                            
-                            Text(pipelineLabel(for: status))
-                                .appFont(10, weight: .semibold)
-                                .foregroundStyle(c > 0 ? Theme.textSecondary : Theme.textTertiary.opacity(0.8))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.95)
+
+                            VStack(spacing: 2) {
+                                Text("\(c)")
+                                    .appFont(20, weight: .bold)
+                                    .foregroundStyle(c > 0 ? Theme.textPrimary : Theme.textTertiary)
+                                    .contentTransition(.numericText())
+
+                                Text(pipelineLabel(for: status))
+                                    .appFont(10, weight: .semibold)
+                                    .foregroundStyle(c > 0 ? Theme.textSecondary : Theme.textTertiary.opacity(0.8))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.95)
+                            }
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -394,29 +396,31 @@ struct ProfileView: View {
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
 
-                            Button {
-                                setDefaultResume(resume)
-                            } label: {
-                                Image(systemName: resume.isDefault ? "star.fill" : "star")
-                                    .appFont(16, weight: .semibold)
-                                    .foregroundStyle(resume.isDefault ? Color.yellow : Theme.textTertiary)
-                                    .frame(width: 34, height: 34)
-                                    .background(Circle().fill(Color.primary.opacity(0.06)))
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(resume.isDefault ? "Default resume" : "Set as default resume")
+                            HStack(spacing: 18) {
+                                Button {
+                                    setDefaultResume(resume)
+                                } label: {
+                                    Image(systemName: resume.isDefault ? "star.fill" : "star")
+                                        .appFont(16, weight: .semibold)
+                                        .foregroundStyle(resume.isDefault ? Color.yellow : Theme.textTertiary)
+                                        .frame(width: 34, height: 34)
+                                        .background(Circle().fill(Color.primary.opacity(0.06)))
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(resume.isDefault ? "Default resume" : "Set as default resume")
 
-                            Button(role: .destructive) {
-                                resumePendingDeletion = resume
-                            } label: {
-                                Image(systemName: "trash")
-                                    .appFont(14, weight: .semibold)
-                                    .foregroundStyle(Theme.destructive)
-                                    .frame(width: 34, height: 34)
-                                    .background(Circle().fill(Theme.destructive.opacity(0.10)))
+                                Button(role: .destructive) {
+                                    resumePendingDeletion = resume
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .appFont(14, weight: .semibold)
+                                        .foregroundStyle(Theme.destructive)
+                                        .frame(width: 34, height: 34)
+                                        .background(Circle().fill(Theme.destructive.opacity(0.10)))
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Delete resume")
                             }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Delete resume")
                         }
                     }
 
