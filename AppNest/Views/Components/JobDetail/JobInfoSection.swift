@@ -11,7 +11,7 @@ struct JobInfoSection: View {
     @Binding var pickerItem: PhotosPickerItem?
     var onAutoFetchStateChanged: ((Bool) -> Void)? = nil
 
-    private enum Field: Hashable { case position }
+    private enum Field: Hashable { case company, position }
     @FocusState private var focused: Field?
     @Environment(\.colorScheme) private var colorScheme
     @State private var isFetchingLogo = false
@@ -49,21 +49,19 @@ struct JobInfoSection: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 0) {
             PhotosPicker(selection: $pickerItem, matching: .images) {
                 ZStack {
-                    // Fallback initial — dematerializes when logo lands
                     ZStack {
                         Circle()
                             .fill(accentTint)
                         Text(logoInitial)
-                            .appFont(40, weight: .heavy)
+                            .appFont(30, weight: .heavy)
                             .foregroundStyle(.white)
                     }
                     .opacity(hasLogo ? 0 : 1)
                     .animation(.appFastOut, value: hasLogo)
 
-                    // Logo — springs in from slightly smaller, settles into place
                     if let image = logoImage {
                         image
                             .resizable()
@@ -76,7 +74,7 @@ struct JobInfoSection: View {
                             )
                     }
                 }
-                .frame(width: 100, height: 100)
+                .frame(width: 72, height: 72)
                 .clipShape(Circle())
                 .background {
                     if isFetchingLogo {
@@ -89,18 +87,18 @@ struct JobInfoSection: View {
                     Circle()
                         .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
                 )
-                .shadow(color: .black.opacity(0.20), radius: 10, y: 5)
+                .shadow(color: .black.opacity(0.20), radius: 8, y: 4)
                 .opacity(isFetchingLogo ? 0.8 : 1.0)
                 .animation(.appFastOut, value: isFetchingLogo)
                 .overlay(alignment: .bottomTrailing) {
                     ZStack {
                         Circle()
                             .fill(Color(UIColor.systemBackground))
-                            .frame(width: 24, height: 24)
+                            .frame(width: 22, height: 22)
                         Image(systemName: "camera.fill")
-                            .appFont(10, weight: .bold)
+                            .appFont(9, weight: .bold)
                             .foregroundStyle(.white)
-                            .frame(width: 20, height: 20)
+                            .frame(width: 18, height: 18)
                             .background(Circle().fill(accentTint))
                     }
                     .offset(x: 2, y: 2)
@@ -158,6 +156,36 @@ struct JobInfoSection: View {
                 withAnimation(.appFastOut) { isFetchingLogo = false }
             }
 
+            // Company name — grouped tightly with the logo (proximity)
+            TextField("Company Name *", text: $companyName)
+                .multilineTextAlignment(.center)
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+                .appFont(13, weight: .semibold)
+                .foregroundStyle(Theme.textSecondary)
+                .textInputAutocapitalization(.words)
+                .focused($focused, equals: .company)
+                .submitLabel(.next)
+                .onSubmit { focused = .position }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+                .padding(.bottom, 6)
+                .overlay(alignment: .bottom) {
+                    Text(companyName.isEmpty ? "Company Name *" : companyName)
+                        .appFont(13, weight: .semibold)
+                        .lineLimit(1)
+                        .fixedSize()
+                        .hidden()
+                        .overlay(alignment: .bottom) {
+                            Rectangle()
+                                .fill(focused == .company ? Color.accentColor : Color.primary.opacity(0.10))
+                                .frame(height: 1)
+                                .animation(.appCrisp, value: focused == .company)
+                        }
+                }
+
+            // Position title — clear visual separation from identity group above
             TextField("Position Title *", text: $position)
                 .multilineTextAlignment(.center)
                 .lineLimit(1)
@@ -169,12 +197,20 @@ struct JobInfoSection: View {
                 .onSubmit { focused = nil }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 20)
+                .padding(.top, 22)
                 .padding(.bottom, 9)
                 .overlay(alignment: .bottom) {
-                    Rectangle()
-                        .fill(focused == .position ? Color.accentColor : Color.primary.opacity(0.12))
-                        .frame(height: focused == .position ? 2 : 1)
-                        .animation(.appCrisp, value: focused == .position)
+                    Text(position.isEmpty ? "Position Title *" : position)
+                        .appFont(24, weight: .bold)
+                        .lineLimit(1)
+                        .fixedSize()
+                        .hidden()
+                        .overlay(alignment: .bottom) {
+                            Rectangle()
+                                .fill(focused == .position ? Color.accentColor : Color.primary.opacity(0.12))
+                                .frame(height: focused == .position ? 2 : 1)
+                                .animation(.appCrisp, value: focused == .position)
+                        }
                 }
         }
         .frame(maxWidth: .infinity)

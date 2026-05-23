@@ -52,7 +52,6 @@ struct JobDetailView: View {
     @State private var scrollTargetSection: FormSection?
     @State private var contentAppeared = false
     @State private var isLogoAutoFetched = false
-    @FocusState private var isNavTitleFocused: Bool
     var isSheetPresentation: Bool = false
 
     private enum FormSection: Hashable {
@@ -358,9 +357,7 @@ struct JobDetailView: View {
 
     private func handleInvalidSaveTap() {
         AppHaptics.shared.warning()
-        if companyName.trimmingCharacters(in: .whitespaces).isEmpty {
-            isNavTitleFocused = true
-        } else if let target = firstMissingSection {
+        if let target = firstMissingSection {
             scrollTargetSection = target
         }
         withAnimation(.linear(duration: 0.45)) {
@@ -775,93 +772,67 @@ struct JobDetailView: View {
 
     // MARK: - Floating Nav Bar
 
-    private var navBarFontSize: CGFloat {
-        let count = companyName.trimmingCharacters(in: .whitespaces).count
-        if count > 22 { return 11 }
-        if count > 16 { return 12.5 }
-        return 14
-    }
-
     private var floatingNavBar: some View {
-        ZStack {
-            TextField("Company Name", text: $companyName)
-                .multilineTextAlignment(.center)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-                .appFont(navBarFontSize, weight: .semibold)
-                .foregroundStyle(Theme.textPrimary.opacity(0.65))
-                .textInputAutocapitalization(.words)
-                .focused($isNavTitleFocused)
-                .frame(maxWidth: 180)
-                .padding(.bottom, 4)
-                .overlay(alignment: .bottom) {
-                    Rectangle()
-                        .fill(isNavTitleFocused ? Color.accentColor : Color.primary.opacity(0.18))
-                        .frame(height: isNavTitleFocused ? 1.5 : 0.5)
-                        .animation(.appCrisp, value: isNavTitleFocused)
+        HStack(spacing: 10) {
+            if !isSheetPresentation || isNewApplication {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: isNewApplication ? "xmark" : "chevron.left")
+                        .appFont(14, weight: .semibold)
+                        .foregroundStyle(Theme.textPrimary)
+                        .frame(width: 44, height: 44)
+                        .background {
+                            Circle()
+                                .fill(.ultraThinMaterial)
+                                .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                        }
                 }
+                .buttonStyle(PressScaleButtonStyle())
+                .accessibilityLabel(isNewApplication ? "Cancel" : "Back")
+            }
+
+            Spacer()
 
             HStack(spacing: 10) {
-                if !isSheetPresentation || isNewApplication {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: isNewApplication ? "xmark" : "chevron.left")
-                            .appFont(14, weight: .semibold)
-                            .foregroundStyle(Theme.textPrimary)
-                            .frame(width: 44, height: 44)
-                            .background {
-                                Circle()
-                                    .fill(.ultraThinMaterial)
-                                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
-                            }
-                    }
-                    .buttonStyle(PressScaleButtonStyle())
-                    .accessibilityLabel(isNewApplication ? "Cancel" : "Back")
+                Button { isShowingLogoAttribution.toggle() } label: {
+                    Image(systemName: "info.circle")
+                        .appFont(15, weight: .medium)
+                        .foregroundStyle(Theme.textSecondary)
+                        .frame(width: 44, height: 44)
+                        .background {
+                            Circle()
+                                .fill(Theme.cardFill)
+                                .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                        }
                 }
+                .buttonStyle(PressScaleButtonStyle())
+                .popover(isPresented: $isShowingLogoAttribution, arrowEdge: .top) {
+                    HStack(spacing: 4) {
+                        Text("Company logos from").foregroundStyle(.secondary)
+                        Link("Logo.dev", destination: URL(string: "https://logo.dev")!)
+                    }
+                    .font(.footnote)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .presentationCompactAdaptation(.popover)
+                }
+                .accessibilityLabel("Logo attribution")
 
-                Spacer()
-
-                HStack(spacing: 10) {
-                    Button { isShowingLogoAttribution.toggle() } label: {
-                        Image(systemName: "info.circle")
-                            .appFont(15, weight: .medium)
-                            .foregroundStyle(Theme.textSecondary)
+                if !isNewApplication {
+                    Button { isShowingDeleteConfirmation = true } label: {
+                        Image(systemName: "trash")
+                            .appFont(14, weight: .bold)
+                            .foregroundStyle(Theme.destructive)
                             .frame(width: 44, height: 44)
                             .background {
                                 Circle()
-                                    .fill(Theme.cardFill)
-                                    .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
+                                    .fill(Theme.destructive.opacity(0.10))
+                                    .overlay(Circle().strokeBorder(Theme.destructive.opacity(0.18), lineWidth: 1))
                             }
                     }
                     .buttonStyle(PressScaleButtonStyle())
-                    .popover(isPresented: $isShowingLogoAttribution, arrowEdge: .top) {
-                        HStack(spacing: 4) {
-                            Text("Company logos from").foregroundStyle(.secondary)
-                            Link("Logo.dev", destination: URL(string: "https://logo.dev")!)
-                        }
-                        .font(.footnote)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .presentationCompactAdaptation(.popover)
-                    }
-                    .accessibilityLabel("Logo attribution")
-
-                    if !isNewApplication {
-                        Button { isShowingDeleteConfirmation = true } label: {
-                            Image(systemName: "trash")
-                                .appFont(14, weight: .bold)
-                                .foregroundStyle(Theme.destructive)
-                                .frame(width: 44, height: 44)
-                                .background {
-                                    Circle()
-                                        .fill(Theme.destructive.opacity(0.10))
-                                        .overlay(Circle().strokeBorder(Theme.destructive.opacity(0.18), lineWidth: 1))
-                                }
-                        }
-                        .buttonStyle(PressScaleButtonStyle())
-                        .accessibilityLabel("Delete application")
-                    }
+                    .accessibilityLabel("Delete application")
                 }
             }
         }
