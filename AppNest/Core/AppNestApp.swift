@@ -16,7 +16,6 @@ struct AppNestApp: App {
                 }
             }
             .environment(appState)
-            .fontDesign(.rounded)
         }
         .modelContainer(for: [JobApplication.self, ResumeDocument.self, JobCycle.self])
     }
