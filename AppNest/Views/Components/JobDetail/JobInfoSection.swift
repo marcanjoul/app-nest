@@ -11,7 +11,7 @@ struct JobInfoSection: View {
     @Binding var pickerItem: PhotosPickerItem?
     var onAutoFetchStateChanged: ((Bool) -> Void)? = nil
 
-    private enum Field: Hashable { case position, company }
+    private enum Field: Hashable { case position }
     @FocusState private var focused: Field?
     @Environment(\.colorScheme) private var colorScheme
     @State private var isFetchingLogo = false
@@ -158,46 +158,24 @@ struct JobInfoSection: View {
                 withAnimation(.appFastOut) { isFetchingLogo = false }
             }
 
-            VStack(spacing: 14) {
-                TextField("Position Title *", text: $position)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.4)
-                    .appFont(24, weight: .bold)
-                    .foregroundStyle(Theme.textPrimary)
-                    .focused($focused, equals: .position)
-                    .submitLabel(.next)
-                    .onSubmit { focused = .company }
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 4)
-                    .padding(.bottom, 9)
-                    .overlay(alignment: .bottom) {
-                        Rectangle()
-                            .fill(focused == .position ? Color.accentColor : Color.primary.opacity(0.12))
-                            .frame(height: focused == .position ? 2 : 1)
-                            .animation(.appCrisp, value: focused == .position)
-                    }
-
-                TextField("Company Name *", text: $companyName)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .appFont(13, weight: .semibold)
-                    .foregroundStyle(Theme.textSecondary)
-                    .textInputAutocapitalization(.words)
-                    .focused($focused, equals: .company)
-                    .submitLabel(.done)
-                    .onSubmit { focused = nil }
-                    .frame(maxWidth: .infinity)
-                    .padding(.bottom, 6)
-                    .overlay(alignment: .bottom) {
-                        Rectangle()
-                            .fill(focused == .company ? Color.accentColor : Color.primary.opacity(0.10))
-                            .frame(height: 1)
-                            .animation(.appCrisp, value: focused == .company)
-                    }
-            }
-            .padding(.horizontal, 16)
+            TextField("Position Title *", text: $position)
+                .multilineTextAlignment(.center)
+                .lineLimit(1)
+                .minimumScaleFactor(0.4)
+                .appFont(24, weight: .bold)
+                .foregroundStyle(Theme.textPrimary)
+                .focused($focused, equals: .position)
+                .submitLabel(.done)
+                .onSubmit { focused = nil }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 9)
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(focused == .position ? Color.accentColor : Color.primary.opacity(0.12))
+                        .frame(height: focused == .position ? 2 : 1)
+                        .animation(.appCrisp, value: focused == .position)
+                }
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 8)

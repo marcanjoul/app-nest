@@ -52,6 +52,7 @@ struct JobDetailView: View {
     @State private var scrollTargetSection: FormSection?
     @State private var contentAppeared = false
     @State private var isLogoAutoFetched = false
+    @FocusState private var isNavTitleFocused: Bool
     var isSheetPresentation: Bool = false
 
     private enum FormSection: Hashable {
@@ -357,7 +358,9 @@ struct JobDetailView: View {
 
     private func handleInvalidSaveTap() {
         AppHaptics.shared.warning()
-        if let target = firstMissingSection {
+        if companyName.trimmingCharacters(in: .whitespaces).isEmpty {
+            isNavTitleFocused = true
+        } else if let target = firstMissingSection {
             scrollTargetSection = target
         }
         withAnimation(.linear(duration: 0.45)) {
@@ -772,13 +775,31 @@ struct JobDetailView: View {
 
     // MARK: - Floating Nav Bar
 
+    private var navBarFontSize: CGFloat {
+        let count = companyName.trimmingCharacters(in: .whitespaces).count
+        if count > 22 { return 11 }
+        if count > 16 { return 12.5 }
+        return 14
+    }
+
     private var floatingNavBar: some View {
         ZStack {
-            Text(isNewApplication ? "New Application" : companyName)
-                .appFont(14, weight: .semibold)
-                .foregroundStyle(Theme.textPrimary.opacity(0.65))
+            TextField("Company Name", text: $companyName)
+                .multilineTextAlignment(.center)
                 .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                .appFont(navBarFontSize, weight: .semibold)
+                .foregroundStyle(Theme.textPrimary.opacity(0.65))
+                .textInputAutocapitalization(.words)
+                .focused($isNavTitleFocused)
                 .frame(maxWidth: 180)
+                .padding(.bottom, 4)
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(isNavTitleFocused ? Color.accentColor : Color.primary.opacity(0.18))
+                        .frame(height: isNavTitleFocused ? 1.5 : 0.5)
+                        .animation(.appCrisp, value: isNavTitleFocused)
+                }
 
             HStack(spacing: 10) {
                 if !isSheetPresentation || isNewApplication {
