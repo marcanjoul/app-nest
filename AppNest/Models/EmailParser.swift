@@ -172,24 +172,33 @@ struct EmailParser {
 
     private func extractPosition(from text: String) -> String? {
         let patterns = [
-            // "application/applied for/to Data Science Intern." — title ends sentence with no trailing keyword
-            #"(?:application|applied|applying)\s+(?:for|to)\s+(?:the\s+)?(.+?)(?:\s+(?:position|role)\b|\s+(?:at|@)\s+|\s+with\s+(?=[A-Z])|\s+and\s+(?=(?:we|i|they|the|our|a|an|you)\b)|[.,\n]|$)"#,
-            // "apply/application/applied/applying for the AI Engineering Intern position" — title ends at "position/role"
-            #"(?:\bapply\b|application|applied|applying)\s+(?:for|to)\s+(?:the\s+)?(.+?)\s+(?:position|role)\b"#,
-            // "application/applied/applying for [POSITION] at Company" — requires company context
-            #"(?:application|applied|applying)\s+for\s+(?:the\s+)?(.+?)\s+(?:at|with|@)\s+"#,
-            // "vacancy/opening for [the/our/a] [POSITION] role/position"
-            #"(?:vacancy|opening)\s+for\s+(?:the\s+|our\s+|a\s+|an\s+)?(.+?)\s+(?:role|position)"#,
+            // "apply/application/applied/applying for/to the [POSITION] position/role/opportunity/opening" (More specific, terminates on position/role/opportunity/opening keyword)
+            #"(?:\bapply\b|application|applied|applying)\s+(?:for|to)\s+(?:the\s+|our\s+|a\s+|an\s+)?(.+?)\s+(?:position|role|opportunity|opening)\b"#,
+            
+            // "application/applied/applying/apply for/to [POSITION] at/with Company" (More specific, terminates at company context)
+            #"(?:\bapply\b|application|applied|applying)\s+for\s+(?:the\s+|our\s+|a\s+|an\s+)?(.+?)\s+(?:at|with|@)\s+"#,
+
+            // "application/applied/applying/apply for/to [POSITION]" (Less specific fallback, terminates at sentence end or other markers)
+            #"(?:\bapply\b|application|applied|applying)\s+(?:for|to)\s+(?:the\s+|our\s+|a\s+|an\s+)?(.+?)(?:\s+(?:position|role|opportunity|opening)\b|\s+(?:at|@)\s+|\s+with\s+(?=[A-Z])|\s+and\s+(?=(?:we|i|they|the|our|a|an|you)\b)|[.,\n]|$)"#,
+            
+            // "vacancy/opening for [the/our/a] [POSITION] role/position/opportunity/opening"
+            #"(?:vacancy|opening)\s+for\s+(?:the\s+|our\s+|a\s+|an\s+)?(.+?)\s+(?:role|position|opportunity|opening)"#,
+            
             // "interviewing you for [the] [POSITION]"
-            #"interview(?:ing)?\s+you\s+for\s+(?:the\s+)?(.+?)(?:\s+(?:at|with|@)\s+|,|\.\s|\n|$)"#,
-            // "role/position of [POSITION]"
-            #"(?:role|position)\s+of\s+(?:the\s+)?(.+?)(?:\s+(?:at|with|@)\s+|,|\.\s|\n|$)"#,
-            // "offer you [the] [POSITION] role/position"
-            #"offer\s+(?:you\s+)?(?:the\s+)?(.+?)\s+(?:role|position)"#,
-            // "the/our [POSITION] role/position"
+            #"interview(?:ing)?\s+you\s+for\s+(?:the\s+|our\s+|a\s+|an\s+)?(.+?)(?:\s+(?:at|with|@)\s+|,|\.\s|\n|$)"#,
+            
+            // "role/position/opportunity/opening of [POSITION]"
+            #"(?:role|position|opportunity|opening)\s+of\s+(?:the\s+|our\s+|a\s+|an\s+)?(.+?)(?:\s+(?:at|with|@)\s+|,|\.\s|\n|$)"#,
+            
+            // "offer you [the] [POSITION] role/position/opportunity/opening"
+            #"offer\s+(?:you\s+)?(?:the\s+|our\s+|a\s+|an\s+)?(.+?)\s+(?:role|position|opportunity|opening)"#,
+            
+            // "the/our [POSITION] role/position/opening/opportunity"
             #"(?:the|our)\s+(?!vacancy\b|opening\b|job\b|posting\b)(.+?)\s+(?:role|position|opening|opportunity)"#,
+            
             // Label-style "Role: X" / "Position: X"
             #"(?:role|position|title)\s*:\s*(.+?)(?:\n|$)"#,
+            
             // "as a/an [POSITION]"
             #"as\s+(?:a|an)\s+(.+?)(?:\.|,|\n|$)"#,
         ]
@@ -228,8 +237,8 @@ struct EmailParser {
             }
         }
 
-        // Strip trailing "role"/"position"
-        let trailingSuffixes = [" role", " position"]
+        // Strip trailing "role"/"position"/"opportunity"/"opening"
+        let trailingSuffixes = [" role", " position", " opportunity", " opening"]
         for suffix in trailingSuffixes {
             if s.lowercased().hasSuffix(suffix) {
                 s = String(s.dropLast(suffix.count))
