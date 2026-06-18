@@ -6,6 +6,7 @@ struct EditableFieldRow: View {
     @Binding var text: String
     var placeholder: String = ""
     let index: Int
+    var axis: Axis = .horizontal
 
     @FocusState private var isFocused: Bool
     @State private var appeared = false
@@ -29,7 +30,7 @@ struct EditableFieldRow: View {
                 }
             }
 
-            TextField(placeholder.isEmpty ? label : placeholder, text: $text)
+            TextField(placeholder.isEmpty ? label : placeholder, text: $text, axis: axis)
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(Theme.textPrimary)
                 .focused($isFocused)

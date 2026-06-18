@@ -142,7 +142,7 @@ struct EmailParseResultsCard: View {
     private var formFields: some View {
         VStack(spacing: 12) {
             EditableFieldRow(icon: "building.2", label: "Company", text: $vm.editCompany, placeholder: "Company name", index: 0)
-            EditableFieldRow(icon: "briefcase", label: "Position / Role", text: $vm.editPosition, placeholder: "Job title", index: 1)
+            EditableFieldRow(icon: "briefcase", label: "Position / Role", text: $vm.editPosition, placeholder: "Job title", index: 1, axis: .vertical)
             TypePickerSection(type: $vm.editJobType, isEmbedded: true)
             StatusPickerSection(
                 status: Binding(get: { vm.editStatus }, set: { vm.editStatus = $0 ?? .applied }),
