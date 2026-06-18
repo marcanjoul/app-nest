@@ -94,7 +94,7 @@ extension View {
 
 struct AmbientBackground: View {
     var body: some View {
-        Color(UIColor.systemBackground)
+        Theme.background
             .ignoresSafeArea()
     }
 }

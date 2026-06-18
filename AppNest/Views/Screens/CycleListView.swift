@@ -56,7 +56,7 @@ struct CycleListView: View {
         }
         .navigationTitle("Job Cycles")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Color(UIColor.systemBackground), for: .navigationBar)
+        .toolbarBackground(Theme.background, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .onAppear { appState.cycleListHasAppeared = true }
         .toolbar {

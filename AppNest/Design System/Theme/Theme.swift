@@ -21,7 +21,11 @@ enum Theme {
 
     // MARK: - Background
 
-    static let background = Color(UIColor.systemBackground)
+    static let background = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.03, green: 0.06, blue: 0.03, alpha: 1.0)
+            : UIColor.systemBackground
+    })
 
     // MARK: - Card
 

@@ -310,7 +310,7 @@ struct JobDetailView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
                 .padding(.bottom, 16)
-                .background(Color(UIColor.systemBackground))
+                .background(Theme.background)
             }
             .transition(.move(edge: .bottom).combined(with: .opacity))
             .animation(.appSmooth, value: isSaveDisabled)

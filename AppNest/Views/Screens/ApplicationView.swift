@@ -2,6 +2,13 @@ import SwiftUI
 import SwiftData
 import UIKit
 
+struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 enum SortOption: String, CaseIterable {
     case dateNewest = "Newest"
     case dateOldest = "Oldest"
@@ -38,6 +45,8 @@ struct ApplicationView: View {
     @State private var selectedJobIDs = Set<PersistentIdentifier>()
     @State private var isEditMode = false
     @State private var isConfirmingBulkDelete = false
+    @State private var lastScrollOffset: CGFloat = 0
+    @State private var initialScrollOffset: CGFloat? = nil
 
     // Import / Export
     @State private var csvImportPreview: [CSVImportRow]? = nil
@@ -126,6 +135,15 @@ struct ApplicationView: View {
                     .padding(.top, 16)
 
                 }
+                .background(
+                    GeometryReader { geo in
+                        Color.clear
+                            .preference(
+                                key: ScrollOffsetPreferenceKey.self,
+                                value: geo.frame(in: .global).minY
+                            )
+                    }
+                )
                 .opacity(appState.dashboardHasAppeared ? 1 : 0)
                 .offset(y: appState.dashboardHasAppeared ? 0 : 20)
                 .animation(.appSmooth, value: appState.dashboardHasAppeared)
@@ -270,6 +288,39 @@ struct ApplicationView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.interactively)
+            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
+                if initialScrollOffset == nil {
+                    initialScrollOffset = value
+                }
+                guard let initial = initialScrollOffset else { return }
+                let relativeOffset = value - initial
+                
+                let delta = value - lastScrollOffset
+                lastScrollOffset = value
+                
+                // If near the top, always expand
+                if relativeOffset > -15 {
+                    if appState.isDockCompact {
+                        withAnimation(.appSmooth) {
+                            appState.isDockCompact = false
+                        }
+                    }
+                } else if delta < -8 {
+                    // Scrolling down: make compact
+                    if !appState.isDockCompact {
+                        withAnimation(.appSmooth) {
+                            appState.isDockCompact = true
+                        }
+                    }
+                } else if delta > 8 {
+                    // Scrolling up: make expanded
+                    if appState.isDockCompact {
+                        withAnimation(.appSmooth) {
+                            appState.isDockCompact = false
+                        }
+                    }
+                }
+            }
             .onChange(of: appState.scrollToTopTrigger) { _, _ in
                 withAnimation(.appSmooth) {
                     proxy.scrollTo("appListTop", anchor: .top)

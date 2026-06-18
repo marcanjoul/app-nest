@@ -93,7 +93,7 @@ struct JobInfoSection: View {
                 .overlay(alignment: .bottomTrailing) {
                     ZStack {
                         Circle()
-                            .fill(Color(UIColor.systemBackground))
+                            .fill(Theme.background)
                             .frame(width: 22, height: 22)
                         Image(systemName: "camera.fill")
                             .appFont(9, weight: .bold)

@@ -30,7 +30,7 @@ struct ResumePreview: View {
             }
         }
         .frame(width: 320, height: 460)
-        .background(Color(UIColor.systemBackground))
+        .background(Theme.background)
         .onAppear { resolve() }
         .onDisappear {
             if didStartAccessing {
@@ -57,7 +57,7 @@ struct ResumePreview: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(Color(UIColor.systemBackground))
+        .background(Theme.background)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(Color.primary.opacity(0.08))

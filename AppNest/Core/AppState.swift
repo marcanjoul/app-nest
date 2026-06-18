@@ -10,6 +10,7 @@ class AppState {
         didSet { UserDefaults.standard.set(selectedCycleID?.uuidString, forKey: "appnest.selectedCycleID") }
     }
     var selectedTab: Int = 0
+    var isDockCompact = false
 
     // MARK: - Navigation & Interaction
     var isPresentingSheet = false
