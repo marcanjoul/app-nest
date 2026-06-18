@@ -34,6 +34,8 @@ struct GlassCard: ViewModifier {
             .background {
                 ZStack {
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .fill(Theme.background)
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                         .fill(.ultraThinMaterial)
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                         .fill(Theme.cardFill.opacity(fillOpacity))

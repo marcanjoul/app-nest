@@ -139,7 +139,7 @@ struct DarkJobCardView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(16)
-        .glassCard(cornerRadius: Theme.cardRadius)
+        .glassCard(cornerRadius: Theme.cardRadius, fillOpacity: 1.0)
         .task(id: job.companyName) {
             guard job.companyLogoImageData == nil else { return }
             let trimmed = job.companyName.trimmingCharacters(in: .whitespaces)

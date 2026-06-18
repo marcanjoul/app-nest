@@ -136,7 +136,11 @@ struct EmailParserView: View {
                         Image(systemName: "xmark.circle.fill")
                             .appFont(18)
                             .foregroundStyle(Theme.textSecondary)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Clear text")
                 }
             }
 

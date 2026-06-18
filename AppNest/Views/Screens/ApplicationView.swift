@@ -728,6 +728,7 @@ struct ApplicationView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(isSearchFocused && searchText.isEmpty ? "Dismiss search" : "Clear search")
                 }
             }
             .padding(.horizontal, 12)
