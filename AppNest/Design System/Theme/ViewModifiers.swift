@@ -33,16 +33,26 @@ struct GlassCard: ViewModifier {
         content
             .background {
                 ZStack {
+                    // Outer Bezel Enclosure
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                         .fill(Theme.background)
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                                .strokeBorder(Theme.cardBorder.opacity(fillOpacity), lineWidth: 1)
+                        }
+                    
+                    // Inner Concentric Core
+                    RoundedRectangle(cornerRadius: max(4, cornerRadius - 5), style: .continuous)
                         .fill(.ultraThinMaterial)
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .padding(5)
+                    RoundedRectangle(cornerRadius: max(4, cornerRadius - 5), style: .continuous)
                         .fill(Theme.cardFill.opacity(fillOpacity))
+                        .padding(5)
                 }
                 .overlay {
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .strokeBorder(Theme.cardBorder.opacity(fillOpacity), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: max(4, cornerRadius - 5), style: .continuous)
+                        .strokeBorder(Theme.cardBorder.opacity(fillOpacity * 0.5), lineWidth: 0.8)
+                        .padding(5)
                 }
             }
             .shadow(color: .black.opacity(shadowOpacity), radius: 12, y: 4)

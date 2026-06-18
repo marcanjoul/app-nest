@@ -31,12 +31,20 @@ struct HoldToConfirmButton: View {
                 
                 // Label
                 HStack(spacing: 10) {
-                    Image(systemName: icon)
-                        .appFont(15, weight: .bold)
                     Text(title)
                         .appFont(15, weight: .bold)
+                    Spacer()
+                    ZStack {
+                        Circle()
+                            .fill(progress > 0.5 ? .white.opacity(0.16) : color.opacity(0.12))
+                            .frame(width: 34, height: 34)
+                        Image(systemName: icon)
+                            .appFont(12, weight: .bold)
+                    }
                 }
                 .foregroundStyle(progress > 0.5 ? .white : color)
+                .padding(.leading, 20)
+                .padding(.trailing, 8)
                 .frame(maxWidth: .infinity)
             }
             .frame(height: 50)

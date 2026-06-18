@@ -94,7 +94,7 @@ struct ProfileView: View {
                 VStack(spacing: 20) {
                     identitySection
                     VStack(spacing: 20) {
-                        resumesSection
+                        resumeSection
                         activityHeatmapSection
                         settingsSection
                     }
