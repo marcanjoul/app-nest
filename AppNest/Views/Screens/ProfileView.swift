@@ -238,16 +238,17 @@ struct ProfileView: View {
 
     @ViewBuilder
     private var initialAvatar: some View {
+        let colors = Theme.avatarColor(for: avatarGradientKey)
         ZStack {
-            Theme.avatarFill(for: avatarGradientKey)
+            colors.background
             if profileInitial.isEmpty {
                 Image(systemName: "person.fill")
                     .appFont(34, weight: .bold)
-                    .foregroundStyle(.white.opacity(0.88))
+                    .foregroundStyle(colors.foreground)
             } else {
                 Text(profileInitial)
-                    .appFont(36, weight: .heavy)
-                    .foregroundStyle(.white)
+                    .appFont(36, weight: .bold)
+                    .foregroundStyle(colors.foreground)
             }
         }
     }
