@@ -15,6 +15,8 @@ struct ProfileView: View {
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
 
     @AppStorage(AppStorageKeys.displayName)    private var profileDisplayName: String = ""
+    @AppStorage(AppStorageKeys.handle)         private var profileHandle: String = ""
+    @AppStorage(AppStorageKeys.bio)            private var profileBio: String = ""
     @AppStorage(AppStorageKeys.avatarData)     private var profileAvatarDataBase64: String = ""
     @AppStorage(AppStorageKeys.hapticsEnabled) private var hapticsEnabled: Bool = true
 
@@ -27,6 +29,8 @@ struct ProfileView: View {
     @State private var fullscreenResume: FullscreenResume?
 
     @FocusState private var isNameFocused: Bool
+    @FocusState private var isHandleFocused: Bool
+    @FocusState private var isBioFocused: Bool
 
     // MARK: - Derived
 
@@ -191,13 +195,14 @@ struct ProfileView: View {
                 }
             }
 
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
+                // Name
                 TextField(
                     "",
                     text: $profileDisplayName,
                     prompt: Text("Your Name").foregroundColor(Theme.textSecondary)
                 )
-                .appFont(26, weight: .bold)
+                .appFont(24, weight: .bold)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Theme.textPrimary)
                 .tint(.accentColor)
@@ -206,13 +211,103 @@ struct ProfileView: View {
                 .focused($isNameFocused)
                 .frame(maxWidth: 260)
 
+                // Handle (@username)
+                Group {
+                    if isHandleFocused {
+                        TextField("username", text: $profileHandle)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                            .focused($isHandleFocused)
+                            .appFont(14, weight: .semibold)
+                            .foregroundStyle(Theme.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: 150)
+                            .tint(.accentColor)
+                    } else {
+                        Button {
+                            isHandleFocused = true
+                        } label: {
+                            Text(profileHandle.isEmpty ? "@username" : "@\(profileHandle)")
+                                .appFont(14, weight: .semibold)
+                                .foregroundStyle(Theme.textSecondary)
+                        }
+                    }
+                }
+                .offset(y: -4)
+
+                // Bio
+                TextField(
+                    "",
+                    text: $profileBio,
+                    prompt: Text("Add a short bio...").foregroundColor(Theme.textTertiary),
+                    axis: .vertical
+                )
+                .appFont(13, weight: .medium)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Theme.textSecondary)
+                .tint(.accentColor)
+                .focused($isBioFocused)
+                .lineLimit(3)
+                .frame(maxWidth: 280)
+                .padding(.horizontal, 10)
+
+                // Cycle selector chip (if any cycles)
                 if !cycles.isEmpty {
                     profileCycleChip
+                        .padding(.top, 4)
                 }
 
-                Text("\(totalCount) application\(totalCount == 1 ? "" : "s")")
-                    .appFont(13, weight: .medium)
-                    .foregroundStyle(Theme.textTertiary)
+                // Stats Grid
+                HStack(spacing: 0) {
+                    VStack(spacing: 4) {
+                        Text("\(totalCount)")
+                            .appFont(18, weight: .bold)
+                            .foregroundStyle(Theme.textPrimary)
+                        Text("Apps")
+                            .appFont(11, weight: .bold)
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.08))
+                        .frame(width: 1, height: 28)
+
+                    VStack(spacing: 4) {
+                        Text("\(count(for: .interview))")
+                            .appFont(18, weight: .bold)
+                            .foregroundStyle(Theme.textPrimary)
+                        Text("Interviews")
+                            .appFont(11, weight: .bold)
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.08))
+                        .frame(width: 1, height: 28)
+
+                    VStack(spacing: 4) {
+                        Text("\(count(for: .offer))")
+                            .appFont(18, weight: .bold)
+                            .foregroundStyle(Theme.textPrimary)
+                        Text("Offers")
+                            .appFont(11, weight: .bold)
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Theme.cardFill.opacity(0.4))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .strokeBorder(Theme.cardBorder, lineWidth: 1)
+                        )
+                )
+                .frame(maxWidth: 320)
+                .padding(.top, 8)
             }
         }
         .frame(maxWidth: .infinity)
