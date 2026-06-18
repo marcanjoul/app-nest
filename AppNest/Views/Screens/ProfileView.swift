@@ -15,8 +15,6 @@ struct ProfileView: View {
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
 
     @AppStorage(AppStorageKeys.displayName)    private var profileDisplayName: String = ""
-    @AppStorage(AppStorageKeys.handle)         private var profileHandle: String = ""
-    @AppStorage(AppStorageKeys.bio)            private var profileBio: String = ""
     @AppStorage(AppStorageKeys.avatarData)     private var profileAvatarDataBase64: String = ""
     @AppStorage(AppStorageKeys.hapticsEnabled) private var hapticsEnabled: Bool = true
 
@@ -29,8 +27,6 @@ struct ProfileView: View {
     @State private var fullscreenResume: FullscreenResume?
 
     @FocusState private var isNameFocused: Bool
-    @FocusState private var isHandleFocused: Bool
-    @FocusState private var isBioFocused: Bool
 
     // MARK: - Derived
 
@@ -77,10 +73,10 @@ struct ProfileView: View {
         case .toApply:    return "To Apply"
         case .applied:    return "Applied"
         case .interview:  return "Interview"
-        case .offer:      return "Offers"
+        case .offer:      return "Offer"
         case .rejected:   return "Rejected"
         case .ghosted:    return "Ghosted"
-        case .jobRemoved: return "Removed"
+        case .jobRemoved: return "Job Removed"
         }
     }
 
@@ -88,19 +84,17 @@ struct ProfileView: View {
         pipelineStatuses.map { PipelineSegmentedBar.Segment(id: $0, count: count(for: $0)) }
     }
 
-    // MARK: - Body
+    // MARK: - Views
 
     var body: some View {
         ZStack {
             AmbientBackground()
 
             ScrollView {
-                VStack(spacing: 0) {
+                VStack(spacing: 20) {
                     identitySection
-
-                    VStack(spacing: 14) {
-                        pipelineSection
-                        resumeSection
+                    VStack(spacing: 20) {
+                        resumesSection
                         activityHeatmapSection
                         settingsSection
                     }
@@ -210,46 +204,6 @@ struct ProfileView: View {
                 .autocorrectionDisabled()
                 .focused($isNameFocused)
                 .frame(maxWidth: 260)
-
-                // Handle (@username)
-                Group {
-                    if isHandleFocused {
-                        TextField("username", text: $profileHandle)
-                            .autocorrectionDisabled()
-                            .textInputAutocapitalization(.never)
-                            .focused($isHandleFocused)
-                            .appFont(14, weight: .semibold)
-                            .foregroundStyle(Theme.textSecondary)
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: 150)
-                            .tint(.accentColor)
-                    } else {
-                        Button {
-                            isHandleFocused = true
-                        } label: {
-                            Text(profileHandle.isEmpty ? "@username" : "@\(profileHandle)")
-                                .appFont(14, weight: .semibold)
-                                .foregroundStyle(Theme.textSecondary)
-                        }
-                    }
-                }
-                .offset(y: -4)
-
-                // Bio
-                TextField(
-                    "",
-                    text: $profileBio,
-                    prompt: Text("Add a short bio...").foregroundColor(Theme.textTertiary),
-                    axis: .vertical
-                )
-                .appFont(13, weight: .medium)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(Theme.textSecondary)
-                .tint(.accentColor)
-                .focused($isBioFocused)
-                .lineLimit(3)
-                .frame(maxWidth: 280)
-                .padding(.horizontal, 10)
 
                 // Cycle selector chip (if any cycles)
                 if !cycles.isEmpty {
