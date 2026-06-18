@@ -84,61 +84,6 @@ enum Theme {
         }
     }
 
-    // MARK: - Tag Styles (light-mode badge colors)
-
-    struct TagStyle {
-        let background: Color
-        let foreground: Color
-    }
-
-    static func tagStyle(for status: ApplicationStatus) -> TagStyle {
-        switch status {
-        case .applied:
-            return TagStyle(background: Color(red: 0.92, green: 0.95, blue: 0.87), foreground: Color(red: 0.15, green: 0.31, blue: 0.04))
-        case .interview:
-            return TagStyle(background: Color(red: 0.90, green: 0.95, blue: 0.98), foreground: Color(red: 0.05, green: 0.27, blue: 0.49))
-        case .offer:
-            return TagStyle(background: Color(red: 0.93, green: 0.93, blue: 1.0),  foreground: Color(red: 0.24, green: 0.20, blue: 0.54))
-        case .rejected:
-            return TagStyle(background: Color(red: 0.99, green: 0.92, blue: 0.92), foreground: Color(red: 0.47, green: 0.12, blue: 0.12))
-        case .toApply:
-            return TagStyle(background: Color(red: 0.95, green: 0.94, blue: 0.91), foreground: Color(red: 0.37, green: 0.37, blue: 0.35))
-        case .ghosted:
-            return TagStyle(background: Color(red: 0.93, green: 0.93, blue: 0.93), foreground: Color(red: 0.30, green: 0.30, blue: 0.32))
-        case .jobRemoved:
-            return TagStyle(background: Color(red: 0.99, green: 0.93, blue: 0.87), foreground: Color(red: 0.50, green: 0.25, blue: 0.04))
-        }
-    }
-
-    static func tagStyle(for type: ApplicationType) -> TagStyle {
-        switch type {
-        case .internship:
-            return TagStyle(background: Color(red: 0.88, green: 0.96, blue: 0.93), foreground: Color(red: 0.03, green: 0.31, blue: 0.22))
-        case .fullTime:
-            return TagStyle(background: Color(red: 0.90, green: 0.95, blue: 0.98), foreground: Color(red: 0.05, green: 0.27, blue: 0.49))
-        case .partTime:
-            return TagStyle(background: Color(red: 0.98, green: 0.93, blue: 0.85), foreground: Color(red: 0.52, green: 0.31, blue: 0.04))
-        case .contract:
-            return TagStyle(background: Color(red: 0.93, green: 0.93, blue: 1.0),  foreground: Color(red: 0.24, green: 0.20, blue: 0.54))
-        case .Co_op:
-            return TagStyle(background: Color(red: 0.95, green: 0.94, blue: 0.91), foreground: Color(red: 0.37, green: 0.37, blue: 0.35))
-        case .temporary:
-            return TagStyle(background: Color(red: 0.98, green: 0.92, blue: 0.94), foreground: Color(red: 0.45, green: 0.14, blue: 0.24))
-        }
-    }
-
-    static func tagStyle(for season: ApplicationSeason) -> TagStyle {
-        switch season {
-        case .summer:
-            return TagStyle(background: Color(red: 0.98, green: 0.93, blue: 0.85), foreground: Color(red: 0.39, green: 0.22, blue: 0.02))
-        case .fall:
-            return TagStyle(background: Color(red: 0.98, green: 0.93, blue: 0.91), foreground: Color(red: 0.44, green: 0.17, blue: 0.08))
-        case .winter:
-            return TagStyle(background: Color(red: 0.90, green: 0.95, blue: 0.98), foreground: Color(red: 0.05, green: 0.27, blue: 0.49))
-        case .spring:
-            return TagStyle(background: Color(red: 0.98, green: 0.92, blue: 0.94), foreground: Color(red: 0.45, green: 0.14, blue: 0.24))
-        }
-    }
 
     // MARK: - Type Tag
 
@@ -191,13 +136,7 @@ enum Theme {
         return abs(hash)
     }
 
-    // MARK: - Progress Gradient
 
-    static let progressGradient = LinearGradient(
-        colors: [Color(red: 0.30, green: 0.80, blue: 0.45).opacity(0.8), Color(red: 0.30, green: 0.80, blue: 0.45)],
-        startPoint: .top,
-        endPoint: .bottom
-    )
 
     // MARK: - Section Labels
 
