@@ -295,17 +295,30 @@ struct JobDetailView: View {
                             dismiss()
                         }
                     } label: {
-                        Text(saveButtonLabel)
-                            .appFont(14, weight: .semibold)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 13)
-                            .background {
-                                Capsule()
-                                    .fill(isSaveDisabled ? Color.secondary.opacity(0.3) : Color.accentColor)
+                        HStack {
+                            Text(saveButtonLabel)
+                                .appFont(14, weight: .bold)
+                            Spacer()
+                            ZStack {
+                                Circle()
+                                    .fill(.white.opacity(0.16))
+                                    .frame(width: 28, height: 28)
+                                Image(systemName: isNewApplication ? "plus" : "checkmark")
+                                    .appFont(10, weight: .bold)
                             }
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.leading, 20)
+                        .padding(.trailing, 8)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background {
+                            Capsule()
+                                .fill(isSaveDisabled ? Color.secondary.opacity(0.3) : Color.accentColor)
+                        }
                     }
                     .buttonStyle(PressScaleButtonStyle())
+                    .disabled(!isNewApplication && !hasChanges && missingFields.isEmpty)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
@@ -847,6 +860,12 @@ struct JobDetailView: View {
         let parsedAmount = parsedCompensationAmount
         let resolvedSalaryPeriod: SalaryPeriod? = compensationKind == .salary ? salaryPeriod : nil
         let wantsReminder = status == .toApply && reminderEnabled
+
+        let isOfferTrigger = (status == .offer && (job == nil || job?.status != .offer))
+
+        if isOfferTrigger {
+            appState.showOfferCelebration = true
+        }
 
         if let job {
             job.companyName         = companyName.trimmingCharacters(in: .whitespaces)

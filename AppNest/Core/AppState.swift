@@ -14,6 +14,9 @@ class AppState {
 
     // MARK: - Navigation & Interaction
     var isPresentingSheet = false
+    
+    /// Global trigger for the full-screen offer celebration.
+    var showOfferCelebration = false
 
     /// Main navigation path for the Applications tab.
     var navigationPath = NavigationPath()

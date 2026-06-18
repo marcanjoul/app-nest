@@ -51,7 +51,7 @@ struct PillPickerSheet<T: CaseIterable & RawRepresentable & Hashable>: View
                     .appFont(14, weight: .bold)
                     .foregroundStyle(isSelected ? .white : color)
                 Text(option.rawValue)
-                    .font(.system(size: 14, weight: isSelected ? .bold : .semibold))
+                    .appFont(14, weight: isSelected ? .bold : .semibold)
                     .foregroundStyle(isSelected ? .white : color.opacity(0.88))
                     .lineLimit(1)
                 Spacer(minLength: 0)

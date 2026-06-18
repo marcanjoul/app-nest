@@ -254,15 +254,31 @@ struct CycleRow: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 15)
         .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Theme.cardFill)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .strokeBorder(
-                            isActive ? Color.accentColor.opacity(0.45) : Theme.cardBorder,
-                            lineWidth: isActive ? 1.5 : 1
-                        )
-                )
+            ZStack {
+                // Outer Bezel Enclosure
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Theme.background)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(
+                                isActive ? Color.accentColor.opacity(0.45) : Theme.cardBorder,
+                                lineWidth: isActive ? 1.5 : 1
+                            )
+                    }
+                
+                // Inner Concentric Core
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(Theme.cardFill)
+                    .padding(5)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .strokeBorder(
+                        isActive ? Color.accentColor.opacity(0.2) : Theme.cardBorder.opacity(0.5),
+                        lineWidth: 0.8
+                    )
+                    .padding(5)
+            }
         }
         .animation(.appCrisp, value: isActive)
     }

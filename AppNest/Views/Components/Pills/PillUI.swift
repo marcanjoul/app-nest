@@ -99,11 +99,11 @@ struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == 
             HStack(spacing: isSelected ? 6 : 5) {
                 if let icon {
                     Image(systemName: icon)
-                        .font(.system(size: isSelected ? 13 : 12, weight: .bold))
+                        .appFont(isSelected ? 13 : 12, weight: .bold)
                         .foregroundStyle(isSelected ? .white : color)
                 }
                 Text(option.rawValue)
-                    .font(.system(size: isSelected ? 14 : 13, weight: isSelected ? .bold : .semibold))
+                    .appFont(isSelected ? 14 : 13, weight: isSelected ? .bold : .semibold)
                     .foregroundStyle(isSelected ? .white : color.opacity(0.88))
             }
             .padding(.horizontal, isSelected ? 14 : 12)

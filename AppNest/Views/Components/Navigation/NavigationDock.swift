@@ -123,7 +123,7 @@ struct NavigationDock: View {
             )
         }
         .padding(.horizontal, isCompact ? 104 : 24)
-        .padding(.bottom, isCompact ? 10 : 12)
+        .padding(.bottom, isCompact ? 2 : 4)
         .scaleEffect(isCompact ? 0.78 : 1.0)
         .onAppear {
             visualSelectedTab = selectedTab

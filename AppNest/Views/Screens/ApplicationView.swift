@@ -159,7 +159,7 @@ struct ApplicationView: View {
                     .opacity(appState.dashboardHasAppeared ? 1 : 0)
                     .offset(y: appState.dashboardHasAppeared ? 0 : 16)
                     .animation(.appSmooth.delay(0.07), value: appState.dashboardHasAppeared)
-                    .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .selectionDisabled()
@@ -169,7 +169,7 @@ struct ApplicationView: View {
                     .opacity(appState.dashboardHasAppeared ? 1 : 0)
                     .offset(y: appState.dashboardHasAppeared ? 0 : 12)
                     .animation(.appSmooth.delay(0.12), value: appState.dashboardHasAppeared)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 6, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .selectionDisabled()
@@ -179,7 +179,7 @@ struct ApplicationView: View {
                     .opacity(appState.dashboardHasAppeared ? 1 : 0)
                     .offset(y: appState.dashboardHasAppeared ? 0 : 10)
                     .animation(.appSmooth.delay(0.15), value: appState.dashboardHasAppeared)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 12, trailing: 16))
+                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 16, trailing: 16))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .selectionDisabled()
@@ -230,7 +230,7 @@ struct ApplicationView: View {
                 } else {
                     if isEditMode {
                         selectionToolbar
-                            .listRowInsets(EdgeInsets(top: 4, leading: 20, bottom: 10, trailing: 20))
+                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
                             .selectionDisabled()
@@ -254,7 +254,7 @@ struct ApplicationView: View {
                                     AppHaptics.shared.light()
                                 }
                             )
-                            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                            .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
                             .visualEffect { content, proxy in
@@ -1145,7 +1145,8 @@ struct ApplicationView: View {
             emptyStateActions
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 60)
+        .padding(.top, 60)
+        .padding(.bottom, 120)
     }
 
     private var emptyCycleState: some View {
@@ -1168,7 +1169,8 @@ struct ApplicationView: View {
             emptyStateActions
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 60)
+        .padding(.top, 60)
+        .padding(.bottom, 120)
     }
     
     private var emptyStateActions: some View {
@@ -1176,12 +1178,22 @@ struct ApplicationView: View {
             AppHaptics.shared.light()
             appState.selectedTab = 1 // Navigate to Add tab
         } label: {
-            Label("Add a Job", systemImage: "plus")
-                .appFont(15, weight: .bold)
-                .foregroundStyle(.white)
-                .padding(.horizontal, 22)
-                .padding(.vertical, 14)
-                .background(Capsule().fill(Color.accentColor))
+            HStack(spacing: 12) {
+                Text("Add a Job")
+                    .appFont(15, weight: .bold)
+                ZStack {
+                    Circle()
+                        .fill(.white.opacity(0.16))
+                        .frame(width: 24, height: 24)
+                    Image(systemName: "plus")
+                        .appFont(10, weight: .bold)
+                }
+            }
+            .foregroundStyle(.white)
+            .padding(.leading, 18)
+            .padding(.trailing, 8)
+            .frame(height: 38)
+            .background(Capsule().fill(Color.accentColor))
         }
         .buttonStyle(PressScaleButtonStyle())
         .padding(.top, 10)
@@ -1272,7 +1284,8 @@ struct ApplicationView: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 60)
+        .padding(.top, 60)
+        .padding(.bottom, 120)
         .padding(.horizontal, 20)
     }
 

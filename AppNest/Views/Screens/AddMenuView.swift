@@ -268,14 +268,23 @@ struct AddMenuView: View {
                             Button {
                                 vm.parseEmail(defaultResume: defaultResume)
                             } label: {
-                                HStack(spacing: 8) {
-                                    Image(systemName: vm.hasResult ? "arrow.clockwise.circle.fill" : "sparkles")
+                                HStack {
                                     Text(vm.hasResult ? "Re-parse" : "Parse Email")
-                                        .appFont(16, weight: .semibold)
+                                        .appFont(15, weight: .bold)
+                                    Spacer()
+                                    ZStack {
+                                        Circle()
+                                            .fill(.white.opacity(0.16))
+                                            .frame(width: 28, height: 28)
+                                        Image(systemName: vm.hasResult ? "arrow.clockwise" : "sparkles")
+                                            .appFont(11, weight: .bold)
+                                    }
                                 }
                                 .foregroundStyle(.white)
+                                .padding(.leading, 20)
+                                .padding(.trailing, 8)
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
+                                .frame(height: 44)
                                 .background {
                                     Capsule()
                                         .fill(vm.isParseDisabled ? Color.secondary.opacity(0.3) : Color.orange)

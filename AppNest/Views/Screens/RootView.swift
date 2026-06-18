@@ -9,30 +9,36 @@ struct RootView: View {
         @Bindable var bindableAppState = appState
 
         ZStack(alignment: .bottom) {
-            TabView(selection: $bindableAppState.selectedTab) {
+            ZStack {
                 NavigationStack(path: $bindableAppState.navigationPath) {
                     ApplicationView()
                 }
-                .toolbar(.hidden, for: .tabBar)
-                .tag(0)
+                .opacity(appState.selectedTab == 0 ? 1 : 0)
+                .disabled(appState.selectedTab != 0)
 
                 NavigationStack {
                     AddMenuView()
                 }
-                .toolbar(.hidden, for: .tabBar)
-                .tag(1)
+                .opacity(appState.selectedTab == 1 ? 1 : 0)
+                .disabled(appState.selectedTab != 1)
 
                 NavigationStack {
                     ProfileView()
                 }
-                .toolbar(.hidden, for: .tabBar)
-                .tag(2)
+                .opacity(appState.selectedTab == 2 ? 1 : 0)
+                .disabled(appState.selectedTab != 2)
             }
-            .animation(.none, value: bindableAppState.selectedTab)
+            .animation(.none, value: appState.selectedTab)
 
             if !appState.isPresentingSheet && !isKeyboardVisible {
                 NavigationDock(selectedTab: $bindableAppState.selectedTab)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+            
+            if appState.showOfferCelebration {
+                FullScreenCelebrationView()
+                    .transition(.opacity)
+                    .zIndex(100)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in

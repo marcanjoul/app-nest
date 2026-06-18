@@ -29,7 +29,7 @@ enum Theme {
 
     // MARK: - Card
 
-    static let cardRadius: CGFloat = 20
+    static let cardRadius: CGFloat = 24
 
     static let cardFill: Color = Color(UIColor { trait in
         trait.userInterfaceStyle == .dark
@@ -88,12 +88,12 @@ enum Theme {
     // MARK: - Type Tag
 
     static let typeTagFill:   Color    = Color.primary.opacity(0.05)
-    static let typeTagRadius: CGFloat  = 10
+    static let typeTagRadius: CGFloat  = 8
 
     // MARK: - Stat Chip
 
     static let statChipFill:   Color   = Color(UIColor.secondarySystemGroupedBackground)
-    static let statChipRadius: CGFloat = 18
+    static let statChipRadius: CGFloat = 16
 
     // MARK: - Avatar Gradients
 

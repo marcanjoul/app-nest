@@ -207,14 +207,23 @@ struct EmailParseResultsCard: View {
     private var actionButtons: some View {
         VStack(spacing: 12) {
             Button(action: onSave) {
-                Label(
-                    vm.saveSuccess ? "Added!" : "Add to Applications",
-                    systemImage: vm.saveSuccess ? "checkmark.circle.fill" : "plus.circle.fill"
-                )
-                .appFont(16, weight: .bold)
+                HStack {
+                    Text(vm.saveSuccess ? "Added!" : "Add to Applications")
+                        .appFont(16, weight: .bold)
+                    Spacer()
+                    ZStack {
+                        Circle()
+                            .fill(.white.opacity(0.16))
+                            .frame(width: 32, height: 32)
+                        Image(systemName: vm.saveSuccess ? "checkmark" : "plus")
+                            .appFont(12, weight: .bold)
+                    }
+                }
                 .foregroundStyle(.white)
+                .padding(.leading, 24)
+                .padding(.trailing, 8)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
+                .frame(height: 50)
                 .background {
                     let c: Color = vm.isSaveDisabled ? .secondary.opacity(0.3)
                                  : vm.saveSuccess    ? Color.green
