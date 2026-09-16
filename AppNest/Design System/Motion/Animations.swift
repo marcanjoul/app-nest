@@ -3,42 +3,36 @@ import SwiftUI
 // MARK: - App-wide Animations
 
 extension Animation {
-    /// Smooth, natural spring for primary transitions.
+    /// Short eased transition for layout changes.
     static var appSmooth: Animation {
-        .spring(response: 0.35, dampingFraction: 0.82)
+        .timingCurve(0.22, 1.0, 0.36, 1.0, duration: 0.25)
     }
     
-    /// Snappy, immediate spring for small interactions.
+    /// Immediate feedback for small interactions.
     static var appCrisp: Animation {
-        .spring(response: 0.22, dampingFraction: 0.85)
+        .timingCurve(0.23, 1.0, 0.32, 1.0, duration: 0.18)
     }
 
     /// Snappy spring with a subtle bounce for success/celebration states.
     static var appBouncy: Animation {
-        .spring(response: 0.38, dampingFraction: 0.55)
+        .timingCurve(0.34, 1.35, 0.64, 1.0, duration: 0.50)
     }
     
-    /// Bubbly, liquidy spring for dramatic expansions. Highly damped to prevent screen overflow.
+    /// Shared timing for expanding panels.
     static var appBubbly: Animation {
-        .spring(response: 0.40, dampingFraction: 0.65)
+        .appSmooth
     }
     
     /// Gentle, fluid ease for slower decorative moves.
     static var appFastOut: Animation {
-        .timingCurve(0.4, 0, 0.2, 1, duration: 0.28)
+        .timingCurve(0.4, 0.0, 0.2, 1.0, duration: 0.28)
     }
 }
 
 enum AppAnimations {
     static let pressScale: CGFloat = 0.96
     
-    static var springDefault: Animation {
-        .appSmooth
-    }
     
-    static var springBouncy: Animation {
-        .spring(response: 0.45, dampingFraction: 0.65)
-    }
 }
 
 // MARK: - Geometry Effects
@@ -53,65 +47,24 @@ struct ShakeEffect: GeometryEffect {
     }
 }
 
-// MARK: - Shimmer Effect
-
-struct ShimmerModifier: ViewModifier {
-    @State private var phase: CGFloat = 0
-    
-    func body(content: Content) -> some View {
-        content
-            .overlay(
-                GeometryReader { proxy in
-                    LinearGradient(
-                        stops: [
-                            .init(color: .clear, location: 0),
-                            .init(color: .white.opacity(0.3), location: 0.3),
-                            .init(color: .white.opacity(0.5), location: 0.5),
-                            .init(color: .white.opacity(0.3), location: 0.7),
-                            .init(color: .clear, location: 1)
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(width: proxy.size.width * 2)
-                    .offset(x: -proxy.size.width + (proxy.size.width * 2 * phase))
-                }
-            )
-            .mask(content)
-            .onAppear {
-                withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
-                    phase = 1
-                }
-            }
-    }
-}
-
-extension View {
-    /// Adds a shimmering effect, typically used for skeleton loading.
-    func shimmer() -> some View {
-        modifier(ShimmerModifier())
-    }
-}
-
 // MARK: - Global Button Styles
 
 struct PressScaleButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? AppAnimations.pressScale : 1.0)
-            .shadow(
-                color: .black.opacity(configuration.isPressed ? 0.05 : 0.12),
-                radius: configuration.isPressed ? 2 : 8,
-                y: configuration.isPressed ? 1 : 4
-            )
+            .scaleEffect(configuration.isPressed && !reduceMotion ? AppAnimations.pressScale : 1.0)
             .animation(.interactiveSpring(response: 0.2, dampingFraction: 0.8), value: configuration.isPressed)
     }
 }
 
 struct CardPressButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.98 : 1.0)
             .animation(.interactiveSpring(response: 0.18, dampingFraction: 0.85), value: configuration.isPressed)
     }
 }

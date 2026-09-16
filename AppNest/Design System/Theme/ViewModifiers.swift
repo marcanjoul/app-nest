@@ -28,9 +28,6 @@ struct GlassCard: ViewModifier {
     var cornerRadius: CGFloat = 20
     var shadowOpacity: Double = 0.08
 
-    // ponytail: was an opaque fill + .ultraThinMaterial + a near-opaque fill stacked three
-    // deep. The material blurred an opaque layer and was then covered — a real blur pass per
-    // card for no visible effect. Theme.cardFill absorbed its tint and is now opaque.
     func body(content: Content) -> some View {
         content
             .background {
@@ -41,7 +38,7 @@ struct GlassCard: ViewModifier {
                             .strokeBorder(Theme.cardBorder, lineWidth: 1)
                     }
             }
-            .shadow(color: .black.opacity(shadowOpacity), radius: 12, y: 4)
+            .shadow(color: .black.opacity(shadowOpacity * 0.4), radius: 4, y: 2)
     }
 }
 
@@ -77,6 +74,7 @@ extension View {
     func glassCard(cornerRadius: CGFloat = 20, shadowOpacity: Double = 0.08) -> some View {
         modifier(GlassCard(cornerRadius: cornerRadius, shadowOpacity: shadowOpacity))
     }
+
     
     @ViewBuilder
     func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {

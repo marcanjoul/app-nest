@@ -29,42 +29,38 @@ struct AddMenuView: View {
     @State private var vm = EmailParseViewModel()
     @State private var isShowingEmailParse = false
     @FocusState private var isEmailEditorFocused: Bool
-    @State private var cardsVisible = false
 
     private let linkParser = LinkParser()
 
     private var defaultResume: ResumeDocument? { resumes.first(where: \.isDefault) }
+    private let linkAccent = Color(red: 0.48, green: 0.36, blue: 0.76)
+    private let emailAccent = Color(red: 0.78, green: 0.43, blue: 0.16)
+    private let importAccent = Color(red: 0.10, green: 0.46, blue: 0.56)
 
     var body: some View {
         ZStack {
             AmbientBackground()
 
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 16) {
+                    addHeader
+                        .padding(.bottom, 2)
+
                     pasteLinkCard
-                        .opacity(cardsVisible ? 1 : 0)
-                        .offset(y: cardsVisible ? 0 : 12)
-                        .animation(.appSmooth.delay(0.0), value: cardsVisible)
 
                     emailParseCard
                         .padding(.horizontal, isShowingEmailParse ? -16 : 0)
                         .animation(.appSmooth, value: isShowingEmailParse)
-                        .opacity(cardsVisible ? 1 : 0)
-                        .offset(y: cardsVisible ? 0 : 12)
-                        .animation(.appSmooth.delay(0.05), value: cardsVisible)
 
                     actionCard(
                         title: "Import CSV",
                         subtitle: "Bulk upload applications.",
                         icon: "square.and.arrow.down.fill",
-                        color: Color.blue
+                        color: importAccent
                     ) {
                         AppHaptics.shared.light()
                         isSelectingCSVFile = true
                     }
-                    .opacity(cardsVisible ? 1 : 0)
-                    .offset(y: cardsVisible ? 0 : 12)
-                    .animation(.appSmooth.delay(0.10), value: cardsVisible)
 
                     actionCard(
                         title: "Add Manually",
@@ -75,19 +71,14 @@ struct AddMenuView: View {
                         AppHaptics.shared.light()
                         isPresentingManualAdd = true
                     }
-                    .opacity(cardsVisible ? 1 : 0)
-                    .offset(y: cardsVisible ? 0 : 12)
-                    .animation(.appSmooth.delay(0.15), value: cardsVisible)
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 16)
+                .padding(.top, 22)
                 .padding(.bottom, 110)
-                .onAppear { cardsVisible = true }
             }
             .scrollBounceBehavior(.basedOnSize)
         }
-        .navigationTitle("Add a Job")
-        .navigationBarTitleDisplayMode(.large)
+        .toolbar(.hidden, for: .navigationBar)
         .dismissKeyboardToolbar()
         .sheet(isPresented: Binding(
             get: { isPresentingManualAdd },
@@ -143,6 +134,24 @@ struct AddMenuView: View {
         }
     }
 
+    private var addHeader: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Add a Job")
+                .appFont(40, weight: .heavy)
+                .foregroundStyle(Theme.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+
+            Text("Capture the messy parts fast, then clean them up when you have breathing room.")
+                .appFont(14, weight: .medium)
+                .foregroundStyle(Theme.textSecondary)
+                .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+
     // MARK: - Email Parse Card
 
     @ViewBuilder
@@ -163,7 +172,7 @@ struct AddMenuView: View {
             } label: {
                 CardRowHeader(
                     icon: "envelope.open.fill",
-                    iconColor: .orange,
+                    iconColor: emailAccent,
                     title: "Parse Email",
                     subtitle: "Extract details from an email.",
                     isProminent: true
@@ -257,8 +266,8 @@ struct AddMenuView: View {
                                     .fill(Color.primary.opacity(0.05))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .strokeBorder(
-                                                isEmailEditorFocused ? Color.orange.opacity(0.55) : Color.primary.opacity(0.08),
+                                                .strokeBorder(
+                                                isEmailEditorFocused ? emailAccent.opacity(0.55) : Color.primary.opacity(0.08),
                                                 lineWidth: isEmailEditorFocused ? 1.5 : 1
                                             )
                                     )
@@ -287,7 +296,7 @@ struct AddMenuView: View {
                                 .frame(height: 44)
                                 .background {
                                     Capsule()
-                                        .fill(vm.isParseDisabled ? Color.secondary.opacity(0.3) : Color.orange)
+                                        .fill(vm.isParseDisabled ? Color.secondary.opacity(0.3) : emailAccent)
                                 }
                             }
                             .buttonStyle(PressScaleButtonStyle())
@@ -390,7 +399,7 @@ struct AddMenuView: View {
             } label: {
                 CardRowHeader(
                     icon: "link",
-                    iconColor: .purple,
+                    iconColor: linkAccent,
                     title: "Paste Job Link",
                     subtitle: "Auto-extract company and role.",
                     isProminent: true
@@ -419,7 +428,7 @@ struct AddMenuView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .strokeBorder(isTextFieldFocused ? Color.purple.opacity(0.5) : Color.primary.opacity(0.08), lineWidth: 1)
+                                    .strokeBorder(isTextFieldFocused ? linkAccent.opacity(0.5) : Color.primary.opacity(0.08), lineWidth: 1)
                             )
                             .onChange(of: pasteLinkURL) { _, _ in
                                 withAnimation(.appFastOut) { showLinkedInError = false }
@@ -438,7 +447,7 @@ struct AddMenuView: View {
                             .appFont(15, weight: .bold)
                             .foregroundStyle(.white)
                             .frame(width: 72, height: 44)
-                            .background(pasteLinkURL.isEmpty ? Color.secondary.opacity(0.3) : Color.purple)
+                            .background(pasteLinkURL.isEmpty ? Color.secondary.opacity(0.3) : linkAccent)
                             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         }
                         .disabled(pasteLinkURL.isEmpty || isParsing)

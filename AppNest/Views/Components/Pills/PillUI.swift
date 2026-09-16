@@ -40,9 +40,13 @@ struct FilterToken: View {
                         )
                     )
             )
+            .frame(minHeight: 44)
         }
         .buttonStyle(PressScaleButtonStyle())
         .animation(.appCrisp, value: isActive)
+        .accessibilityLabel("\(label) filter")
+        .accessibilityValue(selectionSummary ?? (isActive ? "Active" : "Any"))
+        .accessibilityHint(isExpanded ? "Collapses filter options" : "Expands filter options")
     }
 }
 
@@ -73,9 +77,12 @@ struct CompactFilterChip: View {
                     .fill(isSelected ? AnyShapeStyle(color) : AnyShapeStyle(color.opacity(0.10)))
                     .overlay(Capsule().strokeBorder(isSelected ? Color.clear : color.opacity(0.20), lineWidth: 0.8))
             )
+            .frame(minHeight: 44)
         }
         .buttonStyle(PressScaleButtonStyle())
         .animation(.appCrisp, value: isSelected)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
@@ -118,9 +125,12 @@ struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == 
                         )
                     )
             )
+            .frame(minHeight: 44)
         }
         .buttonStyle(PressScaleButtonStyle())
         .animation(.appCrisp, value: isSelected)
+        .accessibilityLabel(option.rawValue)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

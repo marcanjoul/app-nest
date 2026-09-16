@@ -23,8 +23,8 @@ enum Theme {
 
     static let background = Color(UIColor { trait in
         trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.03, green: 0.06, blue: 0.03, alpha: 1.0)
-            : UIColor.systemBackground
+            ? UIColor(red: 0.035, green: 0.052, blue: 0.035, alpha: 1.0)
+            : UIColor(red: 0.972, green: 0.969, blue: 0.936, alpha: 1.0)
     })
 
     // MARK: - Card
@@ -33,14 +33,14 @@ enum Theme {
 
     static let cardFill: Color = Color(UIColor { trait in
         trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.105, green: 0.108, blue: 0.115, alpha: 1.0)
-            : UIColor.secondarySystemGroupedBackground
+            ? UIColor(red: 0.105, green: 0.128, blue: 0.095, alpha: 1.0)
+            : UIColor(red: 0.996, green: 0.988, blue: 0.940, alpha: 1.0)
     })
 
     static let cardBorder: Color = Color(UIColor { trait in
         trait.userInterfaceStyle == .dark
-            ? UIColor.white.withAlphaComponent(0.08)
-            : UIColor.black.withAlphaComponent(0.04)
+            ? UIColor(red: 0.79, green: 0.95, blue: 0.58, alpha: 0.12)
+            : UIColor(red: 0.27, green: 0.33, blue: 0.17, alpha: 0.10)
     })
 
     // MARK: - Text
@@ -92,7 +92,7 @@ enum Theme {
 
     // MARK: - Stat Chip
 
-    static let statChipFill:   Color   = Color(UIColor.secondarySystemGroupedBackground)
+    static let statChipFill:   Color   = Theme.cardFill
     static let statChipRadius: CGFloat = 16
 
     // MARK: - Avatar Gradients

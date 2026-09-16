@@ -25,10 +25,13 @@ struct CardRowHeader<Trailing: View>: View {
                 Text(title)
                     .appFont(isProminent ? 18 : 17, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
                 Text(subtitle)
-                    .appFont(12)
+                    .appFont(13, weight: .medium)
                     .foregroundStyle(Theme.textSecondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer()
@@ -37,5 +40,6 @@ struct CardRowHeader<Trailing: View>: View {
         }
         .padding(20)
         .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
     }
 }

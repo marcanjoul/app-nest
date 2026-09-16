@@ -130,8 +130,9 @@ struct ApplicationView: View {
 
                 }
                 .opacity(appState.dashboardHasAppeared ? 1 : 0)
-                .offset(y: appState.dashboardHasAppeared ? 0 : 20)
-                .animation(.appSmooth, value: appState.dashboardHasAppeared)
+                .offset(y: appState.dashboardHasAppeared ? 0 : 23)
+                .blur(radius: appState.dashboardHasAppeared ? 0 : 12)
+                .animation(.appReveal, value: appState.dashboardHasAppeared)
                 .animation(.appSmooth, value: searchText.isEmpty)
                 .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
                 .listRowBackground(Color.clear)
@@ -142,8 +143,9 @@ struct ApplicationView: View {
                 // Search + Filter
                 searchFilterRow
                     .opacity(appState.dashboardHasAppeared ? 1 : 0)
-                    .offset(y: appState.dashboardHasAppeared ? 0 : 16)
-                    .animation(.appSmooth.delay(0.07), value: appState.dashboardHasAppeared)
+                    .offset(y: appState.dashboardHasAppeared ? 0 : 18)
+                    .blur(radius: appState.dashboardHasAppeared ? 0 : 10)
+                    .animation(.appReveal.delay(0.06), value: appState.dashboardHasAppeared)
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -152,8 +154,9 @@ struct ApplicationView: View {
                 // Stats — status chips
                 statsSection
                     .opacity(appState.dashboardHasAppeared ? 1 : 0)
-                    .offset(y: appState.dashboardHasAppeared ? 0 : 12)
-                    .animation(.appSmooth.delay(0.12), value: appState.dashboardHasAppeared)
+                    .offset(y: appState.dashboardHasAppeared ? 0 : 16)
+                    .blur(radius: appState.dashboardHasAppeared ? 0 : 8)
+                    .animation(.appReveal.delay(0.11), value: appState.dashboardHasAppeared)
                     .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -162,8 +165,9 @@ struct ApplicationView: View {
                 // Filters — type + season expandable tokens
                 typeSeasonFilter
                     .opacity(appState.dashboardHasAppeared ? 1 : 0)
-                    .offset(y: appState.dashboardHasAppeared ? 0 : 10)
-                    .animation(.appSmooth.delay(0.15), value: appState.dashboardHasAppeared)
+                    .offset(y: appState.dashboardHasAppeared ? 0 : 14)
+                    .blur(radius: appState.dashboardHasAppeared ? 0 : 8)
+                    .animation(.appReveal.delay(0.16), value: appState.dashboardHasAppeared)
                     .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 16, trailing: 16))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -183,8 +187,9 @@ struct ApplicationView: View {
                     }
                 }
                 .opacity(appState.dashboardHasAppeared ? 1 : 0)
-                .offset(y: appState.dashboardHasAppeared ? 0 : 8)
-                .animation(.appSmooth.delay(0.18), value: appState.dashboardHasAppeared)
+                .offset(y: appState.dashboardHasAppeared ? 0 : 12)
+                .blur(radius: appState.dashboardHasAppeared ? 0 : 6)
+                .animation(.appReveal.delay(0.21), value: appState.dashboardHasAppeared)
                 .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
