@@ -28,6 +28,7 @@ struct EditImportRowView: View {
                     JobInfoSection(
                         companyName: $row.companyName,
                         companyLogoImageData: $row.logoData,
+                        logoRemoved: .constant(false),
                         position: $row.position,
                         pickerItem: $pickerItem
                     )

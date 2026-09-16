@@ -7,6 +7,7 @@ import UIKit
 struct JobInfoSection: View {
     @Binding var companyName: String
     @Binding var companyLogoImageData: Data?
+    @Binding var logoRemoved: Bool
     @Binding var position: String
     @Binding var pickerItem: PhotosPickerItem?
     var onAutoFetchStateChanged: ((Bool) -> Void)? = nil
@@ -111,6 +112,7 @@ struct JobInfoSection: View {
                         withAnimation(.appSmooth) {
                             companyLogoImageData = data
                             isLogoAutoFetched = false
+                            logoRemoved = false
                         }
                         onAutoFetchStateChanged?(false)
                         AppHaptics.shared.success()
@@ -123,6 +125,7 @@ struct JobInfoSection: View {
                         withAnimation(.appFastOut) {
                             companyLogoImageData = nil
                             isLogoAutoFetched = false
+                            logoRemoved = true
                         }
                         onAutoFetchStateChanged?(false)
                         AppHaptics.shared.light()
@@ -131,6 +134,7 @@ struct JobInfoSection: View {
                     }
                 }
             }
+            .onChange(of: companyName) { _, _ in logoRemoved = false }
             .task(id: companyName) {
                 if isLogoAutoFetched {
                     withAnimation(.appFastOut) {
@@ -139,7 +143,7 @@ struct JobInfoSection: View {
                     }
                     onAutoFetchStateChanged?(false)
                 }
-                guard companyLogoImageData == nil else { return }
+                guard !logoRemoved, companyLogoImageData == nil else { return }
                 let trimmed = companyName.trimmingCharacters(in: .whitespaces)
                 guard trimmed.count >= 2 else { isFetchingLogo = false; return }
                 do { try await Task.sleep(for: .milliseconds(600)) } catch { return }

@@ -20,6 +20,7 @@ struct JobDetailView: View {
 
     @State private var companyName:       String
     @State private var companyLogoImageData: Data?
+    @State private var logoRemoved:       Bool
     @State private var position:          String
     @State private var type:              ApplicationType?
     @State private var status:            ApplicationStatus?
@@ -74,6 +75,7 @@ struct JobDetailView: View {
         }()
         return companyName          != job.companyName
             || (!isLogoAutoFetched && companyLogoImageData != job.companyLogoImageData)
+            || logoRemoved          != job.logoRemoved
             || position             != job.position
             || type                 != job.jobType
             || status               != job.status
@@ -127,6 +129,7 @@ struct JobDetailView: View {
         self.isSheetPresentation = isSheetPresentation
         _companyName            = State(initialValue: job?.companyName ?? prefillCompany)
         _companyLogoImageData   = State(initialValue: job?.companyLogoImageData)
+        _logoRemoved            = State(initialValue: job?.logoRemoved ?? false)
         _position               = State(initialValue: job?.position ?? prefillPosition)
         _type                   = State(initialValue: job?.jobType ?? prefillType)
         _status                 = State(initialValue: job?.status ?? prefillStatus ?? .applied)
@@ -156,6 +159,7 @@ struct JobDetailView: View {
         let r = csvRow.wrappedValue
         _companyName            = State(initialValue: r.companyName)
         _companyLogoImageData   = State(initialValue: r.logoData)
+        _logoRemoved            = State(initialValue: false)
         _position               = State(initialValue: r.position)
         _type                   = State(initialValue: r.jobType)
         _status                 = State(initialValue: r.status)
@@ -460,6 +464,7 @@ struct JobDetailView: View {
         JobInfoSection(
             companyName: $companyName,
             companyLogoImageData: $companyLogoImageData,
+            logoRemoved: $logoRemoved,
             position: $position,
             pickerItem: $pickerItem,
             onAutoFetchStateChanged: { isLogoAutoFetched = $0 }
@@ -870,6 +875,7 @@ struct JobDetailView: View {
         if let job {
             job.companyName         = companyName.trimmingCharacters(in: .whitespaces)
             job.companyLogoImageData = companyLogoImageData
+            job.logoRemoved         = logoRemoved
             job.position            = position.trimmingCharacters(in: .whitespaces)
             job.jobType             = type
             job.status              = status
@@ -897,6 +903,7 @@ struct JobDetailView: View {
             let newJob = JobApplication(
                 companyName: companyName,
                 companyLogoImageData: companyLogoImageData,
+                logoRemoved: logoRemoved,
                 position: position,
                 jobType: type,
                 status: status,

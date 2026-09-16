@@ -121,6 +121,10 @@ class JobApplication {
     
     /// Optional custom image data uploaded by user for company logo.
     var companyLogoImageData: Data?
+
+    /// Set when the user deletes a logo, so the card stops re-fetching the one they rejected.
+    /// Cleared when the company name changes or a new image is picked.
+    var logoRemoved: Bool = false
     
     /// Job position/title applied for (e.g., "Software Engineer").
     var position: String
@@ -206,6 +210,7 @@ class JobApplication {
     init(
         companyName: String,
         companyLogoImageData: Data? = nil,
+        logoRemoved: Bool = false,
         position: String,
         jobType: ApplicationType? = nil,
         status: ApplicationStatus? = .applied,
@@ -227,6 +232,7 @@ class JobApplication {
     ) {
         self.companyName = companyName
         self.companyLogoImageData = companyLogoImageData
+        self.logoRemoved = logoRemoved
         self.position = position
         self.jobType = jobType
         self.status = status

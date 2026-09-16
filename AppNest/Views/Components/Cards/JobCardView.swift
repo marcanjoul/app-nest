@@ -237,7 +237,7 @@ struct DarkJobCardView: View {
         .padding(16)
         .glassCard(cornerRadius: Theme.cardRadius)
         .task(id: job.companyName) {
-            guard job.companyLogoImageData == nil else { return }
+            guard !job.logoRemoved, job.companyLogoImageData == nil else { return }
             let trimmed = job.companyName.trimmingCharacters(in: .whitespaces)
             guard trimmed.count >= 2 else { return }
             if let data = await LogoFetcher.fetchLogoData(for: trimmed) {
