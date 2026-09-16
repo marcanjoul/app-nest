@@ -297,12 +297,6 @@ struct AddMenuView: View {
                     }
                     .padding(.horizontal, 20)
 
-                    if vm.isParsing {
-                        ResultsCardSkeleton()
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 20)
-                    }
-
                     if vm.hasResult {
                         EmailParseResultsCard(
                             vm: vm,
@@ -522,7 +516,6 @@ struct AddMenuView: View {
         withAnimation(.appFastOut) { isParsing = true }
         let url = pasteLinkURL
         Task {
-            try? await Task.sleep(for: .milliseconds(500))
             let result = await linkParser.parse(url)
             await MainActor.run {
                 withAnimation(.appSmooth) {

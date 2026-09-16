@@ -122,8 +122,6 @@ struct DarkJobCardView: View {
     @Environment(AppState.self) private var appState
     let job: JobApplication
     @State private var showCelebration = false
-    @State private var showStatusMenu = false
-    @State private var showTypeMenu = false
 
     private static let relativeDateFormatter: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
@@ -189,44 +187,33 @@ struct DarkJobCardView: View {
                 }
 
                 HStack(spacing: 6) {
+                    // ponytail: .contextMenu, not a long-press opening a per-card .sheet. The old
+                    // 0.35s press competed with the scroll gesture, and every card in the list
+                    // carried two sheet presenters.
                     if let status = job.status {
                         DarkStatusPill(status: status)
-                            .onLongPressGesture(minimumDuration: 0.35) {
-                                AppHaptics.shared.medium()
-                                showStatusMenu = true
-                            }
-                            .sheet(isPresented: $showStatusMenu) {
-                                PillPickerSheet(
-                                    current: job.status,
-                                    colorFor: { $0.color },
-                                    iconFor: { $0.iconName }
-                                ) { newStatus in
-                                    withAnimation(.appSmooth) { job.status = newStatus }
+                            .contextMenu {
+                                ForEach(ApplicationStatus.allCases, id: \.self) { option in
+                                    Button {
+                                        withAnimation(.appSmooth) { job.status = option }
+                                        AppHaptics.shared.light()
+                                    } label: {
+                                        Label(option.rawValue, systemImage: option.iconName)
+                                    }
                                 }
-                                .presentationDetents([.height(290)])
-                                .presentationCornerRadius(24)
-                                .presentationDragIndicator(.hidden)
-                                .presentationBackground(.ultraThinMaterial)
                             }
                     }
                     if let type = job.jobType {
                         DarkTypeTag(text: type.rawValue, icon: type.iconName, color: type.color)
-                            .onLongPressGesture(minimumDuration: 0.35) {
-                                AppHaptics.shared.medium()
-                                showTypeMenu = true
-                            }
-                            .sheet(isPresented: $showTypeMenu) {
-                                PillPickerSheet(
-                                    current: job.jobType,
-                                    colorFor: { $0.color },
-                                    iconFor: { $0.iconName }
-                                ) { newType in
-                                    withAnimation(.appSmooth) { job.jobType = newType }
+                            .contextMenu {
+                                ForEach(ApplicationType.allCases, id: \.self) { option in
+                                    Button {
+                                        withAnimation(.appSmooth) { job.jobType = option }
+                                        AppHaptics.shared.light()
+                                    } label: {
+                                        Label(option.rawValue, systemImage: option.iconName)
+                                    }
                                 }
-                                .presentationDetents([.height(240)])
-                                .presentationCornerRadius(24)
-                                .presentationDragIndicator(.hidden)
-                                .presentationBackground(.ultraThinMaterial)
                             }
                     }
                 }

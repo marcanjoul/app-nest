@@ -30,16 +30,25 @@ struct CycleListView: View {
                         CycleSwipeRow(
                             cycle: cycle,
                             isActive: appState.selectedCycleID == cycle.id,
-                            onSelect: { selectCycle(cycle) },
-                            onRename: {
-                                cycleToRename = cycle
-                                renameText = cycle.name
-                            },
-                            onDelete: { cycleToDelete = cycle }
+                            onSelect: { selectCycle(cycle) }
                         )
                         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                cycleToDelete = cycle
+                            } label: {
+                                Label("Delete", systemImage: "trash.fill")
+                            }
+                            Button {
+                                cycleToRename = cycle
+                                renameText = cycle.name
+                            } label: {
+                                Label("Rename", systemImage: "pencil")
+                            }
+                            .tint(Color.accentColor)
+                        }
                         .opacity(appState.cycleListHasAppeared ? 1 : 0)
                         .offset(y: appState.cycleListHasAppeared ? 0 : 12)
                         .animation(.appSmooth.delay(Double(min(index, 8)) * 0.04), value: appState.cycleListHasAppeared)
@@ -195,34 +204,15 @@ struct CycleSwipeRow: View {
     let cycle: JobCycle
     let isActive: Bool
     let onSelect: () -> Void
-    let onRename: () -> Void
-    let onDelete: () -> Void
-
-    @State private var swipeJustFired = false
 
     var body: some View {
-        SwipeActionRow(
-            leadingActions: [],
-            trailingActions: [
-                SwipeAction(title: "Rename", icon: "pencil", color: Color.accentColor, action: onRename),
-                SwipeAction(title: "Delete", icon: "trash.fill", color: Theme.destructive, action: onDelete)
-            ],
-            isEditMode: false,
-            cornerRadius: 16,
-            onActionTriggered: {
-                swipeJustFired = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { swipeJustFired = false }
-            }
-        ) {
-            Button {
-                guard !swipeJustFired else { return }
-                AppHaptics.shared.light()
-                onSelect()
-            } label: {
-                CycleRow(cycle: cycle, isActive: isActive)
-            }
-            .buttonStyle(CardPressButtonStyle())
+        Button {
+            AppHaptics.shared.light()
+            onSelect()
+        } label: {
+            CycleRow(cycle: cycle, isActive: isActive)
         }
+        .buttonStyle(CardPressButtonStyle())
     }
 }
 

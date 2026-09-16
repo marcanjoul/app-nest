@@ -17,6 +17,19 @@ struct NavigationDock: View {
         self._visualSelectedTab = State(initialValue: selectedTab.wrappedValue)
     }
     
+    // ponytail: the dock re-renders constantly (tab changes, compaction); decoding the avatar
+    // each time is wasted work. One slot is enough — there is only ever one profile image.
+    private static var avatarCache: (key: String, image: UIImage)?
+
+    private var avatarImage: UIImage? {
+        guard !profileAvatarDataBase64.isEmpty else { return nil }
+        if let cached = Self.avatarCache, cached.key == profileAvatarDataBase64 { return cached.image }
+        guard let data = Data(base64Encoded: profileAvatarDataBase64),
+              let image = UIImage(data: data) else { return nil }
+        Self.avatarCache = (profileAvatarDataBase64, image)
+        return image
+    }
+
     private let tabs: [(icon: String, title: String)] = [
         ("briefcase.fill", "Apps"),
         ("plus", "Add"),
@@ -57,6 +70,10 @@ struct NavigationDock: View {
                         }
                         .frame(height: isCompact ? 36 : 54)
                     }
+                    // The dock is the app's primary navigation and had no labels at all —
+                    // every tab read as an unnamed button. `title` was already in `tabs`, unused.
+                    .accessibilityLabel(tab.title)
+                    .accessibilityAddTraits(selectedTab == index ? [.isButton, .isSelected] : .isButton)
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(BubblyTabButtonStyle())
@@ -173,9 +190,7 @@ struct NavigationDock: View {
         let size = 22.0 * (isCompact ? 0.72 : 1.0)
         
         Group {
-            if !profileAvatarDataBase64.isEmpty,
-               let data = Data(base64Encoded: profileAvatarDataBase64),
-               let uiImage = UIImage(data: data) {
+            if let uiImage = avatarImage {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFill()

@@ -227,7 +227,6 @@ struct ApplicationView: View {
                                 job: job,
                                 isEditMode: isEditMode,
                                 isSelected: selectedJobIDs.contains(job.id),
-                                onDelete: { scheduleDelete(job) },
                                 onToggleSelection: {
                                     withAnimation(.appCrisp) {
                                         if selectedJobIDs.contains(job.id) {
@@ -242,6 +241,13 @@ struct ApplicationView: View {
                             .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    scheduleDelete(job)
+                                } label: {
+                                    Label("Delete", systemImage: "trash.fill")
+                                }
+                            }
                             .visualEffect { content, proxy in
                                 content
                                     .scaleEffect(cardScale(proxy))
@@ -273,12 +279,14 @@ struct ApplicationView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.interactively)
-            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { old, new in
+            // ponytail: position with a wide dead band, not scroll direction. Direction flipping
+            // on an 8pt delta made the dock resize constantly mid-scroll; the dock is a big visual
+            // change (0.78 scale, padding 24 -> 104) so it needs to commit, not flutter.
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, offset in
                 let compact: Bool
-                if new < 15 { compact = false }            // near the top: always expanded
-                else if new - old > 8 { compact = true }   // scrolling down
-                else if old - new > 8 { compact = false }  // scrolling up
-                else { return }
+                if offset > 140 { compact = true }
+                else if offset < 60 { compact = false }
+                else { return }                            // dead band: leave it where it is
                 guard compact != appState.isDockCompact else { return }
                 withAnimation(.appSmooth) { appState.isDockCompact = compact }
             }

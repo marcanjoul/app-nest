@@ -57,8 +57,9 @@ struct RootView: View {
                 .presentationDragIndicator(.visible)
         }
         .tint(Theme.accent)
+        // ponytail: scale + dim only. The 2pt blur forced an offscreen render of the whole app
+        // for every frame of the sheet animation and was imperceptible under the dim layer.
         .scaleEffect(appState.isPresentingSheet ? 0.95 : 1.0)
-        .blur(radius: appState.isPresentingSheet ? 2 : 0)
         .overlay {
             if appState.isPresentingSheet {
                 Color.black.opacity(0.5)

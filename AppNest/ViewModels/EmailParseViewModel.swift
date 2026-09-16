@@ -8,7 +8,6 @@ final class EmailParseViewModel {
     // MARK: - Input state
 
     var emailText = ""
-    var isParsing = false
     var isEmailExpanded = true
     var isButtonPressed = false
 
@@ -48,7 +47,7 @@ final class EmailParseViewModel {
     // MARK: - Computed
 
     var isParseDisabled: Bool {
-        emailText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isParsing
+        emailText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     var isSaveDisabled: Bool {
@@ -111,30 +110,28 @@ final class EmailParseViewModel {
         UIApplication.shared.dismissKeyboard()
         #endif
         AppHaptics.shared.medium()
-        withAnimation(.appSmooth) { isParsing = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
-            guard let self else { return }
-            let result = self.emailParser.parse(self.emailText)
-            withAnimation(.appSmooth) {
-                self.editCompany = result.companyName ?? ""
-                self.editPosition = result.position ?? ""
-                self.editJobType = result.jobType
-                self.editStatus = result.status ?? .applied
-                self.editSeason = result.season
-                self.editDate = result.dateApplied
-                self.editCompensationKind = nil
-                self.editCompensationAmount = nil
-                self.editNotes = ""
-                self.editAttachedResume = defaultResume
-                self.isParsing = false
-                self.hasResult = true
-                self.isEmailExpanded = false
-                self.parseCount += 1
-                self.highlights = result.highlights
-                self.isHighlightExpanded = false
-            }
-            onParsed?()
+
+        // ponytail: parsing is synchronous regex work — microseconds. It used to be wrapped in a
+        // 0.4s asyncAfter with a loading skeleton, which was pure invented latency.
+        let result = emailParser.parse(emailText)
+        withAnimation(.appSmooth) {
+            editCompany = result.companyName ?? ""
+            editPosition = result.position ?? ""
+            editJobType = result.jobType
+            editStatus = result.status ?? .applied
+            editSeason = result.season
+            editDate = result.dateApplied
+            editCompensationKind = nil
+            editCompensationAmount = nil
+            editNotes = ""
+            editAttachedResume = defaultResume
+            hasResult = true
+            isEmailExpanded = false
+            parseCount += 1
+            highlights = result.highlights
+            isHighlightExpanded = false
         }
+        onParsed?()
     }
 
     func saveApplication(

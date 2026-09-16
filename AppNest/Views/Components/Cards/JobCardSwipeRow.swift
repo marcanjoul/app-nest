@@ -5,22 +5,9 @@ struct JobCardSwipeRow: View {
     let job: JobApplication
     let isEditMode: Bool
     let isSelected: Bool
-    let onDelete: () -> Void
     let onToggleSelection: () -> Void
 
     @Environment(AppState.self) private var appState
-    @State private var swipeJustFired = false
-
-    private var trailingActions: [SwipeAction] {
-        [
-            SwipeAction(
-                title: "Delete",
-                icon: "trash.fill",
-                color: Theme.destructive,
-                action: onDelete
-            )
-        ]
-    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -41,30 +28,20 @@ struct JobCardSwipeRow: View {
             .allowsHitTesting(isEditMode)
             .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isEditMode)
 
-            SwipeActionRow(
-                leadingActions: [],
-                trailingActions: isEditMode ? [] : trailingActions,
-                isEditMode: isEditMode,
-                cornerRadius: 16,
-                onActionTriggered: {
-                    swipeJustFired = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                        swipeJustFired = false
-                    }
+            // ponytail: delete lives on List's own .swipeActions at the call site. The custom
+            // DragGesture this replaced fought the scroll gesture and needed a 0.4s window that
+            // swallowed taps after any swipe.
+            Button {
+                if isEditMode {
+                    onToggleSelection()
+                } else {
+                    AppHaptics.shared.light()
+                    appState.selectedJob = job
                 }
-            ) {
-                Button {
-                    if isEditMode {
-                        onToggleSelection()
-                    } else if !swipeJustFired {
-                        AppHaptics.shared.light()
-                        appState.selectedJob = job
-                    }
-                } label: {
-                    DarkJobCardView(job: job)
-                }
-                .buttonStyle(CardPressButtonStyle())
+            } label: {
+                DarkJobCardView(job: job)
             }
+            .buttonStyle(CardPressButtonStyle())
         }
     }
 }

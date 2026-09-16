@@ -27,13 +27,6 @@ struct EmailParserView: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         inputCard
-                        if vm.isParsing {
-                            ResultsCardSkeleton()
-                                .transition(.asymmetric(
-                                    insertion: .move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.95)),
-                                    removal: .opacity
-                                ))
-                        }
                         if vm.hasResult {
                             EmailParseResultsCard(
                                 vm: vm,
@@ -228,7 +221,6 @@ struct EmailParserView: View {
                             .transition(.scale.combined(with: .opacity))
                         Text(vm.hasResult ? "Re-parse" : "Parse Email")
                             .appFont(16, weight: .semibold)
-                            .animation(.none, value: vm.isParsing)
                     }
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
