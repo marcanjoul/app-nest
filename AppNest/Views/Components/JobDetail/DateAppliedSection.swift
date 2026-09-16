@@ -5,7 +5,7 @@ struct DateAppliedSection: View {
     var status: ApplicationStatus?
     @Binding var reminderEnabled: Bool
     @Binding var reminderTime: Date
-    /// When true, renders with a compact row background instead of a standalone glass card.
+    /// When true, renders with a compact row background instead of a standalone surface.
     /// Use this when embedding inside another card (e.g. EmailParseResultsCard).
     var isEmbedded: Bool = false
 
@@ -26,10 +26,10 @@ struct DateAppliedSection: View {
                     .padding(.vertical, 12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
                             .fill(Color.primary.opacity(0.04))
                             .overlay {
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
                                     .strokeBorder(Color.primary.opacity(0.07), lineWidth: 1)
                             }
                     }
@@ -37,7 +37,7 @@ struct DateAppliedSection: View {
                 contentStack
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .glassCard()
+                    .surface()
             }
         }
         .animation(.appSmooth, value: isToApply)
@@ -64,7 +64,7 @@ struct DateAppliedSection: View {
                         withAnimation(.appSmooth) { dateApplied = Date() }
                     } label: {
                         HStack(spacing: 7) {
-                            Image(systemName: "calendar.badge.plus")
+                            AppIcon("calendar.badge.plus")
                                 .appFont(14, weight: .semibold)
                             Text("Select a date")
                                 .appFont(17, weight: .semibold)
@@ -113,7 +113,7 @@ struct DateAppliedSection: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Toggle(isOn: $reminderEnabled) {
                         HStack(spacing: 8) {
-                            Image(systemName: "bell.badge.fill")
+                            AppIcon("bell.badge.fill")
                                 .appFont(13, weight: .semibold)
                                 .foregroundStyle(accent)
                             VStack(alignment: .leading, spacing: 2) {
@@ -131,7 +131,7 @@ struct DateAppliedSection: View {
 
                     if reminderEnabled && !permissionDenied {
                         HStack(spacing: 10) {
-                            Image(systemName: "clock.fill")
+                            AppIcon("clock.fill")
                                 .appFont(13, weight: .semibold)
                                 .foregroundStyle(accent)
                                 .frame(width: 16)
@@ -148,7 +148,7 @@ struct DateAppliedSection: View {
 
                     if permissionDenied {
                         HStack(spacing: 6) {
-                            Image(systemName: "exclamationmark.triangle.fill")
+                            AppIcon("exclamationmark.triangle.fill")
                                 .appFont(11, weight: .semibold)
                                 .foregroundStyle(Color.orange)
                             Text("Enable notifications in Settings to receive reminders.")

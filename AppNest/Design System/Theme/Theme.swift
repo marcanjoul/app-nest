@@ -11,9 +11,7 @@ enum Theme {
 
     // MARK: - Accent
 
-    static let accent      = Color(red: 0.39, green: 0.60, blue: 0.13)
-    static let accentLight = Color(red: 0.92, green: 0.95, blue: 0.87)
-    static let accentDark  = Color(red: 0.15, green: 0.31, blue: 0.04)
+    static let accent      = Color.accentColor
 
     // MARK: - Destructive
 
@@ -23,8 +21,8 @@ enum Theme {
 
     static let background = Color(UIColor { trait in
         trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.035, green: 0.052, blue: 0.035, alpha: 1.0)
-            : UIColor(red: 0.972, green: 0.969, blue: 0.936, alpha: 1.0)
+            ? UIColor(red: 0.07, green: 0.075, blue: 0.08, alpha: 1.0)
+            : UIColor(red: 0.965, green: 0.97, blue: 0.975, alpha: 1.0)
     })
 
     // MARK: - Card
@@ -33,21 +31,28 @@ enum Theme {
 
     static let cardFill: Color = Color(UIColor { trait in
         trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.105, green: 0.128, blue: 0.095, alpha: 1.0)
-            : UIColor(red: 0.996, green: 0.988, blue: 0.940, alpha: 1.0)
+            ? UIColor(red: 0.115, green: 0.12, blue: 0.125, alpha: 1.0)
+            : UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
     })
 
     static let cardBorder: Color = Color(UIColor { trait in
         trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.79, green: 0.95, blue: 0.58, alpha: 0.12)
-            : UIColor(red: 0.27, green: 0.33, blue: 0.17, alpha: 0.10)
+            ? UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.12)
+            : UIColor(red: 0.15, green: 0.17, blue: 0.19, alpha: 0.10)
     })
 
     // MARK: - Text
 
     static let textPrimary   = Color(UIColor.label)
-    static let textSecondary = Color(UIColor.secondaryLabel)
-    static let textTertiary  = Color(UIColor.tertiaryLabel)
+    static let textOnPrimary = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark ? .black : .white
+    })
+    static let textSecondary = Color(UIColor { trait in
+        UIColor(white: trait.userInterfaceStyle == .dark ? 0.72 : 0.36, alpha: 1)
+    })
+    static let textTertiary = Color(UIColor { trait in
+        UIColor(white: trait.userInterfaceStyle == .dark ? 0.62 : 0.46, alpha: 1)
+    })
 
     // MARK: - Status Pill Styles
 
@@ -58,44 +63,41 @@ enum Theme {
         let iconName:    String
     }
 
+    private static func statusTint(red: CGFloat, green: CGFloat, blue: CGFloat) -> Color {
+        Color(UIColor { trait in
+            let factor: CGFloat = trait.userInterfaceStyle == .dark ? 1 : 0.62
+            return UIColor(red: red * factor, green: green * factor, blue: blue * factor, alpha: 1)
+        })
+    }
+
     static func statusStyle(for status: ApplicationStatus) -> StatusStyle {
         switch status {
         case .toApply:
-            let c = Color(red: 0.58, green: 0.62, blue: 0.82)
+            let c = statusTint(red: 0.58, green: 0.62, blue: 0.82)
             return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "plus.circle.fill")
         case .applied:
-            let c = Color(red: 0.30, green: 0.60, blue: 0.94)
+            let c = statusTint(red: 0.30, green: 0.60, blue: 0.94)
             return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "paperplane.fill")
         case .interview:
-            let c = Color(red: 0.96, green: 0.65, blue: 0.14)
+            let c = statusTint(red: 0.96, green: 0.65, blue: 0.14)
             return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "person.2.fill")
         case .offer:
-            let c = Color(red: 0.30, green: 0.80, blue: 0.45)
+            let c = statusTint(red: 0.30, green: 0.80, blue: 0.45)
             return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "checkmark.seal.fill")
         case .rejected:
-            let c = Color(red: 0.93, green: 0.33, blue: 0.40)
+            let c = statusTint(red: 0.93, green: 0.33, blue: 0.40)
             return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "xmark.circle.fill")
         case .ghosted:
-            let c = Color(red: 0.52, green: 0.52, blue: 0.54)
+            let c = statusTint(red: 0.52, green: 0.52, blue: 0.54)
             return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "moon.zzz.fill")
         case .jobRemoved:
-            let c = Color(red: 0.88, green: 0.52, blue: 0.20)
+            let c = statusTint(red: 0.88, green: 0.52, blue: 0.20)
             return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "minus.circle.fill")
         }
     }
 
 
-    // MARK: - Type Tag
-
-    static let typeTagFill:   Color    = Color.primary.opacity(0.05)
-    static let typeTagRadius: CGFloat  = 8
-
-    // MARK: - Stat Chip
-
-    static let statChipFill:   Color   = Theme.cardFill
-    static let statChipRadius: CGFloat = 16
-
-    // MARK: - Avatar Gradients
+// MARK: - Avatar Colors
 
     static let avatarColors: [Color] = [
         Color(red: 0.36, green: 0.66, blue: 0.96),
@@ -140,6 +142,6 @@ enum Theme {
 
     // MARK: - Section Labels
 
-    static let sectionLabelSize:    CGFloat = 11
-    static let sectionLabelSpacing: CGFloat = 0.8
+    static let sectionLabelSize:    CGFloat = 13
+    static let sectionLabelSpacing: CGFloat = 0
 }

@@ -13,17 +13,17 @@ struct InterviewKitSection: View {
                     .padding(.vertical, 12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
                             .fill(Color.primary.opacity(0.04))
                             .overlay {
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
                                     .strokeBorder(Color.primary.opacity(0.07), lineWidth: 1)
                             }
                     }
             } else {
                 contentStack
                     .padding(16)
-                    .glassCard()
+                    .surface()
             }
         }
     }
@@ -55,7 +55,7 @@ struct InterviewKitSection: View {
     @ViewBuilder
     private func subLabel(icon: String, title: String) -> some View {
         HStack(spacing: 5) {
-            Image(systemName: icon)
+            AppIcon(icon)
                 .appFont(11, weight: .semibold)
                 .foregroundStyle(Theme.textSecondary)
             Text(title)
@@ -82,10 +82,10 @@ struct InterviewKitSection: View {
         }
         .padding(12)
         .background {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(Color.primary.opacity(0.05))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
                 )
         }

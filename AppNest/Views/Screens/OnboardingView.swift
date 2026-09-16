@@ -30,7 +30,7 @@ struct OnboardingView: View {
                                 Circle()
                                     .fill(page.color.opacity(0.14))
                                     .frame(width: 110, height: 110)
-                                Image(systemName: page.icon)
+                                AppIcon(page.icon)
                                     .appFont(56, weight: .semibold)
                                     .foregroundStyle(page.color)
                                     .shadow(color: page.color.opacity(0.30), radius: 16, y: 6)

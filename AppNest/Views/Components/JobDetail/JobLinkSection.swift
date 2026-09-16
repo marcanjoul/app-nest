@@ -20,17 +20,17 @@ struct JobLinkSection: View {
                     .padding(.vertical, 12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
                             .fill(Color.primary.opacity(0.04))
                             .overlay {
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
                                     .strokeBorder(Color.primary.opacity(0.07), lineWidth: 1)
                             }
                     }
             } else {
                 contentStack
                     .padding(16)
-                    .glassCard()
+                    .surface()
             }
         }
     }
@@ -51,7 +51,7 @@ struct JobLinkSection: View {
                     Button {
                         if let url = resolvedURL { openURL(url) }
                     } label: {
-                        Image(systemName: "arrow.up.right.circle.fill")
+                        AppIcon("arrow.up.right.circle.fill")
                             .appFont(22)
                             .foregroundStyle(Color.accentColor)
                     }
@@ -61,10 +61,10 @@ struct JobLinkSection: View {
             }
             .padding(12)
             .background {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(Color.primary.opacity(0.05))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
                             .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
                     )
             }

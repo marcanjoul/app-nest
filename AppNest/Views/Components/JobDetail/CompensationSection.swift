@@ -113,7 +113,7 @@ struct CompensationSection: View {
             }
         }
         .padding(16)
-        .glassCard()
+        .surface()
         .animation(.appSmooth, value: kind)
     }
 
@@ -128,7 +128,7 @@ struct CompensationSection: View {
                         Text("\(option.symbol)  \(option.rawValue)")
                         if option == currency {
                             Spacer()
-                            Image(systemName: "checkmark")
+                            AppIcon("checkmark")
                         }
                     }
                 }
@@ -137,7 +137,7 @@ struct CompensationSection: View {
             HStack(spacing: 4) {
                 Text(currency.rawValue)
                     .appFont(13, weight: .bold)
-                Image(systemName: "chevron.down")
+                AppIcon("chevron.down")
                     .appFont(10, weight: .bold)
             }
             .foregroundStyle(Theme.textPrimary)

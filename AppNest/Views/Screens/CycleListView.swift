@@ -39,13 +39,13 @@ struct CycleListView: View {
                             Button(role: .destructive) {
                                 cycleToDelete = cycle
                             } label: {
-                                Label("Delete", systemImage: "trash.fill")
+                                AppLabel("Delete", systemImage: "trash.fill")
                             }
                             Button {
                                 cycleToRename = cycle
                                 renameText = cycle.name
                             } label: {
-                                Label("Rename", systemImage: "pencil")
+                                AppLabel("Rename", systemImage: "pencil")
                             }
                             .tint(Color.accentColor)
                         }
@@ -74,7 +74,7 @@ struct CycleListView: View {
                     newCycleName = ""
                     isAddingCycle = true
                 } label: {
-                    Image(systemName: "plus")
+                    AppIcon("plus")
                         .appFont(14, weight: .bold)
                         .foregroundStyle(Color.accentColor)
                 }
@@ -123,7 +123,7 @@ struct CycleListView: View {
 
     private var emptyState: some View {
         VStack(spacing: 14) {
-            Image(systemName: "tray.2.fill")
+            AppIcon("tray.2.fill")
                 .appFont(44)
                 .foregroundStyle(Theme.textSecondary.opacity(0.45))
             Text("No cycles yet")
@@ -138,7 +138,7 @@ struct CycleListView: View {
                 newCycleName = ""
                 isAddingCycle = true
             } label: {
-                Label("New Cycle", systemImage: "plus")
+                AppLabel("New Cycle", systemImage: "plus")
                     .appFont(14, weight: .semibold)
                     .foregroundStyle(.white)
                     .padding(.horizontal, 20)
@@ -234,7 +234,7 @@ struct CycleRow: View {
                     .foregroundStyle(Theme.textSecondary)
             }
             Spacer()
-            Image(systemName: "checkmark")
+            AppIcon("checkmark")
                 .appFont(12, weight: .bold)
                 .foregroundStyle(Color.accentColor)
                 .opacity(isActive ? 1 : 0)
@@ -244,10 +244,10 @@ struct CycleRow: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 15)
         .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(Theme.cardFill)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .strokeBorder(
                             isActive ? Color.accentColor.opacity(0.45) : Theme.cardBorder,
                             lineWidth: isActive ? 1.5 : 1

@@ -107,16 +107,15 @@ struct ApplicationView: View {
         let rows = filteredAndSorted
 
         ZStack {
-            // Adaptive ambient gradient background
+            // Shared background
             AmbientBackground()
 
-            ScrollViewReader { proxy in
             List {
                 // Header
                 VStack(alignment: .leading, spacing: 0) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("App Nest")
-                            .appFont(40, weight: .bold)
+                            .appFont(34, weight: .bold)
                             .foregroundStyle(Theme.textPrimary)
 
                         if !searchText.isEmpty {
@@ -129,10 +128,6 @@ struct ApplicationView: View {
                     .padding(.top, 16)
 
                 }
-                .opacity(appState.dashboardHasAppeared ? 1 : 0)
-                .offset(y: appState.dashboardHasAppeared ? 0 : 23)
-                .blur(radius: appState.dashboardHasAppeared ? 0 : 12)
-                .animation(.appReveal, value: appState.dashboardHasAppeared)
                 .animation(.appSmooth, value: searchText.isEmpty)
                 .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
                 .listRowBackground(Color.clear)
@@ -142,10 +137,6 @@ struct ApplicationView: View {
 
                 // Search + Filter
                 searchFilterRow
-                    .opacity(appState.dashboardHasAppeared ? 1 : 0)
-                    .offset(y: appState.dashboardHasAppeared ? 0 : 18)
-                    .blur(radius: appState.dashboardHasAppeared ? 0 : 10)
-                    .animation(.appReveal.delay(0.06), value: appState.dashboardHasAppeared)
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -153,10 +144,6 @@ struct ApplicationView: View {
 
                 // Stats — status chips
                 statsSection
-                    .opacity(appState.dashboardHasAppeared ? 1 : 0)
-                    .offset(y: appState.dashboardHasAppeared ? 0 : 16)
-                    .blur(radius: appState.dashboardHasAppeared ? 0 : 8)
-                    .animation(.appReveal.delay(0.11), value: appState.dashboardHasAppeared)
                     .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -164,10 +151,6 @@ struct ApplicationView: View {
 
                 // Filters — type + season expandable tokens
                 typeSeasonFilter
-                    .opacity(appState.dashboardHasAppeared ? 1 : 0)
-                    .offset(y: appState.dashboardHasAppeared ? 0 : 14)
-                    .blur(radius: appState.dashboardHasAppeared ? 0 : 8)
-                    .animation(.appReveal.delay(0.16), value: appState.dashboardHasAppeared)
                     .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 16, trailing: 16))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
@@ -186,10 +169,6 @@ struct ApplicationView: View {
                         }
                     }
                 }
-                .opacity(appState.dashboardHasAppeared ? 1 : 0)
-                .offset(y: appState.dashboardHasAppeared ? 0 : 12)
-                .blur(radius: appState.dashboardHasAppeared ? 0 : 6)
-                .animation(.appReveal.delay(0.21), value: appState.dashboardHasAppeared)
                 .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
@@ -227,7 +206,7 @@ struct ApplicationView: View {
                             .transition(.move(edge: .top).combined(with: .opacity))
                     }
 
-                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, job in
+                    ForEach(rows) { job in
                         JobCardSwipeRow(
                                 job: job,
                                 isEditMode: isEditMode,
@@ -250,19 +229,13 @@ struct ApplicationView: View {
                                 Button(role: .destructive) {
                                     scheduleDelete(job)
                                 } label: {
-                                    Label("Delete", systemImage: "trash.fill")
+                                    AppLabel("Delete", systemImage: "trash.fill")
                                 }
-                            }
-                            .visualEffect { content, proxy in
-                                content
-                                    .scaleEffect(cardScale(proxy))
-                                    .opacity(cardOpacity(proxy))
                             }
                             .transition(.asymmetric(
                                 insertion: .opacity.combined(with: .scale(scale: 0.95)).combined(with: .offset(y: 10)),
                                 removal: .opacity.combined(with: .scale(scale: 0.97))
                             ))
-                            .animation(.appSmooth.delay(Double(min(index, 6)) * 0.03), value: appState.dashboardHasAppeared)
                             .animation(.appCrisp, value: rows.count)
                     }
                 }
@@ -275,7 +248,7 @@ struct ApplicationView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 40)
-                .padding(.bottom, 100)
+                .padding(.bottom, 24)
                 .listRowInsets(EdgeInsets())
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
@@ -284,23 +257,6 @@ struct ApplicationView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.interactively)
-            // ponytail: position with a wide dead band, not scroll direction. Direction flipping
-            // on an 8pt delta made the dock resize constantly mid-scroll; the dock is a big visual
-            // change (0.78 scale, padding 24 -> 104) so it needs to commit, not flutter.
-            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, offset in
-                let compact: Bool
-                if offset > 140 { compact = true }
-                else if offset < 60 { compact = false }
-                else { return }                            // dead band: leave it where it is
-                guard compact != appState.isDockCompact else { return }
-                withAnimation(.appSmooth) { appState.isDockCompact = compact }
-            }
-            .onChange(of: appState.scrollToTopTrigger) { _, _ in
-                withAnimation(.appSmooth) {
-                    proxy.scrollTo("appListTop", anchor: .top)
-                }
-            }
-            } // ScrollViewReader
 
             // Bulk Actions Bar
             if isEditMode && !selectedJobIDs.isEmpty {
@@ -311,7 +267,7 @@ struct ApplicationView: View {
                             isConfirmingBulkDelete = true
                         } label: {
                             VStack(spacing: 4) {
-                                Image(systemName: "trash")
+                                AppIcon("trash")
                                 Text("Delete")
                             }
                         }
@@ -322,7 +278,7 @@ struct ApplicationView: View {
                             // Menu handled by overlay
                         } label: {
                             VStack(spacing: 4) {
-                                Image(systemName: "folder")
+                                AppIcon("folder")
                                 Text("Move")
                             }
                         }
@@ -334,7 +290,7 @@ struct ApplicationView: View {
                                     newCycleName = ""
                                     isAddingCycleFromBulk = true
                                 } label: {
-                                    Label("New Cycle...", systemImage: "plus")
+                                    AppLabel("New Cycle...", systemImage: "plus")
                                 }
                                 if !cycles.isEmpty {
                                     Divider()
@@ -351,7 +307,7 @@ struct ApplicationView: View {
                     }
                     .appFont(12, weight: .semibold)
                     .padding(.top, 12)
-                    .padding(.bottom, 100)
+                    .padding(.bottom, 24)
                     .background(.ultraThinMaterial)
                     .overlay(alignment: .top) {
                         Divider().opacity(0.5)
@@ -391,7 +347,7 @@ struct ApplicationView: View {
                             .shadow(color: .black.opacity(0.3), radius: 15, y: 8)
                     }
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 110)
+                    .padding(.bottom, 24)
                     .offset(y: toastDragY)
                     .gesture(
                         DragGesture(minimumDistance: 10)
@@ -426,14 +382,10 @@ struct ApplicationView: View {
         .animation(.appSmooth, value: pendingDeleteJob != nil)
         .toolbar(.hidden, for: .navigationBar)
         .dismissKeyboardToolbar()
-        .onAppear {
-            appState.dashboardHasAppeared = true
-        }
         .sheet(isPresented: Binding(
             get: { isShowingCyclePicker },
             set: {
                 isShowingCyclePicker = $0
-                appState.isPresentingSheet = $0
             }
         )) {            NavigationStack { CyclePickerSheet(isPresented: $isShowingCyclePicker) }
                 .presentationDetents([.medium])
@@ -481,7 +433,6 @@ struct ApplicationView: View {
             get: { isShowingImportPreview },
             set: { 
                 isShowingImportPreview = $0 
-                appState.isPresentingSheet = $0
             }
         )) {
             if let rows = csvImportPreview {
@@ -549,22 +500,6 @@ struct ApplicationView: View {
                     .fill(Color.accentColor.opacity(0.12))
             }
         }
-    }
-
-    private func cardScale(_ proxy: GeometryProxy) -> CGFloat {
-        let minY = proxy.frame(in: .global).minY
-        let screenHeight = UIScreen.main.bounds.height
-        if minY < 100 { return max(0.96, 1.0 - (100 - minY) / 2000) }
-        else if minY > screenHeight - 200 { return max(0.96, 1.0 - (minY - (screenHeight - 200)) / 2000) }
-        return 1.0
-    }
-
-    private func cardOpacity(_ proxy: GeometryProxy) -> Double {
-        let minY = proxy.frame(in: .global).minY
-        let screenHeight = UIScreen.main.bounds.height
-        if minY < 0 { return max(0, 1.0 + minY / 400) }
-        else if minY > screenHeight - 100 { return max(0, 1.0 - (minY - (screenHeight - 100)) / 400) }
-        return 1.0
     }
 
     // MARK: - Import / Export
@@ -678,7 +613,7 @@ struct ApplicationView: View {
         HStack(spacing: 8) {
             // Glass search bar
             HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass")
+                AppIcon("magnifyingglass")
                     .foregroundStyle(isSearchFocused ? Color.accentColor : Theme.textSecondary)
                     .appFont(15, weight: .medium)
 
@@ -696,7 +631,7 @@ struct ApplicationView: View {
                         }
                         AppHaptics.shared.light()
                     } label: {
-                        Image(systemName: isSearchFocused && searchText.isEmpty ? "xmark" : "xmark.circle.fill")
+                        AppIcon(isSearchFocused && searchText.isEmpty ? "xmark" : "xmark.circle.fill")
                             .foregroundStyle(Theme.textSecondary)
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
@@ -722,13 +657,13 @@ struct ApplicationView: View {
                         } label: {
                             HStack {
                                 Text(option.rawValue)
-                                if sortOption == option { Image(systemName: "checkmark") }
+                                if sortOption == option { AppIcon("checkmark") }
                             }
                         }
                     }
                 } label: {
                     ZStack(alignment: .topTrailing) {
-                        Image(systemName: "line.3.horizontal.decrease.circle")
+                        AppIcon("line.3.horizontal.decrease.circle")
                             .appFont(18, weight: .semibold)
                             .foregroundStyle(sortOption == .dateNewest ? Theme.textPrimary : Color.accentColor)
                             .frame(width: 44, height: 44)
@@ -1009,7 +944,7 @@ struct ApplicationView: View {
             isShowingExportConfirmation = true
             AppHaptics.shared.light()
         } label: {
-            Image(systemName: "square.and.arrow.up")
+            AppIcon("square.and.arrow.up")
                 .appFont(13, weight: .semibold)
                 .foregroundStyle(Theme.textSecondary)
                 .frame(width: 44, height: 44)
@@ -1033,7 +968,7 @@ struct ApplicationView: View {
             AppHaptics.shared.light()
         } label: {
             HStack(spacing: 4) {
-                Image(systemName: isEditMode ? "checkmark" : "pencil")
+                AppIcon(isEditMode ? "checkmark" : "pencil")
                     .appFont(13, weight: .semibold)
                 if isEditMode {
                     Text("Done")
@@ -1059,7 +994,7 @@ struct ApplicationView: View {
             AppHaptics.shared.light()
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: appState.selectedCycleID != nil ? "tray.fill" : "tray.2.fill")
+                AppIcon(appState.selectedCycleID != nil ? "tray.fill" : "tray.2.fill")
                     .appFont(11, weight: .bold)
                 
                 Group {
@@ -1072,7 +1007,7 @@ struct ApplicationView: View {
                 }
                 .appFont(14, weight: .bold)
                 
-                Image(systemName: "chevron.down")
+                AppIcon("chevron.down")
                     .appFont(10, weight: .black)
                     .opacity(0.5)
             }
@@ -1101,7 +1036,7 @@ struct ApplicationView: View {
 
     private var emptyState: some View {
         VStack(spacing: 20) {
-            Image(systemName: "tray.fill")
+            AppIcon("tray.fill")
                 .appFont(48)
                 .foregroundStyle(Theme.textSecondary.opacity(0.4))
             
@@ -1125,7 +1060,7 @@ struct ApplicationView: View {
 
     private var emptyCycleState: some View {
         VStack(spacing: 20) {
-            Image(systemName: "folder.badge.questionmark")
+            AppIcon("folder.badge.questionmark")
                 .appFont(48)
                 .foregroundStyle(Theme.textSecondary.opacity(0.4))
             
@@ -1159,7 +1094,7 @@ struct ApplicationView: View {
                     Circle()
                         .fill(.white.opacity(0.16))
                         .frame(width: 24, height: 24)
-                    Image(systemName: "plus")
+                    AppIcon("plus")
                         .appFont(10, weight: .bold)
                 }
             }
@@ -1180,7 +1115,7 @@ struct ApplicationView: View {
     private var noResultsState: some View {
         VStack(spacing: 20) {
             if searchText.isEmpty {
-                Image(systemName: "line.3.horizontal.decrease.circle")
+                AppIcon("line.3.horizontal.decrease.circle")
                     .appFont(48)
                     .foregroundStyle(Theme.textSecondary.opacity(0.5))
                 Text("No applications match these filters")
@@ -1210,7 +1145,7 @@ struct ApplicationView: View {
                 )
                 .buttonStyle(PressScaleButtonStyle())
             } else {
-                Image(systemName: "magnifyingglass")
+                AppIcon("magnifyingglass")
                     .appFont(48)
                     .foregroundStyle(Theme.textSecondary.opacity(0.5))
                 Text("No results for \"\(searchText)\"")

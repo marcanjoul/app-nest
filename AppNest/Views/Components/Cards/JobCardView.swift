@@ -34,7 +34,7 @@ struct SparkleView: View {
                 }
             } symbols: {
                 ForEach(particles) { particle in
-                    Image(systemName: particle.systemImage)
+                    AppIcon(particle.systemImage)
                         .font(.system(size: particle.size))
                         .foregroundStyle(color)
                         .tag(particle.id)
@@ -117,7 +117,7 @@ struct SparkleParticle: Identifiable {
 
 // MARK: - Job Card View
 
-/// Full glassmorphic job application card with avatar, status pill, and type tag.
+/// Application summary with company logo, status, and job type.
 struct DarkJobCardView: View {
     @Environment(AppState.self) private var appState
     let job: JobApplication
@@ -154,8 +154,7 @@ struct DarkJobCardView: View {
         HStack(alignment: .center, spacing: 16) {
             avatarView
                 .frame(width: 60, height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .shadow(color: .black.opacity(0.20), radius: 4, y: 2)
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                 .overlay {
                     if showCelebration {
                         SparkleView(color: Color(red: 0.30, green: 0.80, blue: 0.45))
@@ -198,7 +197,7 @@ struct DarkJobCardView: View {
                                         withAnimation(.appSmooth) { job.status = option }
                                         AppHaptics.shared.light()
                                     } label: {
-                                        Label(option.rawValue, systemImage: option.iconName)
+                                        AppLabel(option.rawValue, systemImage: option.iconName)
                                     }
                                 }
                             }
@@ -211,7 +210,7 @@ struct DarkJobCardView: View {
                                         withAnimation(.appSmooth) { job.jobType = option }
                                         AppHaptics.shared.light()
                                     } label: {
-                                        Label(option.rawValue, systemImage: option.iconName)
+                                        AppLabel(option.rawValue, systemImage: option.iconName)
                                     }
                                 }
                             }
@@ -222,7 +221,7 @@ struct DarkJobCardView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(16)
-        .glassCard(cornerRadius: Theme.cardRadius)
+        .surface(cornerRadius: Theme.cardRadius)
         .task(id: job.companyName) {
             guard !job.logoRemoved, job.companyLogoImageData == nil else { return }
             let trimmed = job.companyName.trimmingCharacters(in: .whitespaces)

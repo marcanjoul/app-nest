@@ -55,33 +55,16 @@ struct ProfileView: View {
         return String(first).uppercased()
     }
 
-    private var avatarGradientKey: String {
+    private var avatarColorKey: String {
         let trimmed = profileDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "AppNest" : trimmed
     }
 
     // MARK: - Pipeline data
 
-    private let pipelineStatuses: [ApplicationStatus] = [.toApply, .applied, .interview, .offer, .rejected, .ghosted, .jobRemoved]
 
     private func count(for status: ApplicationStatus) -> Int {
         cycleFilteredApplications.filter { $0.status == status }.count
-    }
-
-    private func pipelineLabel(for status: ApplicationStatus) -> String {
-        switch status {
-        case .toApply:    return "To Apply"
-        case .applied:    return "Applied"
-        case .interview:  return "Interview"
-        case .offer:      return "Offer"
-        case .rejected:   return "Rejected"
-        case .ghosted:    return "Ghosted"
-        case .jobRemoved: return "Job Removed"
-        }
-    }
-
-    private var pipelineSegments: [PipelineSegmentedBar.Segment] {
-        pipelineStatuses.map { PipelineSegmentedBar.Segment(id: $0, count: count(for: $0)) }
     }
 
     // MARK: - Views
@@ -100,7 +83,7 @@ struct ProfileView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 20)
-                    .padding(.bottom, 160)
+                    .padding(.bottom, 24)
                 }
             }
         }
@@ -170,7 +153,7 @@ struct ProfileView: View {
                             Circle()
                                 .fill(Color.accentColor)
                                 .frame(width: 26, height: 26)
-                            Image(systemName: "camera.fill")
+                            AppIcon("camera.fill")
                                 .appFont(11, weight: .bold)
                                 .foregroundStyle(.white)
                         }
@@ -184,7 +167,7 @@ struct ProfileView: View {
                     Button(role: .destructive) {
                         profileAvatarDataBase64 = ""
                     } label: {
-                        Label("Remove Photo", systemImage: "trash")
+                        AppLabel("Remove Photo", systemImage: "trash")
                     }
                 }
             }
@@ -253,10 +236,10 @@ struct ProfileView: View {
                 }
                 .padding(.vertical, 12)
                 .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .fill(Theme.cardFill.opacity(0.4))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
                                 .strokeBorder(Theme.cardBorder, lineWidth: 1)
                         )
                 )
@@ -287,11 +270,11 @@ struct ProfileView: View {
 
     @ViewBuilder
     private var initialAvatar: some View {
-        let colors = Theme.avatarColor(for: avatarGradientKey)
+        let colors = Theme.avatarColor(for: avatarColorKey)
         ZStack {
             colors.background
             if profileInitial.isEmpty {
-                Image(systemName: "person.fill")
+                AppIcon("person.fill")
                     .appFont(34, weight: .bold)
                     .foregroundStyle(colors.foreground)
             } else {
@@ -307,7 +290,7 @@ struct ProfileView: View {
     private var profileCycleChip: some View {
         Button { isShowingCyclePicker = true } label: {
             HStack(spacing: 6) {
-                Image(systemName: appState.selectedCycleID != nil ? "tray.fill" : "tray.2.fill")
+                AppIcon(appState.selectedCycleID != nil ? "tray.fill" : "tray.2.fill")
                     .appFont(11, weight: .bold)
                 Group {
                     if let id = appState.selectedCycleID,
@@ -319,7 +302,7 @@ struct ProfileView: View {
                 }
                 .appFont(13, weight: .bold)
                 .lineLimit(1)
-                Image(systemName: "chevron.down")
+                AppIcon("chevron.down")
                     .appFont(10, weight: .black)
             }
             .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : Theme.textSecondary)
@@ -336,82 +319,6 @@ struct ProfileView: View {
         }
         .buttonStyle(.plain)
         .animation(.appCrisp, value: appState.selectedCycleID)
-    }
-
-    // MARK: - Pipeline
-
-    private var pipelineSection: some View {
-        NavigationLink(destination: ProfileStatsView()) {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    SectionLabel(icon: "chart.bar.fill", title: "Pipeline")
-                    Spacer()
-                    Text("\(totalCount)")
-                        .appFont(15, weight: .bold)
-                        .foregroundStyle(Color.accentColor.opacity(0.75))
-                    Image(systemName: "chevron.right")
-                        .appFont(12, weight: .bold)
-                        .foregroundStyle(Theme.textSecondary.opacity(0.6))
-                }
-
-                PipelineSegmentedBar(segments: pipelineSegments, total: totalCount)
-
-                HStack(spacing: 0) {
-                    ForEach(pipelineStatuses.indices, id: \.self) { i in
-                        let status = pipelineStatuses[i]
-                        let c = count(for: status)
-                        let style = Theme.statusStyle(for: status)
-                        
-                        VStack(spacing: 8) {
-                            Image(systemName: style.iconName)
-                                .appFont(10, weight: .black)
-                                .foregroundStyle(c > 0 ? style.tintColor : Theme.textTertiary.opacity(0.6))
-
-                            VStack(spacing: 2) {
-                                Text("\(c)")
-                                    .appFont(20, weight: .bold)
-                                    .foregroundStyle(c > 0 ? Theme.textPrimary : Theme.textTertiary)
-                                    .contentTransition(.numericText())
-
-                                Text(pipelineLabel(for: status))
-                                    .appFont(10, weight: .semibold)
-                                    .foregroundStyle(c > 0 ? Theme.textSecondary : Theme.textTertiary.opacity(0.8))
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.95)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background {
-                            if c > 0 {
-                                style.tintColor.opacity(0.04)
-                            }
-                        }
-                        
-                        if i < pipelineStatuses.count - 1 {
-                            Rectangle()
-                                .fill(Color.primary.opacity(0.12))
-                                .frame(width: 1, height: 30)
-                        }
-                    }
-                }
-                .background {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.primary.opacity(0.03))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
-                        )
-                }
-            }
-            .padding(18)
-            .glassCard()
-            .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .strokeBorder(Color.accentColor.opacity(0.18), lineWidth: 1.5)
-            )
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Resume Section
@@ -447,7 +354,7 @@ struct ProfileView: View {
                                 Button {
                                     setDefaultResume(resume)
                                 } label: {
-                                    Image(systemName: resume.isDefault ? "star.fill" : "star")
+                                    AppIcon(resume.isDefault ? "star.fill" : "star")
                                         .appFont(16, weight: .semibold)
                                         .foregroundStyle(resume.isDefault ? Color.yellow : Theme.textTertiary)
                                         .frame(width: 34, height: 34)
@@ -459,7 +366,7 @@ struct ProfileView: View {
                                 Button(role: .destructive) {
                                     resumePendingDeletion = resume
                                 } label: {
-                                    Image(systemName: "trash")
+                                    AppIcon("trash")
                                         .appFont(14, weight: .semibold)
                                         .foregroundStyle(Theme.destructive)
                                         .frame(width: 34, height: 34)
@@ -478,7 +385,7 @@ struct ProfileView: View {
 
                         if resumes.count > 5 {
                             Button { isShowingResumeManager = true } label: {
-                                Label("View All", systemImage: "tray.full")
+                                AppLabel("View All", systemImage: "tray.full")
                                     .appFont(13, weight: .semibold)
                                     .foregroundStyle(Color.accentColor)
                                     .padding(.horizontal, 12)
@@ -498,7 +405,7 @@ struct ProfileView: View {
             }
         }
         .padding(18)
-        .glassCard()
+        .surface()
     }
 
     // MARK: - Activity Heatmap
@@ -510,7 +417,7 @@ struct ProfileView: View {
             ActivityHeatmapView(applications: applications)
         }
         .padding(18)
-        .glassCard()
+        .surface()
     }
 
     // MARK: - Settings
@@ -521,7 +428,7 @@ struct ProfileView: View {
                 SectionLabel(icon: "gearshape.fill", title: "Settings")
 
                 Toggle(isOn: $hapticsEnabled) {
-                    Label("Haptic Feedback", systemImage: "waveform")
+                    AppLabel("Haptic Feedback", systemImage: "waveform")
                         .appFont(15, weight: .medium)
                 }
                 .padding(.vertical, 4)
@@ -535,7 +442,7 @@ struct ProfileView: View {
                     .padding(.top, 4)
             }
             .padding(18)
-            .glassCard()
+            .surface()
 
             VStack(alignment: .leading, spacing: 16) {
                 SectionLabel(icon: "exclamationmark.triangle.fill", title: "Danger Zone", color: Theme.destructive)
@@ -543,7 +450,7 @@ struct ProfileView: View {
                 Button(role: .destructive) {
                     isShowingResetConfirmation = true
                 } label: {
-                    Label("Reset All Data", systemImage: "trash.fill")
+                    AppLabel("Reset All Data", systemImage: "trash.fill")
                         .appFont(15, weight: .medium)
                         .foregroundStyle(Theme.destructive)
                 }
@@ -687,43 +594,6 @@ private struct ActivityHeatmapView: View {
     }
 }
 
-// MARK: - Pipeline Segmented Bar
-
-private struct PipelineSegmentedBar: View {
-    struct Segment: Identifiable {
-        let id: ApplicationStatus
-        let count: Int
-        var color: Color { Theme.statusStyle(for: id).tintColor }
-    }
-
-    let segments: [Segment]
-    let total: Int
-
-    private var active: [Segment] { segments.filter { $0.count > 0 } }
-
-    var body: some View {
-        if total == 0 || active.isEmpty {
-            Capsule()
-                .fill(Color.primary.opacity(0.07))
-                .frame(maxWidth: .infinity)
-                .frame(height: 8)
-        } else {
-            GeometryReader { geo in
-                let spacing: CGFloat = 2
-                let available = geo.size.width - spacing * CGFloat(active.count - 1)
-                HStack(spacing: spacing) {
-                    ForEach(active.indices, id: \.self) { i in
-                        active[i].color
-                            .frame(width: max(6, available * CGFloat(active[i].count) / CGFloat(total)))
-                    }
-                }
-                .clipShape(Capsule())
-            }
-            .frame(height: 8)
-        }
-    }
-}
-
 // MARK: - Resume Manager Sheet
 
 private struct ResumeManagerSheet: View {
@@ -761,7 +631,7 @@ private struct ResumeManagerSheet: View {
                         dismiss()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: onUpload)
                     } label: {
-                        Image(systemName: "plus")
+                        AppIcon("plus")
                             .appFont(14, weight: .bold)
                     }
                     .accessibilityLabel("Upload resume")
@@ -786,7 +656,7 @@ private struct ResumeManagerSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             Button { onSetDefault(resume) } label: {
-                Image(systemName: resume.isDefault ? "star.fill" : "star")
+                AppIcon(resume.isDefault ? "star.fill" : "star")
                     .appFont(16, weight: .semibold)
                     .foregroundStyle(resume.isDefault ? Color.yellow : Theme.textTertiary)
                     .frame(width: 34, height: 34)
@@ -797,7 +667,7 @@ private struct ResumeManagerSheet: View {
             .accessibilityLabel(resume.isDefault ? "Default resume" : "Set as default")
 
             Button(role: .destructive) { onRequestDelete(resume) } label: {
-                Image(systemName: "trash")
+                AppIcon("trash")
                     .appFont(14, weight: .semibold)
                     .foregroundStyle(Theme.destructive)
                     .frame(width: 34, height: 34)
@@ -808,10 +678,10 @@ private struct ResumeManagerSheet: View {
         }
         .padding(12)
         .background {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(Color.primary.opacity(0.05))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
                 )
         }

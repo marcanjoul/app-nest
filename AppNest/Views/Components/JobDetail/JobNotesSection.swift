@@ -23,15 +23,15 @@ struct JobNotesSection: View {
             }
             .padding(12)
             .background {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(Color.primary.opacity(0.05))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
                             .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
                     )
             }
         }
         .padding(16)
-        .glassCard()
+        .surface()
     }
 }

@@ -42,7 +42,7 @@ struct EmailParseResultsCard: View {
             actionButtons
         }
         .padding(18)
-        .glassCard()
+        .surface()
         .transition(.asymmetric(
             insertion: .move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.95)),
             removal: .opacity
@@ -51,7 +51,7 @@ struct EmailParseResultsCard: View {
 
     private var header: some View {
         HStack {
-            Label("Review & Edit", systemImage: "square.and.pencil")
+            AppLabel("Review & Edit", systemImage: "square.and.pencil")
                 .appFont(15, weight: .semibold)
                 .foregroundStyle(Theme.textPrimary)
 
@@ -60,7 +60,7 @@ struct EmailParseResultsCard: View {
             let missing = (vm.editCompany.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 1 : 0)
                         + (vm.editPosition.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 1 : 0)
             if missing > 0 {
-                Label("\(missing) field\(missing == 1 ? "" : "s") need attention", systemImage: "exclamationmark.triangle.fill")
+                AppLabel("\(missing) field\(missing == 1 ? "" : "s") need attention", systemImage: "exclamationmark.triangle.fill")
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.orange)
             }
@@ -72,7 +72,7 @@ struct EmailParseResultsCard: View {
             Spacer()
             PhotosPicker(selection: $vm.pickerItem, matching: .images) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .fill(Theme.avatarFill(for: vm.editCompany.isEmpty ? "?" : vm.editCompany))
                     let initial = vm.editCompany.trimmingCharacters(in: .whitespaces).first.map { String($0).uppercased() } ?? "?"
                     Text(initial)
@@ -86,18 +86,17 @@ struct EmailParseResultsCard: View {
                             .transition(.opacity.combined(with: .scale(scale: 0.92)))
                     }
                     if vm.isFetchingLogo {
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
                             .fill(.ultraThinMaterial)
                         ProgressView().tint(.white)
                     }
                 }
                 .frame(width: 60, height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                 .background {
                     if vm.isFetchingLogo {
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
                             .fill(Color.primary.opacity(0.12))
-                            .shimmer()
                     }
                 }
                 .opacity(vm.isFetchingLogo ? 0.8 : 1.0)
@@ -107,7 +106,7 @@ struct EmailParseResultsCard: View {
                         Circle()
                             .fill(Color.accentColor)
                             .frame(width: 20, height: 20)
-                        Image(systemName: "pencil")
+                        AppIcon("pencil")
                             .appFont(10, weight: .bold)
                             .foregroundStyle(.white)
                     }
@@ -215,7 +214,7 @@ struct EmailParseResultsCard: View {
                         Circle()
                             .fill(.white.opacity(0.16))
                             .frame(width: 32, height: 32)
-                        Image(systemName: vm.saveSuccess ? "checkmark" : "plus")
+                        AppIcon(vm.saveSuccess ? "checkmark" : "plus")
                             .appFont(12, weight: .bold)
                     }
                 }

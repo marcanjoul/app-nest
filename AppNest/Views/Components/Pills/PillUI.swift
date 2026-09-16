@@ -17,12 +17,12 @@ struct FilterToken: View {
     var body: some View {
         Button { action() } label: {
             HStack(spacing: 5) {
-                Image(systemName: icon)
+                AppIcon(icon)
                     .appFont(10, weight: .bold)
                 Text(selectionSummary ?? label)
                     .appFont(12, weight: .semibold)
                     .lineLimit(1)
-                Image(systemName: "chevron.down")
+                AppIcon("chevron.down")
                     .appFont(9, weight: .bold)
                     .rotationEffect(.degrees(isExpanded ? 180 : 0))
                     .animation(.appCrisp, value: isExpanded)
@@ -63,7 +63,7 @@ struct CompactFilterChip: View {
     var body: some View {
         Button { action() } label: {
             HStack(spacing: 4) {
-                Image(systemName: icon)
+                AppIcon(icon)
                     .appFont(10, weight: .bold)
                 Text(label)
                     .appFont(11, weight: .semibold)
@@ -88,9 +88,7 @@ struct CompactFilterChip: View {
 
 // MARK: - Universal Selectable Pill
 
-/// Glassmorphic pill button for picking enum values in forms.
-/// Selected: gradient fill + icon + white text.
-/// Unselected: translucent tint fill + muted text.
+/// Selectable form option with a stable touch target.
 struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == String {
     let option: T
     let isSelected: Bool
@@ -105,7 +103,7 @@ struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == 
         } label: {
             HStack(spacing: isSelected ? 6 : 5) {
                 if let icon {
-                    Image(systemName: icon)
+                    AppIcon(icon)
                         .appFont(isSelected ? 13 : 12, weight: .bold)
                         .foregroundStyle(isSelected ? .white : color)
                 }
@@ -216,7 +214,7 @@ struct ResumePill: View {
             action()
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: iconName)
+                AppIcon(iconName)
                     .appFont(iconSize, weight: .semibold)
                 Text(title)
                     .font(textFont)
@@ -242,7 +240,7 @@ struct ResumePill: View {
             view.contextMenu {
                 if let action {
                     Button(action: action) {
-                        Label("Open Full Screen", systemImage: "arrow.up.left.and.arrow.down.right")
+                        AppLabel("Open Full Screen", systemImage: "arrow.up.left.and.arrow.down.right")
                     }
                 }
             } preview: {
@@ -251,6 +249,136 @@ struct ResumePill: View {
                 }
             }
         }
+    }
+}
+
+#if canImport(UIKit)
+#endif
+
+// MARK: - Status Pill
+
+/// Status badge with a distinct icon and color.
+struct DarkStatusPill: View {
+    let status: ApplicationStatus
+
+    private var style: Theme.StatusStyle { Theme.statusStyle(for: status) }
+
+    private var displayText: String {
+        switch status {
+        case .interview: return "Interview"
+        default:         return status.rawValue
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 5) {
+            AppIcon(style.iconName)
+                .appFont(12, weight: .semibold)
+            Text(displayText)
+                .appFont(13, weight: .semibold)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .foregroundStyle(style.tintColor)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 8)
+        .background(
+            Capsule()
+                .fill(style.fillColor)
+                .overlay(Capsule().strokeBorder(style.borderColor, lineWidth: 0.8))
+        )
+    }
+}
+
+// MARK: - Type Tag
+
+/// Compact job type label.
+struct DarkTypeTag: View {
+    let text: String
+    var icon: String? = nil
+    var color: Color = Theme.textSecondary
+
+    var body: some View {
+        HStack(spacing: 4) {
+            if let icon {
+                AppIcon(icon)
+                    .appFont(11, weight: .bold)
+            }
+            Text(text)
+                .appFont(12, weight: .bold)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .foregroundStyle(color)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(
+            Capsule()
+                .fill(color.opacity(0.13))
+                .overlay(Capsule().strokeBorder(color.opacity(0.24), lineWidth: 0.8))
+        )
+    }
+}
+
+// MARK: - Stat Pill
+
+/// Tappable status-tinted pill that shows a count and acts as a filter toggle.
+struct StatChip: View {
+    let status: ApplicationStatus
+    let number: Int
+    var isSelected: Bool = false
+    var action: (() -> Void)? = nil
+
+    private var style: Theme.StatusStyle { Theme.statusStyle(for: status) }
+
+    private var label: String {
+        switch status {
+        case .toApply:    return "To Apply"
+        case .applied:    return "Applied"
+        case .interview:  return "Interview"
+        case .offer:      return "Offers"
+        case .rejected:   return "Rejected"
+        case .ghosted:    return "Ghosted"
+        case .jobRemoved: return "Removed"
+        }
+    }
+
+    var body: some View {
+        Button {
+            AppHaptics.shared.light()
+            action?()
+        } label: {
+            HStack(spacing: 7) {
+                AppIcon(style.iconName)
+                    .appFont(10, weight: .bold)
+                    .foregroundStyle(isSelected ? Color.white : style.tintColor)
+
+                Text("\(number)")
+                    .appFont(20, weight: .bold)
+                    .foregroundStyle(isSelected ? Color.white : Theme.textPrimary)
+                    .contentTransition(.numericText())
+                    .animation(.appCrisp, value: number)
+
+                Text(label)
+                    .appFont(11, weight: .semibold)
+                    .foregroundStyle(isSelected ? Color.white.opacity(0.88) : Theme.textSecondary)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 11)
+            .padding(.vertical, 7)
+            .background(
+                Capsule()
+                    .fill(isSelected ? AnyShapeStyle(style.tintColor) : AnyShapeStyle(style.fillColor))
+                    .overlay(
+                        Capsule().strokeBorder(
+                            isSelected ? Color.clear : style.borderColor,
+                            lineWidth: isSelected ? 0 : 0.8
+                        )
+                    )
+            )
+        }
+        .buttonStyle(PressScaleButtonStyle())
+        .animation(.appCrisp, value: isSelected)
     }
 }
 

@@ -84,7 +84,7 @@ struct EditImportRowView: View {
     private var floatingNavBar: some View {
         HStack {
             Button { dismiss() } label: {
-                Image(systemName: "xmark")
+                AppIcon("xmark")
                     .appFont(14, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                     .frame(width: 44, height: 44)
@@ -148,7 +148,7 @@ struct EditImportRowView: View {
             }
         }
         .padding(16)
-        .glassCard()
+        .surface()
     }
 
     @ViewBuilder

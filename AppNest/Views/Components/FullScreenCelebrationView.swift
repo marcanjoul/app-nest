@@ -56,7 +56,7 @@ struct FullScreenCelebrationView: View {
                     } symbols: {
                         ForEach(particles) { particle in
                             if particle.systemImage != "circle.fill" {
-                                Image(systemName: particle.systemImage)
+                                AppIcon(particle.systemImage)
                                     .font(.system(size: particle.size))
                                     .foregroundStyle(particle.color)
                                     .tag(particle.id)
@@ -73,7 +73,7 @@ struct FullScreenCelebrationView: View {
                             .fill(Color(red: 0.30, green: 0.80, blue: 0.45).opacity(0.12))
                             .frame(width: 80, height: 80)
                         
-                        Image(systemName: "checkmark.seal.fill")
+                        AppIcon("checkmark.seal.fill")
                             .font(.system(size: 44, weight: .bold))
                             .foregroundStyle(Color(red: 0.30, green: 0.80, blue: 0.45))
                     }
@@ -92,10 +92,10 @@ struct FullScreenCelebrationView: View {
                 .padding(.horizontal, 32)
                 .padding(.vertical, 36)
                 .background {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .fill(Theme.background)
                         .overlay {
-                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
                                 .strokeBorder(Color(red: 0.30, green: 0.80, blue: 0.45).opacity(0.25), lineWidth: 1.5)
                         }
                         .shadow(color: .black.opacity(0.12), radius: 20, y: 8)

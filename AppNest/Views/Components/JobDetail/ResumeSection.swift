@@ -38,14 +38,14 @@ struct ResumeSection: View {
                 Button {
                     openFullscreen(attached)
                 } label: {
-                    Label("Open Full Screen", systemImage: "arrow.up.left.and.arrow.down.right")
+                    AppLabel("Open Full Screen", systemImage: "arrow.up.left.and.arrow.down.right")
                 }
                 Button(action: onViewAll) {
-                    Label("Select Another", systemImage: "tray.full")
+                    AppLabel("Select Another", systemImage: "tray.full")
                 }
                 Divider()
                 Button(role: .destructive, action: onClear) {
-                    Label("Remove from Job", systemImage: "trash")
+                    AppLabel("Remove from Job", systemImage: "trash")
                 }
             } preview: {
                 ResumePreview(bookmark: attached.bookmark, fileName: attached.fileName)
@@ -94,7 +94,7 @@ struct ResumeSection: View {
                 if !isShowingUploadOnly {
                     if resumes.count > 1 {
                         Button(action: onViewAll) {
-                            Label("Select Another", systemImage: "tray.full")
+                            AppLabel("Select Another", systemImage: "tray.full")
                                 .appFont(13, weight: .semibold)
                                 .foregroundStyle(Color.accentColor)
                                 .padding(.horizontal, 12)
@@ -111,7 +111,7 @@ struct ResumeSection: View {
                     HStack(spacing: 8) {
                         Spacer()
                         Button(action: onPick) {
-                            Image(systemName: "plus")
+                            AppIcon("plus")
                                 .appFont(16, weight: .bold)
                                 .foregroundStyle(Color.accentColor)
                                 .frame(width: 34, height: 34)
@@ -121,7 +121,7 @@ struct ResumeSection: View {
                         .accessibilityLabel("Add resume")
 
                         Button(role: .destructive, action: onClear) {
-                            Image(systemName: "trash")
+                            AppIcon("trash")
                                 .appFont(14, weight: .semibold)
                                 .foregroundStyle(hasAttachedResume ? Theme.destructive : Theme.destructive.opacity(0.35))
                                 .frame(width: 34, height: 34)
@@ -135,7 +135,7 @@ struct ResumeSection: View {
             }
         }
         .padding(16)
-        .glassCard()
+        .surface()
         .fullScreenCover(item: $fullscreenResume) { resume in
             FullscreenResumeViewer(bookmark: resume.bookmark, fileName: resume.fileName)
         }
@@ -163,7 +163,7 @@ struct ResumeLibrarySheet: View {
                                 onSelectResume(resume)
                             } label: {
                                 HStack(spacing: 12) {
-                                    Image(systemName: resume.isDefault ? "star.fill" : "doc.text.fill")
+                                    AppIcon(resume.isDefault ? "star.fill" : "doc.text.fill")
                                         .appFont(14, weight: .semibold)
                                         .foregroundStyle(resume.isDefault ? Color(red: 0.96, green: 0.73, blue: 0.28) : Theme.textSecondary)
                                         .frame(width: 30, height: 30)
@@ -186,17 +186,17 @@ struct ResumeLibrarySheet: View {
                                     Spacer()
 
                                     if isAttached {
-                                        Image(systemName: "checkmark.circle.fill")
+                                        AppIcon("checkmark.circle.fill")
                                             .appFont(18, weight: .semibold)
                                             .foregroundStyle(Color(red: 0.30, green: 0.80, blue: 0.45))
                                     }
                                 }
                                 .padding(14)
                                 .background {
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
                                         .fill(isAttached ? Color(red: 0.30, green: 0.80, blue: 0.45).opacity(0.12) : Color.primary.opacity(0.05))
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                            RoundedRectangle(cornerRadius: 20, style: .continuous)
                                                 .strokeBorder(
                                                     isAttached ? Color(red: 0.30, green: 0.80, blue: 0.45).opacity(0.35) : Color.primary.opacity(0.08),
                                                     lineWidth: 1

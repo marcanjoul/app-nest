@@ -38,7 +38,7 @@ struct HoldToConfirmButton: View {
                         Circle()
                             .fill(progress > 0.5 ? .white.opacity(0.16) : color.opacity(0.12))
                             .frame(width: 34, height: 34)
-                        Image(systemName: icon)
+                        AppIcon(icon)
                             .appFont(12, weight: .bold)
                     }
                 }

@@ -12,7 +12,7 @@ struct JobCardSwipeRow: View {
     var body: some View {
         HStack(spacing: 0) {
             Button { onToggleSelection() } label: {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                AppIcon(isSelected ? "checkmark.circle.fill" : "circle")
                     .appFont(22, weight: .medium)
                     .foregroundStyle(isSelected ? Color.accentColor : Theme.textSecondary.opacity(0.5))
                     .contentTransition(.symbolEffect(.replace.downUp))

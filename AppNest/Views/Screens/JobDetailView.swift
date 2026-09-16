@@ -223,7 +223,7 @@ struct JobDetailView: View {
             }
         }
         .padding(16)
-        .glassCard()
+        .surface()
     }
 
     @ViewBuilder
@@ -307,7 +307,7 @@ struct JobDetailView: View {
                                 Circle()
                                     .fill(.white.opacity(0.16))
                                     .frame(width: 28, height: 28)
-                                Image(systemName: isNewApplication ? "plus" : "checkmark")
+                                AppIcon(isNewApplication ? "plus" : "checkmark")
                                     .appFont(10, weight: .bold)
                             }
                         }
@@ -669,7 +669,7 @@ struct JobDetailView: View {
                     .frame(height: 1)
                 Text("OPTIONAL")
                     .appFont(11, weight: .bold)
-                    .tracking(0.8)
+                    .tracking(0)
                     .foregroundStyle(Theme.textTertiary.opacity(0.6))
                 Rectangle()
                     .fill(Color.primary.opacity(0.08))
@@ -716,7 +716,7 @@ struct JobDetailView: View {
                 ScrollView {
                     formStack
                         .padding([.top, .horizontal])
-                        .padding(.bottom, 100)
+                        .padding(.bottom, 24)
                 }
                 .scrollDismissesKeyboard(.interactively)
                 .onAppear { contentAppeared = true }
@@ -796,7 +796,7 @@ struct JobDetailView: View {
                 Button {
                     dismiss()
                 } label: {
-                    Image(systemName: isNewApplication ? "xmark" : "chevron.left")
+                    AppIcon(isNewApplication ? "xmark" : "chevron.left")
                         .appFont(14, weight: .semibold)
                         .foregroundStyle(Theme.textPrimary)
                         .frame(width: 44, height: 44)
@@ -814,7 +814,7 @@ struct JobDetailView: View {
 
             HStack(spacing: 10) {
                 Button { isShowingLogoAttribution.toggle() } label: {
-                    Image(systemName: "info.circle")
+                    AppIcon("info.circle")
                         .appFont(15, weight: .medium)
                         .foregroundStyle(Theme.textSecondary)
                         .frame(width: 44, height: 44)
@@ -839,7 +839,7 @@ struct JobDetailView: View {
 
                 if !isNewApplication {
                     Button { isShowingDeleteConfirmation = true } label: {
-                        Image(systemName: "trash")
+                        AppIcon("trash")
                             .appFont(14, weight: .bold)
                             .foregroundStyle(Theme.destructive)
                             .frame(width: 44, height: 44)

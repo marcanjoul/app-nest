@@ -57,6 +57,6 @@ struct LocationSection: View {
         }
         .animation(.appCrisp, value: showLocationField)
         .padding(16)
-        .glassCard()
+        .surface()
     }
 }

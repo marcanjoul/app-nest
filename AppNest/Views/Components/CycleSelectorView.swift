@@ -146,7 +146,7 @@ struct CyclePickerSheet: View {
                 cycleToEdit = cycle
                 isConfirmingDelete = true
             } label: {
-                Label("Delete", systemImage: "trash")
+                AppLabel("Delete", systemImage: "trash")
             }
             .tint(.red)
         }
@@ -156,7 +156,7 @@ struct CyclePickerSheet: View {
                 newCycleName = cycle.name
                 isRenamingCycle = true
             } label: {
-                Label("Rename", systemImage: "pencil")
+                AppLabel("Rename", systemImage: "pencil")
             }
             .tint(.orange)
         }
@@ -197,7 +197,7 @@ struct CyclePickerSheet: View {
                 Circle()
                     .fill(circleFill)
                     .frame(width: 36, height: 36)
-                Image(systemName: icon)
+                AppIcon(icon)
                     .appFont(13, weight: .bold)
                     .foregroundStyle(iconColor)
             }
@@ -218,10 +218,10 @@ struct CyclePickerSheet: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(Theme.cardFill)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .strokeBorder(
                             isActive ? Color.accentColor.opacity(0.4) : Theme.cardBorder,
                             lineWidth: isActive ? 1.5 : 1

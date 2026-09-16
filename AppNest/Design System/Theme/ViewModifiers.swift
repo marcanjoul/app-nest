@@ -13,6 +13,7 @@ struct ScaledSystemFont: ViewModifier {
 
     func body(content: Content) -> some View {
         content.font(.system(size: scaledSize, weight: weight))
+            .environment(\.appIconSize, scaledSize)
     }
 }
 
@@ -22,9 +23,9 @@ extension View {
     }
 }
 
-// MARK: - Glass Card
+// MARK: - Surface
 
-struct GlassCard: ViewModifier {
+struct Surface: ViewModifier {
     var cornerRadius: CGFloat = 20
     var shadowOpacity: Double = 0.08
 
@@ -38,7 +39,7 @@ struct GlassCard: ViewModifier {
                             .strokeBorder(Theme.cardBorder, lineWidth: 1)
                     }
             }
-            .shadow(color: .black.opacity(shadowOpacity * 0.4), radius: 4, y: 2)
+            .shadow(color: .black.opacity(shadowOpacity * 0.2), radius: 3, y: 1)
     }
 }
 
@@ -71,8 +72,8 @@ extension View {
         modifier(ChangedHighlight(isChanged: isChanged))
     }
     
-    func glassCard(cornerRadius: CGFloat = 20, shadowOpacity: Double = 0.08) -> some View {
-        modifier(GlassCard(cornerRadius: cornerRadius, shadowOpacity: shadowOpacity))
+    func surface(cornerRadius: CGFloat = 20, shadowOpacity: Double = 0.08) -> some View {
+        modifier(Surface(cornerRadius: cornerRadius, shadowOpacity: shadowOpacity))
     }
 
     
@@ -115,7 +116,7 @@ struct DismissKeyboardToolbar: ViewModifier {
                     UIApplication.shared.dismissKeyboard()
                     #endif
                 } label: {
-                    Image(systemName: "chevron.down")
+                    AppIcon("chevron.down")
                         .appFont(14, weight: .semibold)
                 }
                 .accessibilityLabel("Dismiss keyboard")

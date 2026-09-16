@@ -81,7 +81,6 @@ struct JobInfoSection: View {
                     if isFetchingLogo {
                         Circle()
                             .fill(Color.primary.opacity(0.12))
-                            .shimmer()
                     }
                 }
                 .overlay(
@@ -96,7 +95,7 @@ struct JobInfoSection: View {
                         Circle()
                             .fill(Theme.background)
                             .frame(width: 22, height: 22)
-                        Image(systemName: "camera.fill")
+                        AppIcon("camera.fill")
                             .appFont(9, weight: .bold)
                             .foregroundStyle(.white)
                             .frame(width: 18, height: 18)
@@ -130,7 +129,7 @@ struct JobInfoSection: View {
                         onAutoFetchStateChanged?(false)
                         AppHaptics.shared.light()
                     } label: {
-                        Label("Remove Logo", systemImage: "trash")
+                        AppLabel("Remove Logo", systemImage: "trash")
                     }
                 }
             }

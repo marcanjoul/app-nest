@@ -56,7 +56,7 @@ struct CSVImportPreviewSheet: View {
                                 }
                             }
                             .padding(.horizontal, 16)
-                            .padding(.bottom, 100)
+                            .padding(.bottom, 24)
                         }
                     }
                 }
@@ -97,7 +97,7 @@ struct CSVImportPreviewSheet: View {
                 ToolbarItemGroup(placement: .bottomBar) {
                     if !selectedRows.isEmpty {
                         Button(role: .destructive) { isConfirmingDelete = true } label: {
-                            Label("Delete", systemImage: "trash")
+                            AppLabel("Delete", systemImage: "trash")
                         }
                         .foregroundStyle(Theme.destructive)
                         
@@ -106,7 +106,7 @@ struct CSVImportPreviewSheet: View {
                         Menu {
                             Section("Cycle") {
                                 Button { isAddingNewCycle = true } label: {
-                                    Label("New Cycle...", systemImage: "plus")
+                                    AppLabel("New Cycle...", systemImage: "plus")
                                 }
                                 ForEach(cycles) { cycle in
                                     Button(cycle.name) {
@@ -115,7 +115,7 @@ struct CSVImportPreviewSheet: View {
                                 }
                             }
                         } label: {
-                            Label("Move to Cycle", systemImage: "folder")
+                            AppLabel("Move to Cycle", systemImage: "folder")
                         }
                     }
                 }
@@ -188,7 +188,7 @@ struct CSVImportPreviewSheet: View {
             AppHaptics.shared.light()
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: icon)
+                AppIcon(icon)
                     .appFont(12, weight: .bold)
                     .foregroundStyle(isSelected ? .white : color)
                 
@@ -215,7 +215,7 @@ struct CSVImportPreviewSheet: View {
 
     private var emptyRowsView: some View {
         VStack(spacing: 14) {
-            Image(systemName: "doc.text.magnifyingglass")
+            AppIcon("doc.text.magnifyingglass")
                 .appFont(44)
                 .foregroundStyle(Theme.textSecondary.opacity(0.4))
             Text("No rows found")
@@ -232,7 +232,7 @@ struct CSVImportPreviewSheet: View {
 
     private var noFilterResultsView: some View {
         VStack(spacing: 12) {
-            Image(systemName: activeFilter == .ready ? "checkmark.circle" : "sparkles")
+            AppIcon(activeFilter == .ready ? "checkmark.circle" : "sparkles")
                 .appFont(32)
                 .foregroundStyle(Theme.textSecondary.opacity(0.4))
             Text(activeFilter == .ready ? "Nothing to import" : "All rows are ready")
@@ -265,7 +265,7 @@ struct CSVImportPreviewSheet: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
                 .background {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .fill(readyRows.isEmpty ? Color.gray.opacity(0.3) : Color.accentColor)
                 }
         }
@@ -287,7 +287,7 @@ struct CSVImportPreviewSheet: View {
                 }
                 AppHaptics.shared.light()
             } label: {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                AppIcon(isSelected ? "checkmark.circle.fill" : "circle")
                     .appFont(22)
                     .foregroundStyle(isSelected ? Color.accentColor : Theme.textTertiary)
             }
@@ -345,7 +345,7 @@ struct CSVImportPreviewSheet: View {
                     
                     Spacer()
                     
-                    Image(systemName: "chevron.right")
+                    AppIcon("chevron.right")
                         .appFont(11, weight: .semibold)
                         .foregroundStyle(Theme.textTertiary.opacity(0.6))
                 }
@@ -355,10 +355,10 @@ struct CSVImportPreviewSheet: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(Theme.cardFill)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .strokeBorder(isSelected ? Color.accentColor.opacity(0.4) : Color.primary.opacity(0.08), lineWidth: isSelected ? 1.5 : 1)
                 }
         }

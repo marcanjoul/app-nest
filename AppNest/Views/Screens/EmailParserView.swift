@@ -93,7 +93,7 @@ struct EmailParserView: View {
 
             // Header row
             HStack(alignment: .center) {
-                Label("Paste Email", systemImage: "envelope.open.fill")
+                AppLabel("Paste Email", systemImage: "envelope.open.fill")
                     .appFont(15, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
 
@@ -107,7 +107,7 @@ struct EmailParserView: View {
                         }
                     } label: {
                         HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
+                            AppIcon("chevron.left")
                                 .appFont(11, weight: .semibold)
                             Text("Edit email")
                                 .font(.caption.weight(.medium))
@@ -126,7 +126,7 @@ struct EmailParserView: View {
                     Button {
                         withAnimation(.appCrisp) { vm.emailText = "" }
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
+                        AppIcon("xmark.circle.fill")
                             .appFont(18)
                             .foregroundStyle(Theme.textSecondary)
                             .frame(width: 44, height: 44)
@@ -158,7 +158,7 @@ struct EmailParserView: View {
                         HStack(spacing: 4) {
                             Text(vm.isHighlightExpanded ? "Show less" : "Show full email")
                                 .font(.caption.weight(.medium))
-                            Image(systemName: vm.isHighlightExpanded ? "chevron.up" : "chevron.down")
+                            AppIcon(vm.isHighlightExpanded ? "chevron.up" : "chevron.down")
                                 .font(.caption2.weight(.semibold))
                         }
                         .foregroundStyle(Color.accentColor.opacity(0.85))
@@ -194,10 +194,10 @@ struct EmailParserView: View {
                 }
                 .padding(12)
                 .background {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .fill(Color.primary.opacity(0.05))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
                                 .strokeBorder(
                                     isEditorFocused ? Color.accentColor.opacity(0.55) : Color.primary.opacity(0.08),
                                     lineWidth: isEditorFocused ? 1.5 : 1
@@ -217,7 +217,7 @@ struct EmailParserView: View {
                     vm.parseEmail(defaultResume: defaultResume) { scrollToResults = true }
                 } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: vm.hasResult ? "arrow.clockwise.circle.fill" : "sparkles")
+                        AppIcon(vm.hasResult ? "arrow.clockwise.circle.fill" : "sparkles")
                             .transition(.scale.combined(with: .opacity))
                         Text(vm.hasResult ? "Re-parse" : "Parse Email")
                             .appFont(16, weight: .semibold)
@@ -237,7 +237,7 @@ struct EmailParserView: View {
             }
         }
         .padding(18)
-        .glassCard()
+        .surface()
         .opacity(cardAppeared ? 1 : 0)
         .offset(y: cardAppeared ? 0 : 20)
     }

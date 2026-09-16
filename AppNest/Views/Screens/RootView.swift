@@ -12,19 +12,19 @@ struct RootView: View {
                 NavigationStack(path: $bindableAppState.navigationPath) {
                     ApplicationView()
                 }
-                .tabItem { Label("Applications", systemImage: "briefcase") }
+                .tabItem { AppLabel("Applications", systemImage: "briefcase") }
                 .tag(0)
 
                 NavigationStack {
                     AddMenuView()
                 }
-                .tabItem { Label("Add", systemImage: "plus") }
+                .tabItem { AppLabel("Add", systemImage: "plus") }
                 .tag(1)
 
                 NavigationStack {
                     ProfileView()
                 }
-                .tabItem { Label("Profile", systemImage: "person") }
+                .tabItem { AppLabel("Profile", systemImage: "person") }
                 .tag(2)
             }
             .animation(.none, value: appState.selectedTab)

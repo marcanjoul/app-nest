@@ -33,9 +33,9 @@ struct AddMenuView: View {
     private let linkParser = LinkParser()
 
     private var defaultResume: ResumeDocument? { resumes.first(where: \.isDefault) }
-    private let linkAccent = Color(red: 0.48, green: 0.36, blue: 0.76)
-    private let emailAccent = Color(red: 0.78, green: 0.43, blue: 0.16)
-    private let importAccent = Color(red: 0.10, green: 0.46, blue: 0.56)
+    private let linkAccent = Theme.textPrimary
+    private let emailAccent = Theme.textPrimary
+    private let importAccent = Theme.textPrimary
 
     var body: some View {
         ZStack {
@@ -74,7 +74,7 @@ struct AddMenuView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 22)
-                .padding(.bottom, 110)
+                .padding(.bottom, 24)
             }
             .scrollBounceBehavior(.basedOnSize)
         }
@@ -82,13 +82,13 @@ struct AddMenuView: View {
         .dismissKeyboardToolbar()
         .sheet(isPresented: Binding(
             get: { isPresentingManualAdd },
-            set: { isPresentingManualAdd = $0; appState.isPresentingSheet = $0 }
+            set: { isPresentingManualAdd = $0 }
         )) {
             NavigationStack { JobDetailView(job: nil) }
         }
         .sheet(isPresented: Binding(
             get: { isPresentingParsedJob },
-            set: { isPresentingParsedJob = $0; appState.isPresentingSheet = $0 }
+            set: { isPresentingParsedJob = $0 }
         )) {
             NavigationStack {
                 JobDetailView(
@@ -102,7 +102,7 @@ struct AddMenuView: View {
         }
         .sheet(isPresented: Binding(
             get: { isPresentingImport },
-            set: { isPresentingImport = $0; appState.isPresentingSheet = $0 }
+            set: { isPresentingImport = $0 }
         )) {
             CSVImportPreviewSheet(initialRows: csvImportRows)
         }
@@ -117,36 +117,20 @@ struct AddMenuView: View {
             guard let content = try? String(contentsOf: url, encoding: .utf8) else { return }
             csvImportRows = CSVImporter.parse(content)
             isPresentingImport = true
-            appState.isPresentingSheet = true
         }
         .task(id: vm.editCompany) {
             await vm.fetchLogo(isDark: colorScheme == .dark)
-        }
-        .onChange(of: appState.shouldResetAddMenu) { _, newValue in
-            if newValue {
-                withAnimation(.appSmooth) {
-                    isShowingPasteLink = false
-                    isShowingEmailParse = false
-                    vm.reset()
-                }
-                appState.shouldResetAddMenu = false
-            }
         }
     }
 
     private var addHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Add a Job")
-                .appFont(40, weight: .heavy)
+                .appFont(34, weight: .bold)
                 .foregroundStyle(Theme.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
 
-            Text("Capture the messy parts fast, then clean them up when you have breathing room.")
-                .appFont(14, weight: .medium)
-                .foregroundStyle(Theme.textSecondary)
-                .lineSpacing(2)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
@@ -177,7 +161,7 @@ struct AddMenuView: View {
                     subtitle: "Extract details from an email.",
                     isProminent: true
                 ) {
-                    Image(systemName: "chevron.down")
+                    AppIcon("chevron.down")
                         .appFont(12, weight: .bold)
                         .foregroundStyle(Theme.textSecondary.opacity(0.55))
                         .frame(width: 28, height: 28)
@@ -203,7 +187,7 @@ struct AddMenuView: View {
                                         }
                                     } label: {
                                         HStack(spacing: 4) {
-                                            Image(systemName: "pencil")
+                                            AppIcon("pencil")
                                                 .appFont(10, weight: .semibold)
                                             Text("Edit")
                                                 .font(.caption.weight(.semibold))
@@ -235,7 +219,7 @@ struct AddMenuView: View {
                                     HStack(spacing: 4) {
                                         Text(vm.isHighlightExpanded ? "Show less" : "Show full email")
                                             .font(.caption.weight(.medium))
-                                        Image(systemName: vm.isHighlightExpanded ? "chevron.up" : "chevron.down")
+                                        AppIcon(vm.isHighlightExpanded ? "chevron.up" : "chevron.down")
                                             .font(.caption2.weight(.semibold))
                                     }
                                     .foregroundStyle(Color.accentColor.opacity(0.85))
@@ -262,10 +246,10 @@ struct AddMenuView: View {
                             }
                             .padding(12)
                             .background {
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
                                     .fill(Color.primary.opacity(0.05))
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        RoundedRectangle(cornerRadius: 20, style: .continuous)
                                                 .strokeBorder(
                                                 isEmailEditorFocused ? emailAccent.opacity(0.55) : Color.primary.opacity(0.08),
                                                 lineWidth: isEmailEditorFocused ? 1.5 : 1
@@ -283,13 +267,13 @@ struct AddMenuView: View {
                                     Spacer()
                                     ZStack {
                                         Circle()
-                                            .fill(.white.opacity(0.16))
+                                            .fill(Theme.textOnPrimary.opacity(0.16))
                                             .frame(width: 28, height: 28)
-                                        Image(systemName: vm.hasResult ? "arrow.clockwise" : "sparkles")
+                                        AppIcon(vm.hasResult ? "arrow.clockwise" : "sparkles")
                                             .appFont(11, weight: .bold)
                                     }
                                 }
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Theme.textOnPrimary)
                                 .padding(.leading, 20)
                                 .padding(.trailing, 8)
                                 .frame(maxWidth: .infinity)
@@ -370,7 +354,7 @@ struct AddMenuView: View {
                 ))
             }
         }
-        .glassCard(cornerRadius: Theme.cardRadius)
+        .surface(cornerRadius: Theme.cardRadius)
         .overlay(
             RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
                 .strokeBorder(Color.primary.opacity(isShowingEmailParse ? 0.15 : 0.0), lineWidth: 1)
@@ -404,7 +388,7 @@ struct AddMenuView: View {
                     subtitle: "Auto-extract company and role.",
                     isProminent: true
                 ) {
-                    Image(systemName: "chevron.down")
+                    AppIcon("chevron.down")
                         .appFont(12, weight: .bold)
                         .foregroundStyle(Theme.textSecondary.opacity(0.55))
                         .frame(width: 28, height: 28)
@@ -439,13 +423,13 @@ struct AddMenuView: View {
                         } label: {
                             Group {
                                 if isParsing {
-                                    ProgressView().tint(.white)
+                                    ProgressView().tint(Theme.textOnPrimary)
                                 } else {
                                     Text("Parse")
                                 }
                             }
                             .appFont(15, weight: .bold)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Theme.textOnPrimary)
                             .frame(width: 72, height: 44)
                             .background(pasteLinkURL.isEmpty ? Color.secondary.opacity(0.3) : linkAccent)
                             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -460,7 +444,7 @@ struct AddMenuView: View {
 
                     if showLinkedInError {
                         HStack(alignment: .top, spacing: 10) {
-                            Image(systemName: "exclamationmark.triangle.fill")
+                            AppIcon("exclamationmark.triangle.fill")
                                 .appFont(14)
                                 .foregroundStyle(Color.orange)
 
@@ -490,7 +474,7 @@ struct AddMenuView: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .glassCard(cornerRadius: Theme.cardRadius)
+        .surface(cornerRadius: Theme.cardRadius)
         .overlay(
             RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
                 .strokeBorder(Color.primary.opacity(isShowingPasteLink ? 0.15 : 0.0), lineWidth: 1)
@@ -503,13 +487,13 @@ struct AddMenuView: View {
     private func actionCard(title: String, subtitle: String, icon: String, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             CardRowHeader(icon: icon, iconColor: color, title: title, subtitle: subtitle) {
-                Image(systemName: "chevron.right")
+                AppIcon("chevron.right")
                     .appFont(12, weight: .bold)
                     .foregroundStyle(Theme.textSecondary.opacity(0.55))
                     .frame(width: 28, height: 28)
                     .background(Circle().fill(Color.primary.opacity(0.06)))
             }
-            .glassCard(cornerRadius: Theme.cardRadius)
+            .surface(cornerRadius: Theme.cardRadius)
         }
         .buttonStyle(PressScaleButtonStyle())
     }
@@ -543,5 +527,49 @@ struct AddMenuView: View {
                 }
             }
         }
+    }
+}
+
+/// Reusable header row used by expandable and action cards.
+/// Renders a tinted icon circle, title, subtitle, and an arbitrary trailing view.
+struct CardRowHeader<Trailing: View>: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let subtitle: String
+    var isProminent: Bool = false
+    @ViewBuilder let trailing: () -> Trailing
+
+    var body: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(iconColor.opacity(isProminent ? 0.18 : 0.15))
+                    .frame(width: isProminent ? 56 : 48, height: isProminent ? 56 : 48)
+                AppIcon(icon)
+                    .appFont(isProminent ? 24 : 20, weight: .semibold)
+                    .foregroundStyle(iconColor)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .appFont(isProminent ? 18 : 17, weight: .semibold)
+                    .foregroundStyle(Theme.textPrimary)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+                Text(subtitle)
+                    .appFont(13, weight: .medium)
+                    .foregroundStyle(Theme.textSecondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer()
+
+            trailing()
+        }
+        .padding(20)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
     }
 }

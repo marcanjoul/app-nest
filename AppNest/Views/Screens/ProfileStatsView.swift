@@ -89,7 +89,7 @@ struct ProfileStatsView: View {
         .safeAreaInset(edge: .top, spacing: 0) {
             HStack {
                 Button { dismiss() } label: {
-                    Image(systemName: "chevron.left")
+                    AppIcon("chevron.left")
                         .appFont(14, weight: .semibold)
                         .foregroundStyle(Theme.textPrimary)
                         .frame(width: 40, height: 40)
@@ -127,7 +127,7 @@ struct ProfileStatsView: View {
     private var summarySection: some View {
         VStack(spacing: 14) {
             HStack {
-                Label("Summary", systemImage: "chart.bar.xaxis")
+                AppLabel("Summary", systemImage: "chart.bar.xaxis")
                     .appFont(15, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                 Spacer()
@@ -166,13 +166,13 @@ struct ProfileStatsView: View {
             }
         }
         .padding(18)
-        .glassCard()
+        .surface()
     }
 
     private var statusBreakdownSection: some View {
         VStack(spacing: 14) {
             HStack {
-                Label("Status Breakdown", systemImage: "list.bullet.rectangle")
+                AppLabel("Status Breakdown", systemImage: "list.bullet.rectangle")
                     .appFont(15, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                 Spacer()
@@ -190,7 +190,7 @@ struct ProfileStatsView: View {
             }
         }
         .padding(18)
-        .glassCard()
+        .surface()
     }
 
     private var funnelSection: some View {
@@ -200,7 +200,7 @@ struct ProfileStatsView: View {
 
         return VStack(spacing: 14) {
             HStack {
-                Label("Conversion Funnel", systemImage: "arrow.down.right.circle")
+                AppLabel("Conversion Funnel", systemImage: "arrow.down.right.circle")
                     .appFont(15, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                 Spacer()
@@ -243,13 +243,13 @@ struct ProfileStatsView: View {
             .padding(.top, 4)
         }
         .padding(18)
-        .glassCard()
+        .surface()
     }
 
     private var topCompaniesSection: some View {
         VStack(spacing: 14) {
             HStack {
-                Label("Top Companies", systemImage: "building.2.fill")
+                AppLabel("Top Companies", systemImage: "building.2.fill")
                     .appFont(15, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                 Spacer()
@@ -267,14 +267,14 @@ struct ProfileStatsView: View {
             }
         }
         .padding(18)
-        .glassCard()
+        .surface()
     }
 
     // MARK: - Empty state
 
     private var emptyState: some View {
         VStack(spacing: 14) {
-            Image(systemName: "chart.bar.xaxis")
+            AppIcon("chart.bar.xaxis")
                 .appFont(44, weight: .semibold)
                 .foregroundStyle(Theme.textSecondary.opacity(0.5))
             Text("No insights yet")
@@ -306,11 +306,11 @@ private struct StatsKPITile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
-                Image(systemName: icon)
+                AppIcon(icon)
                     .appFont(10, weight: .bold)
                 Text(label.uppercased())
                     .appFont(10, weight: .bold)
-                    .tracking(0.5)
+                    .tracking(0)
             }
             .foregroundStyle(tint)
 
@@ -321,10 +321,10 @@ private struct StatsKPITile: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
         .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(Color.primary.opacity(0.04))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
                 )
         }
@@ -383,7 +383,7 @@ private struct FunnelRow: View {
                 Circle()
                     .fill(tint.opacity(0.12))
                     .frame(width: 32, height: 32)
-                Image(systemName: icon)
+                AppIcon(icon)
                     .appFont(13, weight: .bold)
                     .foregroundStyle(tint)
             }
