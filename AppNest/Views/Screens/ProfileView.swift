@@ -55,9 +55,11 @@ struct ProfileView: View {
         return String(first).uppercased()
     }
 
+    /// Keyed off the initial, not the full name: hashing the whole string reshuffled the
+    /// colour on every keystroke while typing. The avatar only ever shows one letter, so
+    /// the colour should settle as soon as that letter does.
     private var avatarColorKey: String {
-        let trimmed = profileDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "AppNest" : trimmed
+        profileInitial.isEmpty ? "AppNest" : profileInitial
     }
 
     // MARK: - Pipeline data
@@ -432,14 +434,6 @@ struct ProfileView: View {
                         .appFont(15, weight: .medium)
                 }
                 .padding(.vertical, 4)
-
-                let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
-                let build   = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
-                Text("AppNest \(version) (\(build))")
-                    .appFont(11, weight: .medium)
-                    .foregroundStyle(Theme.textTertiary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 4)
             }
             .padding(18)
             .surface()

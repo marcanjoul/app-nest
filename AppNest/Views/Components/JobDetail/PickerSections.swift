@@ -44,23 +44,40 @@ private struct ChoiceSection<Option: Hashable & RawRepresentable>: View where Op
     let symbol: (Option) -> String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// The selected pill moves to the head of the row so the current choice is always the
+    /// one you can see, however far down `allCases` it sits.
+    private var orderedOptions: [Option] {
+        guard let selected = selection else { return options }
+        return [selected] + options.filter { $0 != selected }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionLabel(icon: icon, title: title, isRequired: isRequired)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(options, id: \.self) { option in
-                        SelectablePill(option: option, isSelected: option == selection,
-                                       color: color(option), icon: symbol(option)) {
-                            withAnimation(reduceMotion ? nil : .appCrisp) {
-                                selection = selection == option ? nil : option
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(orderedOptions, id: \.self) { option in
+                            SelectablePill(option: option, isSelected: option == selection,
+                                           color: color(option), icon: symbol(option)) {
+                                withAnimation(reduceMotion ? nil : .appCrisp) {
+                                    selection = selection == option ? nil : option
+                                }
+                                AppHaptics.shared.light()
                             }
-                            AppHaptics.shared.light()
+                            .id(option)
                         }
                     }
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 2)
                 }
-                .padding(.vertical, 4)
-                .padding(.horizontal, 2)
+                // Reordering alone leaves the row scrolled wherever the tap happened.
+                .onChange(of: selection) { _, _ in
+                    guard let first = orderedOptions.first else { return }
+                    withAnimation(reduceMotion ? nil : .appSmooth) {
+                        proxy.scrollTo(first, anchor: .leading)
+                    }
+                }
             }
         }
         .padding(isEmbedded ? 12 : 16)

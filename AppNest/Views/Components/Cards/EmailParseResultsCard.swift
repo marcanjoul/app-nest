@@ -9,6 +9,20 @@ struct EmailParseResultsCard: View {
     let onSave: () -> Void
     let onCancel: () -> Void
 
+    @State private var showOptionalFields = false
+
+    /// A parsed email fills company/position/status and little else, so the optional
+    /// sections below are usually empty boxes the user has to scroll past. Show them
+    /// only when the parser actually found something — or when asked.
+    private var hasOptionalContent: Bool {
+        vm.editCompensationKind != nil
+        || vm.editCompensationAmount != nil
+        || vm.editAttachedResume != nil
+        || !vm.editNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        || !vm.editJobURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        || isInterviewStage
+    }
+
     private var compensationAmountBinding: Binding<String> {
         Binding(
             get: {
@@ -43,6 +57,9 @@ struct EmailParseResultsCard: View {
         }
         .padding(18)
         .surface()
+        // A fresh parse starts collapsed again. Lives here rather than on `formFields`,
+        // whose .id(parseCount) tears that subtree down before onChange could fire.
+        .onChange(of: vm.parseCount) { _, _ in showOptionalFields = false }
         .transition(.asymmetric(
             insertion: .move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.95)),
             removal: .opacity
@@ -161,8 +178,34 @@ struct EmailParseResultsCard: View {
                 reminderTime: $vm.editReminderTime,
                 isEmbedded: true
             )
-            JobLinkSection(jobURL: $vm.editJobURL, isEmbedded: true)
+            if showOptionalFields || hasOptionalContent {
+                optionalSections
+            } else {
+                Button {
+                    withAnimation(.appSmooth) { showOptionalFields = true }
+                    AppHaptics.shared.light()
+                } label: {
+                    AppLabel("Add more details", systemImage: "plus.circle")
+                        .appFont(14, weight: .semibold)
+                        .foregroundStyle(Color.accentColor)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 10)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .animation(.appSmooth, value: isSeasonAllowed)
+        .animation(.appSmooth, value: isInterviewStage)
+        .animation(.appSmooth, value: showOptionalFields || hasOptionalContent)
+        .onChange(of: vm.editJobType) { _, _ in
+            if !isSeasonAllowed { vm.editSeason = nil }
+        }
+        .id(vm.parseCount)
+    }
 
+    private var optionalSections: some View {
+        VStack(spacing: 12) {
+            JobLinkSection(jobURL: $vm.editJobURL, isEmbedded: true)
             Group {
                 CompensationSection(
                     kind: $vm.editCompensationKind,
@@ -195,12 +238,10 @@ struct EmailParseResultsCard: View {
             }
             .padding(.top, 4)
         }
-        .animation(.appSmooth, value: isSeasonAllowed)
-        .animation(.appSmooth, value: isInterviewStage)
-        .onChange(of: vm.editJobType) { _, _ in
-            if !isSeasonAllowed { vm.editSeason = nil }
-        }
-        .id(vm.parseCount)
+        .transition(.asymmetric(
+            insertion: .opacity.combined(with: .move(edge: .top)),
+            removal: .opacity
+        ))
     }
 
     private var actionButtons: some View {
