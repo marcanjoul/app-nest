@@ -120,7 +120,7 @@ final class EmailParseViewModel {
                 self.editPosition = result.position ?? ""
                 self.editJobType = result.jobType
                 self.editStatus = result.status ?? .applied
-                self.editSeason = nil
+                self.editSeason = result.season
                 self.editDate = result.dateApplied
                 self.editCompensationKind = nil
                 self.editCompensationAmount = nil

@@ -22,6 +22,7 @@ struct EmailParser {
         var position: String?
         var jobType: ApplicationType?
         var status: ApplicationStatus?
+        var season: ApplicationSeason?
         var dateApplied: Date?
         var highlights: [HighlightSpan] = []
     }
@@ -31,6 +32,7 @@ struct EmailParser {
         result.companyName = extractCompanyName(from: emailText)
         result.position    = extractPosition(from: emailText)
         result.jobType     = extractJobType(from: emailText)
+        result.season      = extractSeason(from: emailText)
 
         let (status, statusPhrase) = extractStatusAndPhrase(from: emailText)
         result.status = status
@@ -87,6 +89,10 @@ struct EmailParser {
             #"(?:welcome to|offer from)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
             // "career/opportunity at Company" — catches "interest in a career at Norstella"
             #"(?:career|opportunity)\s+at\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
+            // Sign-off line: "The Waymo Team" / "The Yara team". High precision, and often the
+            // only clean mention in emails where NER mis-tags something else (e.g. "BS/MS").
+            // Requires the leading "The" — "JPMorganChase Talent Team" would capture the filler word.
+            #"(?:^|\n)\s*The\s+([A-Z][A-Za-z0-9&\.]+(?:\s+[A-Z][A-Za-z0-9&\.]+){0,2})\s+Team\b"#,
             // "interest in Company" — but NOT "interest in joining" (handled by pattern above)
             // Terminators include \s+and\b and \s+for\b to prevent over-capture into surrounding sentence
             // (e.g. "your interest in Pindrop and for the time..." → stops at "and")
@@ -123,7 +129,8 @@ struct EmailParser {
                     cleaned = String(cleaned[m.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
                 }
 
-                cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+                cleaned = stripCollectiveSuffix(cleaned)
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
                 if !cleaned.isEmpty && cleaned.count < 100 {
                     return cleaned
                 }
@@ -165,21 +172,44 @@ struct EmailParser {
                 && !positionKeywords.contains(where: { lower.contains($0) })
         }
 
-        return filtered.sorted(by: { $0.value > $1.value }).first?.key
+        return filtered.sorted(by: { $0.value > $1.value }).first
+            .map { stripCollectiveSuffix($0.key) }
+    }
+
+    /// Drops trailing collective nouns: "role in the Yara Network" names the company Yara.
+    /// NLTagger in particular joins these into the entity because they read as company suffixes.
+    // ponytail: a suffix list, not real disambiguation — a company genuinely named
+    // "<Word> Network" (Cartoon Network) loses its second word. Swap in a lookup against
+    // known company names if that ever bites.
+    private func stripCollectiveSuffix(_ name: String) -> String {
+        let suffixes = [" talent network", " talent community", " talent pool",
+                        " network", " team", " careers", " recruiting", " recruitment"]
+        var s = name
+        for suffix in suffixes where s.lowercased().hasSuffix(suffix) {
+            let trimmed = String(s.dropLast(suffix.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+            // Only strip when a name survives — "Network" alone is all we have.
+            if !trimmed.isEmpty { s = trimmed }
+            break
+        }
+        return s
     }
 
     // MARK: - Position Title
 
     private func extractPosition(from text: String) -> String? {
+        // ATS emails ("your application for the position listed below") put the title on its
+        // own line. The generic patterns below capture the sentence instead, so check first.
+        if let listed = positionFromLineBelow(text) { return listed }
+
         let patterns = [
             // "apply/application/applied/applying for/to the [POSITION] position/role/opportunity/opening" (More specific, terminates on position/role/opportunity/opening keyword)
-            #"(?:\bapply\b|application|applied|applying)\s+(?:for|to)\s+(?:the\s+|our\s+|a\s+|an\s+)?(.+?)\s+(?:position|role|opportunity|opening)\b"#,
+            #"(?:\bapply\b|application|applied|applying)\s+(?:for|to)\s+(?:the\s+|our\s+|a\s+|an\s+)?([^.\n]+?)\s+(?:position|role|opportunity|opening)\b"#,
             
             // "application/applied/applying/apply for/to [POSITION] at/with Company" (More specific, terminates at company context)
-            #"(?:\bapply\b|application|applied|applying)\s+for\s+(?:the\s+|our\s+|a\s+|an\s+)?(.+?)\s+(?:at|with|@)\s+"#,
+            #"(?:\bapply\b|application|applied|applying)\s+for\s+(?:the\s+|our\s+|a\s+|an\s+)?([^.\n]+?)\s+(?:at|with|@)\s+"#,
 
             // "application/applied/applying/apply for/to [POSITION]" (Less specific fallback, terminates at sentence end or other markers)
-            #"(?:\bapply\b|application|applied|applying)\s+(?:for|to)\s+(?:the\s+|our\s+|a\s+|an\s+)?(.+?)(?:\s+(?:position|role|opportunity|opening)\b|\s+(?:at|@)\s+|\s+with\s+(?=[A-Z])|\s+and\s+(?=(?:we|i|they|the|our|a|an|you)\b)|[.,\n]|$)"#,
+            #"(?:\bapply\b|application|applied|applying)\s+(?:for|to)\s+(?:the\s+|our\s+|a\s+|an\s+)?([^.\n]+?)(?:\s+(?:position|role|opportunity|opening)\b|\s+(?:at|@)\s+|\s+with\s+(?=[A-Z])|\s+and\s+(?=(?:we|i|they|the|our|a|an|you)\b)|[.,\n]|$)"#,
             
             // "vacancy/opening for [the/our/a] [POSITION] role/position/opportunity/opening"
             #"(?:vacancy|opening)\s+for\s+(?:the\s+|our\s+|a\s+|an\s+)?(.+?)\s+(?:role|position|opportunity|opening)"#,
@@ -218,6 +248,36 @@ struct EmailParser {
         return nil
     }
 
+    /// Pulls the title off its own line when the body points at it ("the position listed below").
+    // ponytail: takes the first non-empty line after the marker's paragraph. An email that puts
+    // something else there (a greeting, a divider) gets it wrong — tighten with a keyword check
+    // on the line if that shows up.
+    private func positionFromLineBelow(_ text: String) -> String? {
+        let markers = ["position listed below", "role listed below", "job listed below",
+                       "positions listed below", "position(s) listed below",
+                       "position below", "role below"]
+        let lowered = text.lowercased()
+        guard let marker = markers.compactMap({ lowered.range(of: $0)?.upperBound }).min() else { return nil }
+
+        // Skip the rest of the marker's own line, then take the first line with content.
+        let rest = text[marker...]
+        let followingLines = rest.split(separator: "\n", omittingEmptySubsequences: false).dropFirst()
+        guard let line = followingLines
+            .map({ $0.trimmingCharacters(in: .whitespacesAndNewlines) })
+            .first(where: { !$0.isEmpty })
+        else { return nil }
+
+        // Titles arrive with qualifiers appended: "X - Full-Time - United States - July Start 210774111"
+        let title = line
+            .components(separatedBy: CharacterSet(charactersIn: "|\u{2013}\u{2014}"))[0]
+            .components(separatedBy: " - ")[0]
+        let cleaned = cleanupPosition(cleaned: title)
+
+        guard cleaned.count >= 2, cleaned.count < 100,
+              cleaned.rangeOfCharacter(from: .letters) != nil else { return nil }
+        return cleaned
+    }
+
     private func cleanupPosition(cleaned raw: String) -> String {
         var s = raw
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -250,6 +310,8 @@ struct EmailParser {
         // Strip job requisition IDs (e.g. "(JOB212131)", "(REQ-4892)", or standing alone like "R160469")
         let idPatterns = [
             #"\s*\([A-Z]{2,}[-]?\d+\)"#,      // (REQ-123)
+            // (?i) — the loop below runs case-sensitively so the [A-Z] patterns keep their meaning.
+            #"(?i)\s*\((?:job|req|requisition|posting)\s*(?:number|no\.?|id|#)?\s*:?\s*[A-Za-z0-9-]+\)"#,  // (Job number: 200049019)
             #"^[A-Z]\d{5,}\s+"#,              // R160469 at start
             #"\s+-\s+[A-Z]\d{5,}"#,           // - R160469 at end
             #"^\d{4,}\s+"#                    // 2026 or similar years/IDs at start
@@ -278,7 +340,8 @@ struct EmailParser {
             (.internship, ["intern ", "internship", " intern\n", " intern,", " intern."]),
             (.Co_op,      ["co-op", "co op", "coop"]),
             (.partTime,   ["part-time", "part time"]),
-            (.fullTime,   ["full-time", "full time"]),
+            (.fullTime,   ["full-time", "full time", "new grad", "new graduate",
+                           "new-grad", "entry level", "entry-level"]),
             (.contract,   ["contract position", "contract role", "contractor"]),
             (.temporary,  ["temporary position", "temporary role", "temp position"]),
         ]
@@ -299,12 +362,36 @@ struct EmailParser {
         return nil
     }
 
+    // MARK: - Season
+
+    private func extractSeason(from text: String) -> ApplicationSeason? {
+        let lowered = text.lowercased()
+
+        // Ordered by confidence. "fall" is a common English verb ("if your skills fall short"),
+        // so it never matches on the bare word — only next to a year or a program noun.
+        let contextual = #"(?:20\d{2}\s+)?\#(seasonAlternation)(?:\s+(?:of\s+)?20\d{2}|\s+(?:intern|internship|analyst|associate|program|term|semester|co-op|start|cohort))"#
+        let bareWord   = #"\b(summer|spring|winter)\b"#
+
+        for pattern in [contextual, bareWord] {
+            guard let range = lowered.range(of: pattern, options: .regularExpression) else { continue }
+            let match = String(lowered[range])
+            // ponytail: first season word in the match wins — an email naming two seasons
+            // ("Summer 2027, not Fall") picks the wrong one. Rare enough to wait for.
+            if let season = ApplicationSeason.allCases.first(where: { match.contains($0.rawValue.lowercased()) }) {
+                return season
+            }
+        }
+        return nil
+    }
+
+    private var seasonAlternation: String {
+        "(" + ApplicationSeason.allCases.map { $0.rawValue.lowercased() }.joined(separator: "|") + ")"
+    }
+
     // MARK: - Status
 
     private func extractStatusAndPhrase(from text: String) -> (ApplicationStatus, String?) {
         let lowered = text.lowercased()
-
-        let conditionalPrefixes = ["if you are ", "if you're ", "in case you ", "should you "]
 
         let statusPatterns: [(ApplicationStatus, [String])] = [
             (.offer, [
@@ -341,50 +428,52 @@ struct EmailParser {
         ]
 
         for (status, phrases) in statusPatterns {
-            for phrase in phrases {
-                if lowered.contains(phrase) {
-                    if status == .rejected {
-                        let isConditional = conditionalPrefixes.contains { conditional in
-                            if let condRange  = lowered.range(of: conditional),
-                               let phraseRange = lowered.range(of: phrase) {
-                                let sentenceStart = lowered[..<phraseRange.lowerBound]
-                                    .lastIndex(of: ".") ?? lowered.startIndex
-                                return condRange.lowerBound >= sentenceStart
-                                    && condRange.lowerBound < phraseRange.lowerBound
-                            }
-                            return false
-                        }
-                        if isConditional { continue }
-                    }
-                    // "phone screen", "technical interview" etc. appearing in a process
-                    // description ("our process involves a phone screen") are not status signals.
-                    if status == .interview {
-                        let processDescriptionPhrases = [
-                            "process includes", "process involves",
-                            "stages include", "stages involving", "stages including",
-                            "typically involves", "typically includes",
-                            "steps include", "steps are"
-                        ]
-                        let isProcessDescription = processDescriptionPhrases.contains { desc in
-                            guard let descRange   = lowered.range(of: desc),
-                                  let phraseRange = lowered.range(of: phrase) else { return false }
-                            let sentenceStart: String.Index
-                            if let dot = lowered[..<phraseRange.lowerBound].lastIndex(of: ".") {
-                                sentenceStart = lowered.index(after: dot)
-                            } else {
-                                sentenceStart = lowered.startIndex
-                            }
-                            return descRange.lowerBound >= sentenceStart
-                                && descRange.upperBound <= phraseRange.lowerBound
-                        }
-                        if isProcessDescription { continue }
-                    }
-                    return (status, phrase)
-                }
+            for phrase in phrases where lowered.contains(phrase) {
+                // "If you're selected for an interview, you'll be notified" describes what
+                // *might* happen — same for "if you are not moving forward".
+                if isHypothetical(phrase: phrase, in: lowered) { continue }
+
+                // "phone screen", "technical interview" etc. appearing in a process
+                // description ("our process involves a phone screen") are not status signals.
+                if status == .interview, isProcessDescription(phrase: phrase, in: lowered) { continue }
+
+                return (status, phrase)
             }
         }
 
         return (.applied, nil)
+    }
+
+    /// True when a conditional ("if you're …") opens the same clause as the matched phrase.
+    /// Clause, not sentence: "If you are available next week, we would like to schedule an
+    /// interview" is a real invitation, and the comma is what separates the two cases.
+    private func isHypothetical(phrase: String, in lowered: String) -> Bool {
+        let conditionals = ["if you are ", "if you're ", "if you\u{2019}re ", "in case you ", "should you ",
+                            "if we ", "if your ", "unless you "]
+        guard let phraseRange = lowered.range(of: phrase) else { return false }
+        let sentenceStart = lowered[..<phraseRange.lowerBound].lastIndex(of: ".")
+            .map { lowered.index(after: $0) } ?? lowered.startIndex
+
+        return conditionals.contains { conditional in
+            guard let condRange = lowered.range(of: conditional, range: sentenceStart..<phraseRange.lowerBound)
+            else { return false }
+            // A comma between the two means the conditional governs an earlier clause.
+            return !lowered[condRange.upperBound..<phraseRange.lowerBound].contains(",")
+        }
+    }
+
+    private func isProcessDescription(phrase: String, in lowered: String) -> Bool {
+        let descriptions = ["process includes", "process involves",
+                            "stages include", "stages involving", "stages including",
+                            "typically involves", "typically includes",
+                            "steps include", "steps are"]
+        guard let phraseRange = lowered.range(of: phrase) else { return false }
+        let sentenceStart = lowered[..<phraseRange.lowerBound].lastIndex(of: ".")
+            .map { lowered.index(after: $0) } ?? lowered.startIndex
+
+        return descriptions.contains { desc in
+            lowered.range(of: desc, range: sentenceStart..<phraseRange.lowerBound) != nil
+        }
     }
 
     // MARK: - Date (NSDataDetector)
