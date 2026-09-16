@@ -71,7 +71,7 @@ struct EmailParser {
             // "applied to [POSITION] at Company" — skip past the position title to find the company
             #"(?:apply|applied|applying)\s+(?:to|for)\s+.+?\s+at\s+([A-Z][A-Za-z0-9&®\s\.]+?)(?:\s+on\b|\s+via\b|\s+through\b|\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
             // "apply/applied/applying to/at Company" — negative lookahead skips articles that precede position titles
-            #"(?:apply|applied|applying)\s+(?:to|at|for)\s+(?!the\b|a\b|an\b)([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+through\b|\s+via\b|\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
+            #"(?:apply|applied|applying)\s+(?:to|at|for)\s+(?!the\b|a\b|an\b)([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+on\b|\s+through\b|\s+via\b|\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
             // "application to Company" — acknowledgment emails ("submit an application to Snackpass")
             #"(?:application|applying|applied)\s+to\s+([A-Z][A-Za-z0-9&\.]+(?:\s+[A-Z][A-Za-z0-9&\.]+){0,2})(?:'s)?\b"#,
             // "about Company and" — rejection emails ("learn more about Intuitive and the...")
