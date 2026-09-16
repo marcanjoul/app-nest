@@ -137,6 +137,21 @@ struct DarkJobCardView: View {
 
     private var initial: String { String(job.companyName.prefix(1)).uppercased() }
 
+    #if canImport(UIKit)
+    // ponytail: UIImage(data:) decodes on every body pass — cache it. Key includes byte
+    // count so a replaced logo for the same company still invalidates.
+    private static let decodedLogos = NSCache<NSString, UIImage>()
+
+    private var logoImage: UIImage? {
+        guard let data = job.companyLogoImageData else { return nil }
+        let key = "\(job.companyName)-\(data.count)" as NSString
+        if let cached = Self.decodedLogos.object(forKey: key) { return cached }
+        guard let ui = UIImage(data: data) else { return nil }
+        Self.decodedLogos.setObject(ui, forKey: key)
+        return ui
+    }
+    #endif
+
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
             avatarView
@@ -220,7 +235,7 @@ struct DarkJobCardView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(16)
-        .glassCard(cornerRadius: Theme.cardRadius, fillOpacity: 1.0)
+        .glassCard(cornerRadius: Theme.cardRadius)
         .task(id: job.companyName) {
             guard job.companyLogoImageData == nil else { return }
             let trimmed = job.companyName.trimmingCharacters(in: .whitespaces)
@@ -245,7 +260,7 @@ struct DarkJobCardView: View {
     @ViewBuilder
     private var avatarView: some View {
         #if canImport(UIKit)
-        if let data = job.companyLogoImageData, let ui = UIImage(data: data) {
+        if let ui = logoImage {
             Image(uiImage: ui)
                 .resizable()
                 .scaledToFill()

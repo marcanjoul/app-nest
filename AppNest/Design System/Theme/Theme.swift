@@ -33,7 +33,7 @@ enum Theme {
 
     static let cardFill: Color = Color(UIColor { trait in
         trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.11, green: 0.11, blue: 0.12, alpha: 0.85)
+            ? UIColor(red: 0.105, green: 0.108, blue: 0.115, alpha: 1.0)
             : UIColor.secondarySystemGroupedBackground
     })
 

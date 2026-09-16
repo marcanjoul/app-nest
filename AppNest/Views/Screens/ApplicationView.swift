@@ -2,13 +2,6 @@ import SwiftUI
 import SwiftData
 import UIKit
 
-struct ScrollOffsetPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
 enum SortOption: String, CaseIterable {
     case dateNewest = "Newest"
     case dateOldest = "Oldest"
@@ -45,8 +38,6 @@ struct ApplicationView: View {
     @State private var selectedJobIDs = Set<PersistentIdentifier>()
     @State private var isEditMode = false
     @State private var isConfirmingBulkDelete = false
-    @State private var lastScrollOffset: CGFloat = 0
-    @State private var initialScrollOffset: CGFloat? = nil
 
     // Import / Export
     @State private var csvImportPreview: [CSVImportRow]? = nil
@@ -112,6 +103,9 @@ struct ApplicationView: View {
     }
 
     var body: some View {
+        // ponytail: filter+sort is O(n log n) — bind once per body pass, not once per use site
+        let rows = filteredAndSorted
+
         ZStack {
             // Adaptive ambient gradient background
             AmbientBackground()
@@ -126,7 +120,7 @@ struct ApplicationView: View {
                             .foregroundStyle(Theme.textPrimary)
 
                         if !searchText.isEmpty {
-                            Text("\(filteredAndSorted.count) results")
+                            Text("\(rows.count) results")
                                 .appFont(13, weight: .bold)
                                 .foregroundStyle(Color.accentColor)
                                 .transition(.opacity.combined(with: .move(edge: .leading)))
@@ -135,15 +129,6 @@ struct ApplicationView: View {
                     .padding(.top, 16)
 
                 }
-                .background(
-                    GeometryReader { geo in
-                        Color.clear
-                            .preference(
-                                key: ScrollOffsetPreferenceKey.self,
-                                value: geo.frame(in: .global).minY
-                            )
-                    }
-                )
                 .opacity(appState.dashboardHasAppeared ? 1 : 0)
                 .offset(y: appState.dashboardHasAppeared ? 0 : 20)
                 .animation(.appSmooth, value: appState.dashboardHasAppeared)
@@ -220,7 +205,7 @@ struct ApplicationView: View {
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .selectionDisabled()
-                } else if filteredAndSorted.isEmpty {
+                } else if rows.isEmpty {
                     noResultsState
                         .transition(.opacity.combined(with: .scale(scale: 0.95)).combined(with: .offset(y: 20)))
                         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
@@ -237,7 +222,7 @@ struct ApplicationView: View {
                             .transition(.move(edge: .top).combined(with: .opacity))
                     }
 
-                    ForEach(Array(filteredAndSorted.enumerated()), id: \.element.id) { index, job in
+                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, job in
                         JobCardSwipeRow(
                                 job: job,
                                 isEditMode: isEditMode,
@@ -267,7 +252,7 @@ struct ApplicationView: View {
                                 removal: .opacity.combined(with: .scale(scale: 0.97))
                             ))
                             .animation(.appSmooth.delay(Double(min(index, 6)) * 0.03), value: appState.dashboardHasAppeared)
-                            .animation(.appCrisp, value: filteredAndSorted.count)
+                            .animation(.appCrisp, value: rows.count)
                     }
                 }
 
@@ -288,38 +273,14 @@ struct ApplicationView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.interactively)
-            .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-                if initialScrollOffset == nil {
-                    initialScrollOffset = value
-                }
-                guard let initial = initialScrollOffset else { return }
-                let relativeOffset = value - initial
-                
-                let delta = value - lastScrollOffset
-                lastScrollOffset = value
-                
-                // If near the top, always expand
-                if relativeOffset > -15 {
-                    if appState.isDockCompact {
-                        withAnimation(.appSmooth) {
-                            appState.isDockCompact = false
-                        }
-                    }
-                } else if delta < -8 {
-                    // Scrolling down: make compact
-                    if !appState.isDockCompact {
-                        withAnimation(.appSmooth) {
-                            appState.isDockCompact = true
-                        }
-                    }
-                } else if delta > 8 {
-                    // Scrolling up: make expanded
-                    if appState.isDockCompact {
-                        withAnimation(.appSmooth) {
-                            appState.isDockCompact = false
-                        }
-                    }
-                }
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { old, new in
+                let compact: Bool
+                if new < 15 { compact = false }            // near the top: always expanded
+                else if new - old > 8 { compact = true }   // scrolling down
+                else if old - new > 8 { compact = false }  // scrolling up
+                else { return }
+                guard compact != appState.isDockCompact else { return }
+                withAnimation(.appSmooth) { appState.isDockCompact = compact }
             }
             .onChange(of: appState.scrollToTopTrigger) { _, _ in
                 withAnimation(.appSmooth) {

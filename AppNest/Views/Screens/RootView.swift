@@ -9,24 +9,27 @@ struct RootView: View {
         @Bindable var bindableAppState = appState
 
         ZStack(alignment: .bottom) {
-            ZStack {
+            // ponytail: was three NavigationStacks stacked with .opacity(0) — every tab's body
+            // re-evaluated on every state change. TabView renders only the selected tab and
+            // still keeps the others' state; its own bar is hidden in favour of NavigationDock.
+            TabView(selection: $bindableAppState.selectedTab) {
                 NavigationStack(path: $bindableAppState.navigationPath) {
                     ApplicationView()
                 }
-                .opacity(appState.selectedTab == 0 ? 1 : 0)
-                .disabled(appState.selectedTab != 0)
+                .toolbar(.hidden, for: .tabBar)
+                .tag(0)
 
                 NavigationStack {
                     AddMenuView()
                 }
-                .opacity(appState.selectedTab == 1 ? 1 : 0)
-                .disabled(appState.selectedTab != 1)
+                .toolbar(.hidden, for: .tabBar)
+                .tag(1)
 
                 NavigationStack {
                     ProfileView()
                 }
-                .opacity(appState.selectedTab == 2 ? 1 : 0)
-                .disabled(appState.selectedTab != 2)
+                .toolbar(.hidden, for: .tabBar)
+                .tag(2)
             }
             .animation(.none, value: appState.selectedTab)
 
