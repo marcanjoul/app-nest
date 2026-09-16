@@ -13,7 +13,7 @@ build/
 skills-lock.json
 .agents/skills/
 PRODUCT.md
-AppNest/APIKeys.swift
+AppNest/Core/APIKeys.swift
 .impeccable/critique/2026-05-17T18-04-33Z__appnest-views-applicationview-swift.md
 AppNest/App Nest Icon.icon/icon.json
 AppNest/Models/EmailParser.swift
