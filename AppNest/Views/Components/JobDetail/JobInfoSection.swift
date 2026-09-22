@@ -18,19 +18,13 @@ struct JobInfoSection: View {
     @State private var isFetchingLogo = false
     @State private var isLogoAutoFetched = false
 
-    private static let tintPalette: [Color] = [
-        Color(red: 0.36, green: 0.66, blue: 0.96),
-        Color(red: 0.96, green: 0.73, blue: 0.28),
-        Color(red: 0.30, green: 0.80, blue: 0.45),
-        Color(red: 0.93, green: 0.38, blue: 0.44),
-        Color(red: 0.62, green: 0.52, blue: 0.96),
-        Color(red: 0.96, green: 0.52, blue: 0.62),
-    ]
-
+    /// ponytail: was a local copy of Theme.avatarColors indexed by `abs(key.hashValue)`.
+    /// Swift seeds `hashValue` per process, so the logo changed colour on every launch and
+    /// disagreed with the job card behind it. Theme.avatarFill hashes the full company name
+    /// with Theme.stableHash, so detail and card now always match.
     private var accentTint: Color {
         let trimmed = companyName.trimmingCharacters(in: .whitespaces)
-        let key = trimmed.first.map { String($0).uppercased() } ?? "AppNest"
-        return Self.tintPalette[abs(key.hashValue) % Self.tintPalette.count]
+        return Theme.avatarFill(for: trimmed.isEmpty ? "AppNest" : trimmed)
     }
 
     private var logoImage: Image? {

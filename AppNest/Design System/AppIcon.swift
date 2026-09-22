@@ -136,6 +136,7 @@ struct AppIcon: View {
         "exclamationmark.circle.fill": "\u{e192}",
         "info.circle": "\u{e0fe}",
         "dollarsign.circle": "\u{e481}",
+        "banknote": "\u{e056}",
         "graduationcap.fill": "\u{e233}",
         "building.2.fill": "\u{e28f}",
         "moon.zzz.fill": "\u{e121}",

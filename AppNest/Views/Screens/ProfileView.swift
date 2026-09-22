@@ -548,11 +548,23 @@ private struct ActivityHeatmapView: View {
         }
     }
     
+    /// Blank cells before the first day so every column lands on a real calendar week.
+    /// `weekday` is 1-based from Sunday, so Sunday contributes no offset.
+    private var leadingBlanks: Int {
+        guard let first = last90Days.first else { return 0 }
+        return Calendar.current.component(.weekday, from: first) - 1
+    }
+
     var body: some View {
-        let columns = Array(repeating: GridItem(.fixed(10), spacing: 4), count: 7)
-        
+        // ponytail: LazyHGrid with 7 rows fills column-major, so one column == one week.
+        // LazyVGrid(columns: 7) filled row-major and stacked 90 days into a tall 7x13 block.
+        let rows = Array(repeating: GridItem(.fixed(10), spacing: 4), count: 7)
+
         VStack(alignment: .leading, spacing: 8) {
-            LazyVGrid(columns: columns, spacing: 4) {
+            LazyHGrid(rows: rows, spacing: 4) {
+                ForEach(0..<leadingBlanks, id: \.self) { _ in
+                    Color.clear.frame(width: 10, height: 10)
+                }
                 ForEach(last90Days, id: \.self) { date in
                     let count = dayStats[date, default: 0]
                     RoundedRectangle(cornerRadius: 2)
