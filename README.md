@@ -75,7 +75,7 @@ An iOS app for tracking job and internship applications, built with SwiftUI.
 | NLP / Parsing | Apple NaturalLanguage (NLTagger) + Regex + NSDataDetector |
 | Logo Lookup | Logo.dev API |
 | Architecture | Hybrid: `@Query` for reactive data + `@Observable` ViewModel for complex form state |
-| Design System | Adaptive light/dark theme — flat design |
+| Design System | Adaptive light/dark theme — flat content, Liquid Glass controls |
 | Accessibility | Dynamic Type via `@ScaledMetric`-backed `appFont()` modifier; 44pt minimum touch targets |
 
 ---
@@ -101,7 +101,7 @@ AppNest/
 
 ### Requirements
 
-- macOS with Xcode 16+ installed (iOS 17.0+ SDK)
+- macOS with Xcode 27+ installed (iOS 27.0+ SDK)
 - A [Logo.dev](https://logo.dev) account for automatic company logo fetching (free tier works)
 
 ### Setup
@@ -115,7 +115,7 @@ AppNest/
    }
    ```
    Logo.dev uses two separate keys — both are in your Logo.dev dashboard. `APIKeys.swift` is gitignored and should never be committed.
-3. Open `AppNest.xcodeproj` and run on an iOS 17+ simulator
+3. Open `AppNest.xcodeproj` and run on an iOS 27+ simulator
 
 ---
 

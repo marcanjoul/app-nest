@@ -115,11 +115,7 @@ struct EmailParserView: View {
                         .foregroundStyle(Color.accentColor)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
-                        .background(
-                            Capsule()
-                                .fill(Color.accentColor.opacity(0.10))
-                                .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1))
-                        )
+                        .glassEffect(.regular.tint(Color.accentColor.opacity(0.10)).interactive(), in: .capsule)
                     }
                     .buttonStyle(PressScaleButtonStyle())
                 } else if !vm.emailText.isEmpty {
@@ -225,10 +221,7 @@ struct EmailParserView: View {
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background {
-                        Capsule()
-                            .fill(vm.isParseDisabled ? Color.secondary.opacity(0.3) : Color.accentColor)
-                    }
+                    .glassEffect(.regular.tint(vm.isParseDisabled ? Color.secondary.opacity(0.3) : Color.accentColor).interactive(), in: .capsule)
                 }
                 .scaleEffect(vm.isButtonPressed ? AppAnimations.pressScale : 1.0)
                 .disabled(vm.isParseDisabled)

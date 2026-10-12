@@ -88,11 +88,7 @@ struct EditImportRowView: View {
                     .appFont(14, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                     .frame(width: 44, height: 44)
-                    .background {
-                        Circle()
-                            .fill(.ultraThinMaterial)
-                            .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
-                    }
+                    .glassEffect(.regular.interactive(), in: .circle)
             }
             .buttonStyle(PressScaleButtonStyle())
             Spacer()
@@ -118,10 +114,7 @@ struct EditImportRowView: View {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 15)
-                        .background {
-                            Capsule()
-                                .fill(Color.accentColor)
-                        }
+                        .glassEffect(.regular.tint(Color.accentColor).interactive(), in: .capsule)
                 }
                 .buttonStyle(PressScaleButtonStyle())
             }

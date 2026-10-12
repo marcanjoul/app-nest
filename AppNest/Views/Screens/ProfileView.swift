@@ -16,7 +16,6 @@ struct ProfileView: View {
 
     @AppStorage(AppStorageKeys.displayName)    private var profileDisplayName: String = ""
     @AppStorage(AppStorageKeys.avatarData)     private var profileAvatarDataBase64: String = ""
-    @AppStorage(AppStorageKeys.hapticsEnabled) private var hapticsEnabled: Bool = true
 
     @State private var avatarSelection: PhotosPickerItem?
     @State private var isShowingDocumentPicker = false
@@ -392,11 +391,7 @@ struct ProfileView: View {
                                     .foregroundStyle(Color.accentColor)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 6)
-                                    .background(
-                                        Capsule()
-                                            .fill(Color.accentColor.opacity(0.10))
-                                            .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1))
-                                    )
+                                    .glassEffect(.regular.tint(Color.accentColor.opacity(0.10)).interactive(), in: .capsule)
                             }
                             .buttonStyle(PressScaleButtonStyle())
                         }
@@ -426,18 +421,6 @@ struct ProfileView: View {
 
     private var settingsSection: some View {
         VStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 16) {
-                SectionLabel(icon: "gearshape.fill", title: "Settings")
-
-                Toggle(isOn: $hapticsEnabled) {
-                    AppLabel("Haptic Feedback", systemImage: "waveform")
-                        .appFont(15, weight: .medium)
-                }
-                .padding(.vertical, 4)
-            }
-            .padding(18)
-            .surface()
-
             VStack(alignment: .leading, spacing: 16) {
                 SectionLabel(icon: "exclamationmark.triangle.fill", title: "Danger Zone", color: Theme.destructive)
 

@@ -318,10 +318,7 @@ struct JobDetailView: View {
                         .padding(.trailing, 8)
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
-                        .background {
-                            Capsule()
-                                .fill(isSaveDisabled ? Color.secondary.opacity(0.3) : Color.accentColor)
-                        }
+                        .glassEffect(.regular.tint(isSaveDisabled ? Color.secondary.opacity(0.3) : Color.accentColor).interactive(), in: .capsule)
                     }
                     .buttonStyle(PressScaleButtonStyle())
                     .disabled(!isNewApplication && !hasChanges && missingFields.isEmpty)
@@ -768,11 +765,7 @@ struct JobDetailView: View {
                         .appFont(14, weight: .semibold)
                         .foregroundStyle(Theme.textPrimary)
                         .frame(width: 44, height: 44)
-                        .background {
-                            Circle()
-                                .fill(.ultraThinMaterial)
-                                .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
-                        }
+                        .glassEffect(.regular.interactive(), in: .circle)
                 }
                 .buttonStyle(PressScaleButtonStyle())
                 .accessibilityLabel(isNewApplication ? "Cancel" : "Back")
@@ -786,11 +779,7 @@ struct JobDetailView: View {
                         .appFont(15, weight: .medium)
                         .foregroundStyle(Theme.textSecondary)
                         .frame(width: 44, height: 44)
-                        .background {
-                            Circle()
-                                .fill(Theme.cardFill)
-                                .overlay(Circle().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
-                        }
+                        .glassEffect(.regular.interactive(), in: .circle)
                 }
                 .buttonStyle(PressScaleButtonStyle())
                 .popover(isPresented: $isShowingLogoAttribution, arrowEdge: .top) {
@@ -811,11 +800,7 @@ struct JobDetailView: View {
                             .appFont(14, weight: .bold)
                             .foregroundStyle(Theme.destructive)
                             .frame(width: 44, height: 44)
-                            .background {
-                                Circle()
-                                    .fill(Theme.destructive.opacity(0.10))
-                                    .overlay(Circle().strokeBorder(Theme.destructive.opacity(0.18), lineWidth: 1))
-                            }
+                            .glassEffect(.regular.tint(Theme.destructive.opacity(0.12)).interactive(), in: .circle)
                     }
                     .buttonStyle(PressScaleButtonStyle())
                     .accessibilityLabel("Delete application")

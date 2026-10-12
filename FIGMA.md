@@ -21,8 +21,6 @@ these rows translate straight into `.figma.swift` connect files.
 | [TypeTag](https://www.figma.com/design/zi4ChBz3BykixFyN8A61ZH?node-id=15-189) | 13 | `DarkTypeTag` | `Views/Components/Pills/PillUI.swift` |
 | [SelectablePill](https://www.figma.com/design/zi4ChBz3BykixFyN8A61ZH?node-id=15-200) | 2 | `SelectablePill` | `Views/Components/Pills/PillUI.swift` |
 | [StatChip](https://www.figma.com/design/zi4ChBz3BykixFyN8A61ZH?node-id=16-175) | 14 | `StatChip` | `Views/Components/Pills/PillUI.swift` |
-| [FilterToken](https://www.figma.com/design/zi4ChBz3BykixFyN8A61ZH?node-id=17-66) | 4 | `FilterToken` | `Views/Components/Pills/PillUI.swift` |
-| [CompactFilterChip](https://www.figma.com/design/zi4ChBz3BykixFyN8A61ZH?node-id=17-77) | 2 | `CompactFilterChip` | `Views/Components/Pills/PillUI.swift` |
 | [ResumePill](https://www.figma.com/design/zi4ChBz3BykixFyN8A61ZH?node-id=17-118) | 8 | `ResumePill` | `Views/Components/Pills/PillUI.swift` |
 | [CompanyAvatar](https://www.figma.com/design/zi4ChBz3BykixFyN8A61ZH?node-id=17-138) | 6 | `DarkJobCardView.avatarView` | `Views/Components/Cards/JobCardView.swift` |
 | [JobCard](https://www.figma.com/design/zi4ChBz3BykixFyN8A61ZH?node-id=17-156) | 1 | `DarkJobCardView` | `Views/Components/Cards/JobCardView.swift` |
@@ -83,7 +81,7 @@ alpha baked in. That's why the file has ~370 variables for a fairly small palett
 | `textSecondary` | `secondaryLabel` | **`white(0.36)` / `white(0.72)`** |
 | `sectionLabelSize` / tracking | 11pt / +0.8 / UPPERCASE | **13pt / 0 / `textCase(nil)`** |
 | Statuses | 5 | **7** — adds `Ghosted`, `Job Removed` |
-| Status colours | one set | **two** — `Theme.statusStyle` (mode-aware, light = raw × 0.62) and `ApplicationStatus.color` (flat) |
+| Status colours | one set | one set — `ApplicationStatus.color` (mode-aware, light = raw × 0.62) |
 | Motion | springs (response/damping) | **timing curves** |
 | Card shadow | black 8%, r12, y4 | **black 1.6%, r3, y1** |
 | Detail-screen logo | 60×60 rounded rect, pencil badge | **72pt circle, camera badge** |

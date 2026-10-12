@@ -99,11 +99,7 @@ struct ResumeSection: View {
                                 .foregroundStyle(Color.accentColor)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
-                                .background(
-                                    Capsule()
-                                        .fill(Color.accentColor.opacity(0.10))
-                                        .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1))
-                                )
+                                .glassEffect(.regular.tint(Color.accentColor.opacity(0.10)).interactive(), in: .capsule)
                         }
                         .buttonStyle(PressScaleButtonStyle())
                     }

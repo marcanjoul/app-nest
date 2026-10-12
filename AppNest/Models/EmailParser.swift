@@ -202,6 +202,11 @@ struct EmailParser {
         if let listed = positionFromLineBelow(text) { return listed }
 
         let patterns = [
+            // "application for the position of [POSITION] has been received" — checked first because
+            // pattern below reads "for the position" as a title of "the". Titles here carry commas
+            // ("AI Engineer I, Enterprise Technology Services"), so stop at the verb, not the comma.
+            #"(?:position|role)\s+of\s+(?:the\s+|a\s+|an\s+)?(.+?)(?:\s+(?:has|have|was|is)\s+been\b|\s+at\s+|\.(?:\s|$)|\n|$)"#,
+
             // "apply/application/applied/applying for/to the [POSITION] position/role/opportunity/opening" (More specific, terminates on position/role/opportunity/opening keyword)
             #"(?:\bapply\b|application|applied|applying)\s+(?:for|to)\s+(?:the\s+|our\s+|a\s+|an\s+)?([^.\n]+?)\s+(?:position|role|opportunity|opening)\b"#,
             
@@ -238,6 +243,8 @@ struct EmailParser {
                 let matched = String(text[match])
                 if let raw = extractCaptureGroup(from: matched, pattern: pattern) {
                     let cleaned = cleanupPosition(cleaned: raw)
+                    // A lone article means the pattern swallowed the noun it was meant to stop at.
+                    if ["the", "a", "an", "our"].contains(cleaned.lowercased()) { continue }
                     if !cleaned.isEmpty && cleaned.count < 100 {
                         return cleaned
                     }
@@ -317,6 +324,11 @@ struct EmailParser {
             #"^\d{4,}\s+"#                    // 2026 or similar years/IDs at start
         ]
         
+        // Trailing location: "Enterprise Technology Services- Phoenix, AZ"
+        if let loc = s.range(of: #"\s*-\s*[A-Z][A-Za-z.' ]+,\s*[A-Z]{2}$"#, options: .regularExpression) {
+            s = String(s[..<loc.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
         for pattern in idPatterns {
             if let range = s.range(of: pattern, options: .regularExpression) {
                 if pattern.hasPrefix("^") {
@@ -423,7 +435,7 @@ struct EmailParser {
                 "we have received your application", "thank you for your interest",
                 "confirm your application", "received your application",
                 "reviewing your application", "we received your application",
-                "successfully applied"
+                "successfully applied", "has been received"
             ]),
         ]
 

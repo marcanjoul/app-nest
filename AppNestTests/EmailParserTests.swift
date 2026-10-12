@@ -191,3 +191,24 @@ struct DateTests {
         #expect(abs(parsed.timeIntervalSinceNow) < 5)
     }
 }
+
+// MARK: - Full emails
+
+@Suite("Full email parsing")
+struct FullEmailTests {
+
+    @Test("ATS confirmation with a long title that carries a location")
+    func amexConfirmation() {
+        let email = """
+        Hello Mark,
+
+        Thank you for exploring new career opportunities with American Express! Your application for the position of Campus Undergraduate Full-Time Engineer - 2027 AI Engineer I, Enterprise Technology Services- Phoenix, AZ has been received.
+        """
+        let result = parser.parse(email)
+        #expect(result.companyName == "American Express")
+        #expect(result.position == "Campus Undergraduate Full-Time Engineer - 2027 AI Engineer I, Enterprise Technology Services")
+        #expect(result.jobType == .fullTime)
+        #expect(result.status == .applied)
+        #expect(result.highlights.contains { $0.field == .status })
+    }
+}

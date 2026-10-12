@@ -59,11 +59,11 @@ enum Theme {
     struct StatusStyle {
         let tintColor:   Color
         let fillColor:   Color
-        let borderColor: Color
         let iconName:    String
     }
 
-    private static func statusTint(red: CGFloat, green: CGFloat, blue: CGFloat) -> Color {
+    /// Light mode darkens every channel to 62% so tints keep contrast on white.
+    static func statusTint(red: CGFloat, green: CGFloat, blue: CGFloat) -> Color {
         Color(UIColor { trait in
             let factor: CGFloat = trait.userInterfaceStyle == .dark ? 1 : 0.62
             return UIColor(red: red * factor, green: green * factor, blue: blue * factor, alpha: 1)
@@ -71,29 +71,8 @@ enum Theme {
     }
 
     static func statusStyle(for status: ApplicationStatus) -> StatusStyle {
-        switch status {
-        case .toApply:
-            let c = statusTint(red: 0.58, green: 0.62, blue: 0.82)
-            return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "plus.circle.fill")
-        case .applied:
-            let c = statusTint(red: 0.30, green: 0.60, blue: 0.94)
-            return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "paperplane.fill")
-        case .interview:
-            let c = statusTint(red: 0.96, green: 0.65, blue: 0.14)
-            return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "person.2.fill")
-        case .offer:
-            let c = statusTint(red: 0.30, green: 0.80, blue: 0.45)
-            return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "checkmark.seal.fill")
-        case .rejected:
-            let c = statusTint(red: 0.93, green: 0.33, blue: 0.40)
-            return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "xmark.circle.fill")
-        case .ghosted:
-            let c = statusTint(red: 0.52, green: 0.52, blue: 0.54)
-            return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "moon.zzz.fill")
-        case .jobRemoved:
-            let c = statusTint(red: 0.88, green: 0.52, blue: 0.20)
-            return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), borderColor: c.opacity(0.18), iconName: "minus.circle.fill")
-        }
+        let c = status.color
+        return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), iconName: status.iconName)
     }
 
 

@@ -24,9 +24,6 @@ struct ApplicationView: View {
     @State private var selectedTypes: Set<ApplicationType> = []
     @State private var selectedSeasons: Set<ApplicationSeason> = []
     @State private var selectedWorkModes: Set<WorkMode> = []
-    @State private var isTypePickerExpanded = false
-    @State private var isSeasonPickerExpanded = false
-    @State private var isWorkModePickerExpanded = false
     @State private var sortOption: SortOption = .dateNewest
     @State private var pendingDeleteJob: JobApplication? = nil
     @State private var undoTask: Task<Void, Never>? = nil
@@ -114,10 +111,6 @@ struct ApplicationView: View {
                 // Header
                 VStack(alignment: .leading, spacing: 0) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("App Nest")
-                            .appFont(34, weight: .bold)
-                            .foregroundStyle(Theme.textPrimary)
-
                         if !searchText.isEmpty {
                             Text("\(rows.count) results")
                                 .appFont(13, weight: .bold)
@@ -145,13 +138,6 @@ struct ApplicationView: View {
                 // Stats — status chips
                 statsSection
                     .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 0))
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .selectionDisabled()
-
-                // Filters — type + season expandable tokens
-                typeSeasonFilter
-                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 16, trailing: 16))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .selectionDisabled()
@@ -306,12 +292,10 @@ struct ApplicationView: View {
                         }
                     }
                     .appFont(12, weight: .semibold)
-                    .padding(.top, 12)
+                    .padding(.vertical, 10)
+                    .glassEffect(in: .capsule)
+                    .padding(.horizontal, 20)
                     .padding(.bottom, 24)
-                    .background(.ultraThinMaterial)
-                    .overlay(alignment: .top) {
-                        Divider().opacity(0.5)
-                    }
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -321,31 +305,19 @@ struct ApplicationView: View {
                 VStack {
                     Spacer()
                     HStack(spacing: 14) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Removed \(pending.companyName)")
-                                .appFont(15, weight: .semibold)
-                                .foregroundStyle(.white)
-                            Text("The application has been deleted.")
-                                .appFont(13)
-                                .foregroundStyle(.white.opacity(0.7))
-                        }
+                        Text("Deleted \(pending.companyName)")
+                            .appFont(15, weight: .semibold)
+                            .foregroundStyle(Theme.textPrimary)
+                            .lineLimit(1)
                         Spacer()
-                        Button(action: undoDelete) {
-                            Text("Undo")
-                                .appFont(14, weight: .bold)
-                                .foregroundStyle(Color.accentColor)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 8)
-                                .background(Capsule().fill(Color.white.opacity(0.12)))
-                        }
+                        Button("Undo", action: undoDelete)
+                            .appFont(15, weight: .bold)
+                            .foregroundStyle(Color.accentColor)
+                            .frame(minHeight: 44)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-                    .background {
-                        Capsule()
-                            .fill(Color(red: 0.12, green: 0.12, blue: 0.14))
-                            .shadow(color: .black.opacity(0.3), radius: 15, y: 8)
-                    }
+                    .padding(.leading, 20)
+                    .padding(.trailing, 16)
+                    .glassEffect(in: .capsule)
                     .padding(.horizontal, 20)
                     .padding(.bottom, 24)
                     .offset(y: toastDragY)
@@ -495,10 +467,7 @@ struct ApplicationView: View {
             .foregroundStyle(Color.accentColor)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background {
-                Capsule()
-                    .fill(Color.accentColor.opacity(0.12))
-            }
+            .glassEffect(.regular.tint(Color.accentColor.opacity(0.12)).interactive(), in: .capsule)
         }
     }
 
@@ -642,36 +611,36 @@ struct ApplicationView: View {
             }
             .padding(.horizontal, 12)
             .frame(height: 44)
-            .background(.ultraThinMaterial)
-            .clipShape(Capsule())
-            .overlay(Capsule().strokeBorder(isSearchFocused ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08), lineWidth: isSearchFocused ? 2 : 1))
+            .glassEffect(.regular.tint(isSearchFocused ? Color.accentColor.opacity(0.12) : nil), in: .capsule)
             .frame(maxWidth: .infinity)
             .animation(.appBubbly, value: isSearchFocused)
 
             if !applications.isEmpty && !isSearchFocused {
                 Menu {
-                    ForEach(SortOption.allCases, id: \.self) { option in
-                        Button {
-                            sortOption = option
-                            AppHaptics.shared.light()
-                        } label: {
-                            HStack {
-                                Text(option.rawValue)
-                                if sortOption == option { AppIcon("checkmark") }
-                            }
+                    Section("Sort") {
+                        Picker("Sort", selection: $sortOption) {
+                            ForEach(SortOption.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                        }
+                    }
+                    filterSection("Type", selection: $selectedTypes)
+                    filterSection("Season", selection: $selectedSeasons)
+                    filterSection("Location", selection: $selectedWorkModes)
+                    if hasMenuFilters {
+                        Button("Clear Filters", role: .destructive) {
+                            selectedTypes.removeAll()
+                            selectedSeasons.removeAll()
+                            selectedWorkModes.removeAll()
                         }
                     }
                 } label: {
                     ZStack(alignment: .topTrailing) {
                         AppIcon("line.3.horizontal.decrease.circle")
                             .appFont(18, weight: .semibold)
-                            .foregroundStyle(sortOption == .dateNewest ? Theme.textPrimary : Color.accentColor)
+                            .foregroundStyle(isMenuCustomized ? Color.accentColor : Theme.textPrimary)
                             .frame(width: 44, height: 44)
-                            .background(.ultraThinMaterial)
-                            .clipShape(Circle())
-                            .overlay(Circle().strokeBorder(Color.primary.opacity(0.08), lineWidth: 1))
+                            .glassEffect(.regular.interactive(), in: .circle)
 
-                        if sortOption != .dateNewest {
+                        if isMenuCustomized {
                             Circle()
                                 .fill(Color.accentColor)
                                 .frame(width: 8, height: 8)
@@ -680,6 +649,7 @@ struct ApplicationView: View {
                         }
                     }
                 }
+                .menuActionDismissBehavior(.disabled)
                 .buttonStyle(PressScaleButtonStyle())
                 .transition(.asymmetric(
                     insertion: .move(edge: .trailing).combined(with: .scale(scale: 0.8)).combined(with: .opacity).animation(.appBubbly.delay(0.15)),
@@ -687,8 +657,27 @@ struct ApplicationView: View {
                 ))
             }
         }
-        .clipped()
         .animation(.appSmooth, value: isSearchFocused)
+    }
+
+    private var hasMenuFilters: Bool {
+        !selectedTypes.isEmpty || !selectedSeasons.isEmpty || !selectedWorkModes.isEmpty
+    }
+
+    private var isMenuCustomized: Bool { hasMenuFilters || sortOption != .dateNewest }
+
+    private func filterSection<T: Hashable & CaseIterable & RawRepresentable>(_ title: String, selection: Binding<Set<T>>) -> some View where T.AllCases: RandomAccessCollection, T.RawValue == String {
+        Section(title) {
+            ForEach(T.allCases, id: \.self) { option in
+                Toggle(option.rawValue, isOn: Binding(
+                    get: { selection.wrappedValue.contains(option) },
+                    set: { isOn in
+                        if isOn { selection.wrappedValue.insert(option) } else { selection.wrappedValue.remove(option) }
+                        AppHaptics.shared.light()
+                    }
+                ))
+            }
+        }
     }
 
     private var statsSection: some View {
@@ -724,185 +713,7 @@ struct ApplicationView: View {
             }
             .animation(.appSmooth, value: selectedStatuses)
         }
-    }
-
-    private var typeSelectionLabel: String? {
-        switch selectedTypes.count {
-        case 0: return nil
-        case 1: return selectedTypes.first!.rawValue
-        default: return "\(selectedTypes.count) Types"
-        }
-    }
-
-    private var seasonSelectionLabel: String? {
-        switch selectedSeasons.count {
-        case 0: return nil
-        case 1: return selectedSeasons.first!.rawValue
-        default: return "\(selectedSeasons.count) Seasons"
-        }
-    }
-
-    private var workModeSelectionLabel: String? {
-        switch selectedWorkModes.count {
-        case 0: return nil
-        case 1: return selectedWorkModes.first!.rawValue
-        default: return "\(selectedWorkModes.count) Modes"
-        }
-    }
-
-    private var typeSeasonFilter: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            // Token row
-            HStack(spacing: 8) {
-                FilterToken(
-                    label: "Type",
-                    icon: "briefcase.fill",
-                    selectionSummary: typeSelectionLabel,
-                    isExpanded: isTypePickerExpanded,
-                    isActive: !selectedTypes.isEmpty
-                ) {
-                    withAnimation(.appSmooth) {
-                        isTypePickerExpanded.toggle()
-                        if isTypePickerExpanded { isSeasonPickerExpanded = false; isWorkModePickerExpanded = false }
-                    }
-                    AppHaptics.shared.light()
-                }
-
-                FilterToken(
-                    label: "Season",
-                    icon: "leaf.fill",
-                    selectionSummary: seasonSelectionLabel,
-                    isExpanded: isSeasonPickerExpanded,
-                    isActive: !selectedSeasons.isEmpty
-                ) {
-                    withAnimation(.appSmooth) {
-                        isSeasonPickerExpanded.toggle()
-                        if isSeasonPickerExpanded { isTypePickerExpanded = false; isWorkModePickerExpanded = false }
-                    }
-                    AppHaptics.shared.light()
-                }
-
-                FilterToken(
-                    label: "Location",
-                    icon: "mappin.circle.fill",
-                    selectionSummary: workModeSelectionLabel,
-                    isExpanded: isWorkModePickerExpanded,
-                    isActive: !selectedWorkModes.isEmpty
-                ) {
-                    withAnimation(.appSmooth) {
-                        isWorkModePickerExpanded.toggle()
-                        if isWorkModePickerExpanded { isTypePickerExpanded = false; isSeasonPickerExpanded = false }
-                    }
-                    AppHaptics.shared.light()
-                }
-
-                Spacer()
-
-                if !selectedTypes.isEmpty || !selectedSeasons.isEmpty || !selectedWorkModes.isEmpty {
-                    Button {
-                        withAnimation(.appCrisp) {
-                            selectedTypes.removeAll()
-                            selectedSeasons.removeAll()
-                            selectedWorkModes.removeAll()
-                            isTypePickerExpanded = false
-                            isSeasonPickerExpanded = false
-                            isWorkModePickerExpanded = false
-                        }
-                        AppHaptics.shared.light()
-                    } label: {
-                        Text("Clear")
-                            .appFont(12, weight: .semibold)
-                            .foregroundStyle(Theme.textSecondary)
-                    }
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                }
-            }
-
-            // Type grid
-            if isTypePickerExpanded {
-                LazyVGrid(
-                    columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3),
-                    spacing: 8
-                ) {
-                    ForEach(ApplicationType.allCases, id: \.self) { type in
-                        let count = searchFiltered.filter { $0.jobType == type }.count
-                        CompactFilterChip(
-                            label: type.rawValue,
-                            icon: type.iconName,
-                            color: type.color,
-                            isSelected: selectedTypes.contains(type)
-                        ) {
-                            withAnimation(.appCrisp) {
-                                if selectedTypes.contains(type) { selectedTypes.remove(type) }
-                                else { selectedTypes.insert(type) }
-                            }
-                            AppHaptics.shared.light()
-                        }
-                        .opacity(count == 0 && !selectedTypes.contains(type) ? 0.4 : 1.0)
-                        .frame(maxWidth: .infinity)
-                    }
-                }
-                .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.97, anchor: .top)),
-                    removal: .opacity.combined(with: .scale(scale: 0.97, anchor: .top))
-                ))
-            }
-
-            // Season row
-            if isSeasonPickerExpanded {
-                HStack(spacing: 8) {
-                    ForEach(ApplicationSeason.allCases, id: \.self) { season in
-                        let count = searchFiltered.filter { $0.season == season }.count
-                        CompactFilterChip(
-                            label: season.rawValue,
-                            icon: season.iconName,
-                            color: season.color,
-                            isSelected: selectedSeasons.contains(season)
-                        ) {
-                            withAnimation(.appCrisp) {
-                                if selectedSeasons.contains(season) { selectedSeasons.remove(season) }
-                                else { selectedSeasons.insert(season) }
-                            }
-                            AppHaptics.shared.light()
-                        }
-                        .opacity(count == 0 && !selectedSeasons.contains(season) ? 0.4 : 1.0)
-                        .frame(maxWidth: .infinity)
-                    }
-                }
-                .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.97, anchor: .top)),
-                    removal: .opacity.combined(with: .scale(scale: 0.97, anchor: .top))
-                ))
-            }
-
-            // Work mode row
-            if isWorkModePickerExpanded {
-                HStack(spacing: 8) {
-                    ForEach(WorkMode.allCases, id: \.self) { mode in
-                        let count = searchFiltered.filter { $0.workMode == mode }.count
-                        CompactFilterChip(
-                            label: mode.rawValue,
-                            icon: mode.iconName,
-                            color: mode.color,
-                            isSelected: selectedWorkModes.contains(mode)
-                        ) {
-                            withAnimation(.appCrisp) {
-                                if selectedWorkModes.contains(mode) { selectedWorkModes.remove(mode) }
-                                else { selectedWorkModes.insert(mode) }
-                            }
-                            AppHaptics.shared.light()
-                        }
-                        .opacity(count == 0 && !selectedWorkModes.contains(mode) ? 0.4 : 1.0)
-                        .frame(maxWidth: .infinity)
-                    }
-                }
-                .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.97, anchor: .top)),
-                    removal: .opacity.combined(with: .scale(scale: 0.97, anchor: .top))
-                ))
-            }
-
-        }
+        .scrollClipDisabled()
     }
 
     @ViewBuilder
@@ -931,11 +742,7 @@ struct ApplicationView: View {
             divider
             editButton
         }
-        .background {
-            Capsule()
-                .fill(Color.primary.opacity(0.06))
-                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.09), lineWidth: 1))
-        }
+        .glassEffect(in: .capsule)
         .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .trailing)))
     }
 
@@ -1014,11 +821,7 @@ struct ApplicationView: View {
             .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : Theme.textSecondary)
             .padding(.horizontal, 14)
             .frame(height: 44)
-            .background {
-                Capsule()
-                    .fill(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.12) : Theme.cardFill)
-                    .overlay(Capsule().strokeBorder(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.28) : Color.primary.opacity(0.08), lineWidth: 1))
-            }
+            .glassEffect(.regular.tint(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.12) : nil).interactive(), in: .capsule)
         }
         .buttonStyle(PressScaleButtonStyle())
     }
@@ -1102,7 +905,7 @@ struct ApplicationView: View {
             .padding(.leading, 18)
             .padding(.trailing, 8)
             .frame(height: 38)
-            .background(Capsule().fill(Color.accentColor))
+            .glassEffect(.regular.tint(Color.accentColor).interactive(), in: .capsule)
         }
         .buttonStyle(PressScaleButtonStyle())
         .padding(.top, 10)
@@ -1128,9 +931,6 @@ struct ApplicationView: View {
                         selectedTypes.removeAll()
                         selectedSeasons.removeAll()
                         selectedWorkModes.removeAll()
-                        isTypePickerExpanded = false
-                        isSeasonPickerExpanded = false
-                        isWorkModePickerExpanded = false
                     }
                     AppHaptics.shared.light()
                 }
@@ -1138,11 +938,7 @@ struct ApplicationView: View {
                 .foregroundStyle(Color.accentColor)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(
-                    Capsule()
-                        .fill(Color.accentColor.opacity(0.10))
-                        .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1))
-                )
+                .glassEffect(.regular.tint(Color.accentColor.opacity(0.10)).interactive(), in: .capsule)
                 .buttonStyle(PressScaleButtonStyle())
             } else {
                 AppIcon("magnifyingglass")
@@ -1160,11 +956,7 @@ struct ApplicationView: View {
                     .foregroundStyle(Color.accentColor)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(
-                        Capsule()
-                            .fill(Color.accentColor.opacity(0.10))
-                            .overlay(Capsule().strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1))
-                    )
+                    .glassEffect(.regular.tint(Color.accentColor.opacity(0.10)).interactive(), in: .capsule)
                     .buttonStyle(PressScaleButtonStyle())
 
                     if hasActiveFilters {
@@ -1173,8 +965,6 @@ struct ApplicationView: View {
                                 selectedStatuses.removeAll()
                                 selectedTypes.removeAll()
                                 selectedSeasons.removeAll()
-                                isTypePickerExpanded = false
-                                isSeasonPickerExpanded = false
                             }
                             AppHaptics.shared.light()
                         }
@@ -1182,11 +972,7 @@ struct ApplicationView: View {
                         .foregroundStyle(Theme.textSecondary)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(
-                            Capsule()
-                                .fill(Color.primary.opacity(0.06))
-                                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
-                        )
+                        .glassEffect(.regular.interactive(), in: .capsule)
                         .buttonStyle(PressScaleButtonStyle())
                     }
                 }

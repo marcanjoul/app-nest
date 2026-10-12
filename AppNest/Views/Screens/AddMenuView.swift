@@ -278,10 +278,7 @@ struct AddMenuView: View {
                                 .padding(.trailing, 8)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 44)
-                                .background {
-                                    Capsule()
-                                        .fill(vm.isParseDisabled ? Color.secondary.opacity(0.3) : emailAccent)
-                                }
+                                .glassEffect(.regular.tint(vm.isParseDisabled ? Color.secondary.opacity(0.3) : emailAccent).interactive(), in: .capsule)
                             }
                             .buttonStyle(PressScaleButtonStyle())
                             .disabled(vm.isParseDisabled)

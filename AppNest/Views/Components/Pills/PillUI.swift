@@ -3,89 +3,6 @@ import SwiftUI
 import UIKit
 #endif
 
-// MARK: - Filter Token Button
-
-/// Collapsed filter token showing current selection summary and expand chevron.
-struct FilterToken: View {
-    let label: String
-    let icon: String
-    var selectionSummary: String?
-    var isExpanded: Bool = false
-    var isActive: Bool = false
-    var action: () -> Void
-
-    var body: some View {
-        Button { action() } label: {
-            HStack(spacing: 5) {
-                AppIcon(icon)
-                    .appFont(10, weight: .bold)
-                Text(selectionSummary ?? label)
-                    .appFont(12, weight: .semibold)
-                    .lineLimit(1)
-                AppIcon("chevron.down")
-                    .appFont(9, weight: .bold)
-                    .rotationEffect(.degrees(isExpanded ? 180 : 0))
-                    .animation(.appCrisp, value: isExpanded)
-            }
-            .foregroundStyle(isActive ? Color.accentColor : Theme.textSecondary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                Capsule()
-                    .fill(isActive ? Color.accentColor.opacity(0.10) : Color.primary.opacity(0.06))
-                    .overlay(
-                        Capsule().strokeBorder(
-                            isActive ? Color.accentColor.opacity(0.25) : Color.primary.opacity(isExpanded ? 0.18 : 0.14),
-                            lineWidth: isExpanded ? 1.2 : 1.0
-                        )
-                    )
-            )
-            .frame(minHeight: 44)
-        }
-        .buttonStyle(PressScaleButtonStyle())
-        .animation(.appCrisp, value: isActive)
-        .accessibilityLabel("\(label) filter")
-        .accessibilityValue(selectionSummary ?? (isActive ? "Active" : "Any"))
-        .accessibilityHint(isExpanded ? "Collapses filter options" : "Expands filter options")
-    }
-}
-
-// MARK: - Compact Filter Chip
-
-/// Lightweight filter chip for type and season rows — icon + label, no count.
-struct CompactFilterChip: View {
-    let label: String
-    let icon: String
-    let color: Color
-    var isSelected: Bool
-    var action: () -> Void
-
-    var body: some View {
-        Button { action() } label: {
-            HStack(spacing: 4) {
-                AppIcon(icon)
-                    .appFont(10, weight: .bold)
-                Text(label)
-                    .appFont(11, weight: .semibold)
-                    .lineLimit(1)
-            }
-            .foregroundStyle(isSelected ? Color.white : color)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
-            .background(
-                Capsule()
-                    .fill(isSelected ? AnyShapeStyle(color) : AnyShapeStyle(color.opacity(0.10)))
-                    .overlay(Capsule().strokeBorder(isSelected ? Color.clear : color.opacity(0.20), lineWidth: 0.8))
-            )
-            .frame(minHeight: 44)
-        }
-        .buttonStyle(PressScaleButtonStyle())
-        .animation(.appCrisp, value: isSelected)
-        .accessibilityLabel(label)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-}
-
 // MARK: - Universal Selectable Pill
 
 /// Selectable form option with a stable touch target.
@@ -282,11 +199,7 @@ struct DarkStatusPill: View {
         .foregroundStyle(style.tintColor)
         .padding(.horizontal, 13)
         .padding(.vertical, 8)
-        .background(
-            Capsule()
-                .fill(style.fillColor)
-                .overlay(Capsule().strokeBorder(style.borderColor, lineWidth: 0.8))
-        )
+        .glassEffect(.regular.tint(style.fillColor), in: .capsule)
     }
 }
 
@@ -312,11 +225,7 @@ struct DarkTypeTag: View {
         .foregroundStyle(color)
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
-        .background(
-            Capsule()
-                .fill(color.opacity(0.13))
-                .overlay(Capsule().strokeBorder(color.opacity(0.24), lineWidth: 0.8))
-        )
+        .glassEffect(.regular.tint(color.opacity(0.13)), in: .capsule)
     }
 }
 
@@ -366,18 +275,9 @@ struct StatChip: View {
             }
             .padding(.horizontal, 11)
             .padding(.vertical, 7)
-            .background(
-                Capsule()
-                    .fill(isSelected ? AnyShapeStyle(style.tintColor) : AnyShapeStyle(style.fillColor))
-                    .overlay(
-                        Capsule().strokeBorder(
-                            isSelected ? Color.clear : style.borderColor,
-                            lineWidth: isSelected ? 0 : 0.8
-                        )
-                    )
-            )
+            .glassEffect(.regular.tint(isSelected ? style.tintColor : style.fillColor).interactive(), in: .capsule)
         }
-        .buttonStyle(PressScaleButtonStyle())
+        .buttonStyle(.plain)
         .animation(.appCrisp, value: isSelected)
     }
 }
@@ -409,15 +309,16 @@ extension ApplicationType {
 }
 
 extension ApplicationStatus {
+    // ponytail: single status palette — Theme.statusStyle derives from this.
     var color: Color {
         switch self {
-        case .toApply:    return Color(red: 0.58, green: 0.62, blue: 0.82)
-        case .applied:    return Color(red: 0.35, green: 0.65, blue: 0.96)
-        case .interview:  return Color(red: 0.96, green: 0.73, blue: 0.28)
-        case .offer:      return Color(red: 0.30, green: 0.80, blue: 0.45)
-        case .rejected:   return Color(red: 0.93, green: 0.38, blue: 0.44)
-        case .ghosted:    return Color(red: 0.52, green: 0.52, blue: 0.54)
-        case .jobRemoved: return Color(red: 0.88, green: 0.52, blue: 0.20)
+        case .toApply:    return Theme.statusTint(red: 0.58, green: 0.62, blue: 0.82)
+        case .applied:    return Theme.statusTint(red: 0.30, green: 0.60, blue: 0.94)
+        case .interview:  return Theme.statusTint(red: 0.96, green: 0.65, blue: 0.14)
+        case .offer:      return Theme.statusTint(red: 0.30, green: 0.80, blue: 0.45)
+        case .rejected:   return Theme.statusTint(red: 0.93, green: 0.33, blue: 0.40)
+        case .ghosted:    return Theme.statusTint(red: 0.52, green: 0.52, blue: 0.54)
+        case .jobRemoved: return Theme.statusTint(red: 0.88, green: 0.52, blue: 0.20)
         }
     }
 
