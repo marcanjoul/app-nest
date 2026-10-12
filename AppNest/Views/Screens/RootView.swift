@@ -28,13 +28,6 @@ struct RootView: View {
                 .tag(2)
             }
             .animation(.none, value: appState.selectedTab)
-
-            
-            if appState.showOfferCelebration {
-                FullScreenCelebrationView()
-                    .transition(.opacity)
-                    .zIndex(100)
-            }
         }
         .sheet(item: $bindableAppState.selectedJob) { job in
             JobDetailView(job: job, isSheetPresentation: true)

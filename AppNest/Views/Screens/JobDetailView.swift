@@ -51,8 +51,8 @@ struct JobDetailView: View {
     @State private var shakeMissingFields = false
     @State private var keyboardIsVisible = false
     @State private var scrollTargetSection: FormSection?
-    @State private var contentAppeared = false
     @State private var isLogoAutoFetched = false
+    @State private var isShowingOptionalDetails = false
     var isSheetPresentation: Bool = false
 
     private enum FormSection: Hashable {
@@ -61,6 +61,8 @@ struct JobDetailView: View {
 
     private var isNewApplication: Bool { job == nil }
     private var isCSVMode: Bool { csvRow != nil }
+    // ponytail: new applications start folded; edits and CSV rows may already hold optional data, so show it.
+    private var showsOptionalDetails: Bool { isShowingOptionalDetails || !isNewApplication || isCSVMode }
 
     private var hasChanges: Bool {
         guard let job else { return true }
@@ -472,9 +474,6 @@ struct JobDetailView: View {
         .id(FormSection.info)
         .modifier(ShakeEffect(animatableData: shakingSection == .info ? 1 : 0))
         .changedHighlight(infoChanged)
-        .opacity(contentAppeared ? 1 : 0)
-        .offset(y: contentAppeared ? 0 : 12)
-        .animation(.appSmooth.delay(0.00), value: contentAppeared)
     }
 
     @ViewBuilder
@@ -483,9 +482,6 @@ struct JobDetailView: View {
             .id(FormSection.type)
             .modifier(ShakeEffect(animatableData: shakingSection == .type ? 1 : 0))
             .changedHighlight(typeChanged)
-            .opacity(contentAppeared ? 1 : 0)
-            .offset(y: contentAppeared ? 0 : 12)
-            .animation(.appSmooth.delay(0.03), value: contentAppeared)
     }
 
     @ViewBuilder
@@ -494,9 +490,6 @@ struct JobDetailView: View {
             .id(FormSection.status)
             .modifier(ShakeEffect(animatableData: shakingSection == .status ? 1 : 0))
             .changedHighlight(statusChanged)
-            .opacity(contentAppeared ? 1 : 0)
-            .offset(y: contentAppeared ? 0 : 12)
-            .animation(.appSmooth.delay(0.06), value: contentAppeared)
     }
 
     @ViewBuilder
@@ -507,18 +500,12 @@ struct JobDetailView: View {
                 removal: .opacity
             ))
             .changedHighlight(seasonChanged)
-            .opacity(contentAppeared ? 1 : 0)
-            .offset(y: contentAppeared ? 0 : 12)
-            .animation(.appSmooth.delay(0.09), value: contentAppeared)
     }
 
     @ViewBuilder
     private var locationSectionView: some View {
         LocationSection(workMode: $workMode, location: $location)
             .changedHighlight(locationChanged)
-            .opacity(contentAppeared ? 1 : 0)
-            .offset(y: contentAppeared ? 0 : 12)
-            .animation(.appSmooth.delay(0.12), value: contentAppeared)
     }
 
     @ViewBuilder
@@ -530,18 +517,12 @@ struct JobDetailView: View {
             reminderTime: $reminderTime
         )
         .changedHighlight(dateOrReminderChanged)
-        .opacity(contentAppeared ? 1 : 0)
-        .offset(y: contentAppeared ? 0 : 12)
-        .animation(.appSmooth.delay(0.12), value: contentAppeared)
     }
 
     @ViewBuilder
     private var jobLinkSectionView: some View {
         JobLinkSection(jobURL: $jobURL)
             .changedHighlight(jobURLChanged)
-            .opacity(contentAppeared ? 1 : 0)
-            .offset(y: contentAppeared ? 0 : 12)
-            .animation(.appSmooth.delay(0.15), value: contentAppeared)
     }
 
     @ViewBuilder
@@ -553,17 +534,11 @@ struct JobDetailView: View {
             salaryPeriod: $salaryPeriod
         )
         .changedHighlight(compensationChanged)
-        .opacity(contentAppeared ? 1 : 0)
-        .offset(y: contentAppeared ? 0 : 12)
-        .animation(.appSmooth.delay(0.18), value: contentAppeared)
     }
 
     @ViewBuilder
     private var csvCycleSectionView: some View {
         csvCycleCard
-            .opacity(contentAppeared ? 1 : 0)
-            .offset(y: contentAppeared ? 0 : 12)
-            .animation(.appSmooth.delay(0.21), value: contentAppeared)
     }
 
     @ViewBuilder
@@ -579,18 +554,12 @@ struct JobDetailView: View {
             onClear: { isConfirmingResumeClear = true }
         )
         .changedHighlight(resumeChanged)
-        .opacity(contentAppeared ? 1 : 0)
-        .offset(y: contentAppeared ? 0 : 12)
-        .animation(.appSmooth.delay(0.24), value: contentAppeared)
     }
 
     @ViewBuilder
     private var notesSectionView: some View {
         JobNotesSection(jobNotes: $jobNotes)
             .changedHighlight(notesChanged)
-            .opacity(contentAppeared ? 1 : 0)
-            .offset(y: contentAppeared ? 0 : 12)
-            .animation(.appSmooth.delay(0.27), value: contentAppeared)
     }
 
     @ViewBuilder
@@ -604,9 +573,6 @@ struct JobDetailView: View {
             removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .top))
         ))
         .changedHighlight(interviewKitChanged)
-        .opacity(contentAppeared ? 1 : 0)
-        .offset(y: contentAppeared ? 0 : 12)
-        .animation(.appSmooth.delay(0.27), value: contentAppeared)
     }
 
     private struct CSVSyncSignature: Equatable {
@@ -663,33 +629,36 @@ struct JobDetailView: View {
                 locationSectionView
             }
 
-            HStack(spacing: 10) {
-                Rectangle()
-                    .fill(Color.primary.opacity(0.08))
-                    .frame(height: 1)
-                Text("OPTIONAL")
-                    .appFont(11, weight: .bold)
-                    .tracking(0)
-                    .foregroundStyle(Theme.textTertiary.opacity(0.6))
-                Rectangle()
-                    .fill(Color.primary.opacity(0.08))
-                    .frame(height: 1)
-            }
-            .padding(.horizontal, 4)
-            .padding(.top, 8)
-
-            Group {
-                jobLinkSectionView
-                compensationSectionView
-                if isCSVMode {
-                    csvCycleSectionView
+            if !showsOptionalDetails {
+                Button {
+                    withAnimation(.appSmooth) { isShowingOptionalDetails = true }
+                    AppHaptics.shared.light()
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("More details")
+                        AppIcon("chevron.down")
+                    }
+                    .appFont(14, weight: .semibold)
+                    .foregroundStyle(Theme.textSecondary)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .contentShape(Rectangle())
                 }
-                if !isCSVMode {
-                    resumeSectionView
-                }
-                notesSectionView
-                if isInterviewStage && !isCSVMode {
-                    interviewKitSectionView
+                .buttonStyle(.plain)
+                .padding(.top, 8)
+            } else {
+                Group {
+                    jobLinkSectionView
+                    compensationSectionView
+                    if isCSVMode {
+                        csvCycleSectionView
+                    }
+                    if !isCSVMode {
+                        resumeSectionView
+                    }
+                    notesSectionView
+                    if isInterviewStage && !isCSVMode {
+                        interviewKitSectionView
+                    }
                 }
             }
         }
@@ -719,7 +688,6 @@ struct JobDetailView: View {
                         .padding(.bottom, 24)
                 }
                 .scrollDismissesKeyboard(.interactively)
-                .onAppear { contentAppeared = true }
                 .onChange(of: scrollTargetSection) { _, target in
                     guard let target else { return }
                     withAnimation(.appSmooth) {
@@ -865,12 +833,6 @@ struct JobDetailView: View {
         let parsedAmount = parsedCompensationAmount
         let resolvedSalaryPeriod: SalaryPeriod? = compensationKind == .salary ? salaryPeriod : nil
         let wantsReminder = status == .toApply && reminderEnabled
-
-        let isOfferTrigger = (status == .offer && (job == nil || job?.status != .offer))
-
-        if isOfferTrigger {
-            appState.showOfferCelebration = true
-        }
 
         if let job {
             job.companyName         = companyName.trimmingCharacters(in: .whitespaces)
