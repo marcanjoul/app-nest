@@ -10,13 +10,31 @@ struct LinkParser {
         var jobType: ApplicationType?
         var jobURL: String?
         var isLinkedIn: Bool = false
+        /// A real URL that isn't a job posting (a homepage, a search page, a social link).
+        var isNotJobLink: Bool = false
+    }
+
+    /// The pasted text as a web URL, or nil when it isn't one. Bare domains get `https://`.
+    /// Rejects whitespace (pasted sentences), hosts without a dot ("hello"), and non-web schemes.
+    static func webURL(from text: String) -> URL? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed.rangeOfCharacter(from: .whitespacesAndNewlines) == nil else { return nil }
+        let withScheme = trimmed.contains("://") ? trimmed : "https://" + trimmed
+        guard let url = URL(string: withScheme),
+              let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
+              let host = url.host, host.contains("."),
+              let tld = host.split(separator: ".").last, tld.count >= 2, tld.allSatisfy(\.isLetter)
+        else { return nil }
+        return url
     }
 
     func parse(_ urlString: String) async -> ParsedResult {
         var result = ParsedResult(jobURL: urlString)
-        guard let url = URL(string: urlString), let host = url.host else {
+        guard let url = Self.webURL(from: urlString), let host = url.host else {
+            result.isNotJobLink = true
             return result
         }
+        result.jobURL = url.absoluteString
 
         // Clean up host
         let cleanHost = host.lowercased().replacingOccurrences(of: "www.", with: "")
@@ -32,14 +50,19 @@ struct LinkParser {
            let ghJid = components.queryItems?.first(where: { $0.name == "gh_jid" })?.value {
             let domainParts = cleanHost.split(separator: ".")
             if domainParts.count >= 2 {
-                let boardToken = String(domainParts[domainParts.count - 2])
-                result.companyName = formatName(boardToken)
-                if let fetched = await fetchGreenhouseJob(boardToken: boardToken, jobID: ghJid) {
-                    result.position = fetched.title
-                    result.jobType = inferType(from: fetched.title)
+                let label = String(domainParts[domainParts.count - 2])
+                let company = Self.stripCareersAffix(label)
+                result.companyName = formatName(company)
+                // The board token is usually the bare company ("pinterest" on pinterestcareers.com).
+                for token in Set([company, label]) {
+                    if let fetched = await fetchGreenhouseJob(boardToken: token, jobID: ghJid) {
+                        result.position = fetched.title
+                        result.jobType = inferType(from: fetched.title)
+                        return result
+                    }
                 }
             }
-            return result
+            // API miss: fall through so the title slug in the path can still be read.
         }
 
         // 1. Greenhouse (boards.greenhouse.io/companyname/jobs/12345)
@@ -91,13 +114,22 @@ struct LinkParser {
         }
 
         // 5. Careers pages (company.com/careers/...) or (careers.company.com/...)
-        // Heuristic fallback for general domains
+        // Heuristic fallback for general domains — only when something says "job". Without
+        // this, google.com/search?q=… became an application at "Google".
+        // ponytail: keyword sniffing, not page fetching — a job page on a path with none of
+        // these words is rejected. Fetch the page's JSON-LD JobPosting if that comes up.
+        let jobSignals = ["career", "job", "position", "opening", "apply", "vacanc", "recruit", "posting", "talent", "hiring"]
+        let haystack = (cleanHost + url.path).lowercased()
+        guard jobSignals.contains(where: haystack.contains) else {
+            result.isNotJobLink = true
+            return result
+        }
         let domainParts = cleanHost.split(separator: ".")
         if domainParts.count >= 2 {
             let primaryDomain = String(domainParts[domainParts.count - 2])
             if primaryDomain != "com" && primaryDomain != "co" && primaryDomain != "io" && primaryDomain != "net" && primaryDomain != "org" {
                 if primaryDomain.lowercased() != "greenhouse" && primaryDomain.lowercased() != "lever" && primaryDomain.lowercased() != "ashbyhq" {
-                    result.companyName = formatName(primaryDomain)
+                    result.companyName = result.companyName ?? formatName(Self.stripCareersAffix(primaryDomain))
                 }
             }
         }
@@ -114,6 +146,18 @@ struct LinkParser {
         }
 
         return result
+    }
+
+    /// "pinterestcareers" → "pinterest", "jobsatacme" stays (no clean split). Keeps the label
+    /// when stripping would leave nothing.
+    static func stripCareersAffix(_ label: String) -> String {
+        let lower = label.lowercased()
+        // A remainder under 3 letters means the affix *was* the label ("careers" → "s").
+        for affix in ["careers", "career", "jobs", "talent"] {
+            if lower.hasSuffix(affix), lower.count - affix.count >= 3 { return String(lower.dropLast(affix.count)) }
+            if lower.hasPrefix(affix), lower.count - affix.count >= 3 { return String(lower.dropFirst(affix.count)) }
+        }
+        return lower
     }
 
     // MARK: - Type Inference

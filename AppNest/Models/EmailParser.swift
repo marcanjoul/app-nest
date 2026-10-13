@@ -64,10 +64,13 @@ struct EmailParser {
         // Strategy 1: Context-aware pattern matching (higher precision in job email context)
         // Patterns ordered from most to least specific.
         let companyPatterns = [
+            // Ashby template: "application for X and considering Otter.ai for your next role".
+            // Allows a domain-style suffix (.ai/.io/...) that the generic patterns treat as a sentence end.
+            #"and\s+considering\s+([A-Z][A-Za-z0-9&]*(?:\.(?:ai|io|co|com|app|dev|so|xyz))?(?:\s+[A-Z][A-Za-z0-9&]*){0,2})\s+for\b"#,
             // "joining BillionToOne" / "join our team at Acme"
             #"(?:joining|join)\s+(?:our\s+team\s+at\s+|the\s+team\s+at\s+)?([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
             // "role/position/internship at Company"
-            #"(?:role|position|opportunity|internship|job)\s+(?:at|with)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
+            #"(?:role|position|opportunity|opportunities|internship|job)\s+(?:at|with)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
             // "applied to [POSITION] at Company" — skip past the position title to find the company
             #"(?:apply|applied|applying)\s+(?:to|for)\s+.+?\s+at\s+([A-Z][A-Za-z0-9&®\s\.]+?)(?:\s+on\b|\s+via\b|\s+through\b|\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
             // "apply/applied/applying to/at Company" — negative lookahead skips articles that precede position titles
@@ -142,6 +145,7 @@ struct EmailParser {
         tagger.string = text
 
         var organizations: [String: Int] = [:]
+        var firstSeen: [String: String.Index] = [:]
         tagger.enumerateTags(
             in: text.startIndex..<text.endIndex,
             unit: .word,
@@ -151,7 +155,10 @@ struct EmailParser {
             if tag == .organizationName {
                 let name = String(text[tokenRange])
                     .trimmingCharacters(in: .whitespacesAndNewlines)
-                if !name.isEmpty { organizations[name, default: 0] += 1 }
+                if !name.isEmpty {
+                    organizations[name, default: 0] += 1
+                    if firstSeen[name] == nil { firstSeen[name] = tokenRange.lowerBound }
+                }
             }
             return true
         }
@@ -172,7 +179,11 @@ struct EmailParser {
                 && !positionKeywords.contains(where: { lower.contains($0) })
         }
 
-        return filtered.sorted(by: { $0.value > $1.value }).first
+        // Ties go to the earliest mention — Dictionary order is randomized per run, so without
+        // this the same email could name a different company each time.
+        return filtered.sorted(by: { a, b in
+            a.value != b.value ? a.value > b.value : firstSeen[a.key]! < firstSeen[b.key]!
+        }).first
             .map { stripCollectiveSuffix($0.key) }
     }
 
@@ -202,6 +213,9 @@ struct EmailParser {
         if let listed = positionFromLineBelow(text) { return listed }
 
         let patterns = [
+            // Ashby template: "application for Software Engineer, Front-End (New Grad) and considering…"
+            #"application\s+for\s+(?:the\s+)?(.+?)\s+and\s+considering\b"#,
+
             // "application for the position of [POSITION] has been received" — checked first because
             // pattern below reads "for the position" as a title of "the". Titles here carry commas
             // ("AI Engineer I, Enterprise Technology Services"), so stop at the verb, not the comma.
@@ -245,6 +259,8 @@ struct EmailParser {
                     let cleaned = cleanupPosition(cleaned: raw)
                     // A lone article means the pattern swallowed the noun it was meant to stop at.
                     if ["the", "a", "an", "our"].contains(cleaned.lowercased()) { continue }
+                    // Pronouns mean a sentence, not a title: "positions and we will review your application".
+                    if cleaned.range(of: #"\b(?:we|you|your|us)\b"#, options: [.regularExpression, .caseInsensitive]) != nil { continue }
                     if !cleaned.isEmpty && cleaned.count < 100 {
                         return cleaned
                     }
@@ -435,7 +451,7 @@ struct EmailParser {
                 "we have received your application", "thank you for your interest",
                 "confirm your application", "received your application",
                 "reviewing your application", "we received your application",
-                "successfully applied", "has been received"
+                "successfully applied", "has been received", "submit your application"
             ]),
         ]
 

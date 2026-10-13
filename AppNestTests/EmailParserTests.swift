@@ -211,4 +211,17 @@ struct FullEmailTests {
         #expect(result.status == .applied)
         #expect(result.highlights.contains { $0.field == .status })
     }
+
+    @Test("Ashby template: title with commas, company with a domain suffix")
+    func ashbyConfirmation() {
+        let email = """
+        Dear Mark,
+
+        Thank you for taking the time to submit your application for Software Engineer, Front-End (New Grad) and considering Otter.ai for your next role! We understand the time and thought that goes into applying for positions and we will review your application with our hiring team promptly.
+        """
+        let result = parser.parse(email)
+        #expect(result.companyName == "Otter.ai")
+        #expect(result.position == "Software Engineer, Front-End (New Grad)")
+        #expect(result.jobType == .fullTime)
+    }
 }

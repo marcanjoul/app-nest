@@ -46,7 +46,8 @@ from the bundled `Design System/lucide.ttf`, so they match `AppIcon` exactly.
 
 `01 Applications` · `01b Applications (edit)` · `02 Add a Job` · `03 Job Detail` ·
 `03b Job Detail (optional)` · `04 Profile` · `05 Onboarding ×3` · `06 Cycle Picker` ·
-`07 Insights` · `08 Parse Email` · `09 CSV Import Preview`, plus 5 dark-mode copies.
+`08 Parse Email` · `09 CSV Import Preview`, plus 4 dark-mode copies. (`07 Insights` was removed
+with `ProfileStatsView`.)
 
 Prototype flows: **First launch — Onboarding** and **Main app — Applications**.
 Transitions use the real motion tokens from `Animations.swift`

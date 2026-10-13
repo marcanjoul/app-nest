@@ -9,23 +9,33 @@ struct RootView: View {
 
         ZStack(alignment: .bottom) {
             TabView(selection: $bindableAppState.selectedTab) {
-                NavigationStack(path: $bindableAppState.navigationPath) {
-                    ApplicationView()
+                Tab(value: 0) {
+                    NavigationStack(path: $bindableAppState.navigationPath) {
+                        ApplicationView()
+                    }
+                } label: {
+                    AppLabel("Applications", systemImage: "briefcase")
                 }
-                .tabItem { AppLabel("Applications", systemImage: "briefcase") }
-                .tag(0)
 
-                NavigationStack {
-                    AddMenuView()
+                Tab(value: 2) {
+                    NavigationStack {
+                        ProfileView()
+                    }
+                } label: {
+                    AppLabel("Profile", systemImage: "person")
                 }
-                .tabItem { AppLabel("Add", systemImage: "plus") }
-                .tag(1)
 
-                NavigationStack {
-                    ProfileView()
+                // ponytail: borrows the search role purely for its look — iOS draws it as a
+                // separate glass circle at the trailing end of the tab bar. Tag stays 1 so
+                // `selectedTab = 1` call sites keep working.
+                Tab(value: 1, role: .search) {
+                    NavigationStack {
+                        AddMenuView()
+                    }
+                } label: {
+                    AppLabel("Add", systemImage: "plus")
+                        .accessibilityLabel("Add application")
                 }
-                .tabItem { AppLabel("Profile", systemImage: "person") }
-                .tag(2)
             }
             .animation(.none, value: appState.selectedTab)
         }

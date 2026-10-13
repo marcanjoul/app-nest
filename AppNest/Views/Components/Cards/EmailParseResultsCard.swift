@@ -13,14 +13,13 @@ struct EmailParseResultsCard: View {
 
     /// A parsed email fills company/position/status and little else, so the optional
     /// sections below are usually empty boxes the user has to scroll past. Show them
-    /// only when the parser actually found something — or when asked.
+    /// only when the parser actually found something — or when asked. The default resume
+    /// is attached on every parse, so it doesn't count as "found".
     private var hasOptionalContent: Bool {
         vm.editCompensationKind != nil
         || vm.editCompensationAmount != nil
-        || vm.editAttachedResume != nil
         || !vm.editNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         || !vm.editJobURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        || isInterviewStage
     }
 
     private var compensationAmountBinding: Binding<String> {
@@ -52,11 +51,9 @@ struct EmailParseResultsCard: View {
             header
             companyAvatar
             formFields
-            Divider().opacity(0.4)
             actionButtons
+                .padding(.top, 4)
         }
-        .padding(18)
-        .surface()
         // A fresh parse starts collapsed again. Lives here rather than on `formFields`,
         // whose .id(parseCount) tears that subtree down before onChange could fire.
         .onChange(of: vm.parseCount) { _, _ in showOptionalFields = false }
@@ -156,28 +153,32 @@ struct EmailParseResultsCard: View {
     }
 
     private var formFields: some View {
-        VStack(spacing: 12) {
-            EditableFieldRow(icon: "building.2", label: "Company", text: $vm.editCompany, placeholder: "Company name", index: 0)
-            EditableFieldRow(icon: "briefcase", label: "Position / Role", text: $vm.editPosition, placeholder: "Job title", index: 1, axis: .vertical)
-            TypePickerSection(type: $vm.editJobType, isEmbedded: true)
-            StatusPickerSection(
-                status: Binding(get: { vm.editStatus }, set: { vm.editStatus = $0 ?? .applied }),
-                isEmbedded: true
-            )
-            if isSeasonAllowed {
-                SeasonPickerSection(season: $vm.editSeason, isEmbedded: true)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)),
-                        removal: .opacity
-                    ))
+        VStack(spacing: 16) {
+            VStack(spacing: 12) {
+                EditableFieldRow(icon: "building.2", label: "Company", text: $vm.editCompany, placeholder: "Company name", index: 0)
+                EditableFieldRow(icon: "briefcase", label: "Position / Role", text: $vm.editPosition, placeholder: "Job title", index: 1, axis: .vertical)
             }
-            DateAppliedSection(
-                dateApplied: $vm.editDate,
-                status: vm.editStatus,
-                reminderEnabled: $vm.editReminderEnabled,
-                reminderTime: $vm.editReminderTime,
-                isEmbedded: true
-            )
+            .padding(16)
+            .surface()
+
+            // Embedded pickers carry 12pt padding of their own; 4 more lands them on the 16pt card grid.
+            VStack(spacing: 0) {
+                TypePickerSection(type: $vm.editJobType, isEmbedded: true)
+                StatusPickerSection(
+                    status: Binding(get: { vm.editStatus }, set: { vm.editStatus = $0 ?? .applied }),
+                    isEmbedded: true
+                )
+                if isSeasonAllowed {
+                    SeasonPickerSection(season: $vm.editSeason, isEmbedded: true)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)),
+                            removal: .opacity
+                        ))
+                }
+            }
+            .padding(4)
+            .surface()
+
             if showOptionalFields || hasOptionalContent {
                 optionalSections
             } else {
@@ -185,11 +186,14 @@ struct EmailParseResultsCard: View {
                     withAnimation(.appSmooth) { showOptionalFields = true }
                     AppHaptics.shared.light()
                 } label: {
-                    AppLabel("Add more details", systemImage: "plus.circle")
-                        .appFont(14, weight: .semibold)
-                        .foregroundStyle(Color.accentColor)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 10)
+                    HStack(spacing: 6) {
+                        Text("More details")
+                        AppIcon("chevron.down")
+                    }
+                    .appFont(14, weight: .semibold)
+                    .foregroundStyle(Theme.textSecondary)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
@@ -204,8 +208,14 @@ struct EmailParseResultsCard: View {
     }
 
     private var optionalSections: some View {
-        VStack(spacing: 12) {
-            JobLinkSection(jobURL: $vm.editJobURL, isEmbedded: true)
+        VStack(spacing: 16) {
+            DateAppliedSection(
+                dateApplied: $vm.editDate,
+                status: vm.editStatus,
+                reminderEnabled: $vm.editReminderEnabled,
+                reminderTime: $vm.editReminderTime
+            )
+            JobLinkSection(jobURL: $vm.editJobURL)
             Group {
                 CompensationSection(
                     kind: $vm.editCompensationKind,
@@ -227,8 +237,7 @@ struct EmailParseResultsCard: View {
                 if isInterviewStage {
                     InterviewKitSection(
                         companyResearch: $vm.editCompanyResearch,
-                        interviewNotes: $vm.editInterviewNotes,
-                        isEmbedded: true
+                        interviewNotes: $vm.editInterviewNotes
                     )
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .move(edge: .bottom)).combined(with: .scale(scale: 0.96, anchor: .top)),
@@ -236,7 +245,6 @@ struct EmailParseResultsCard: View {
                     ))
                 }
             }
-            .padding(.top, 4)
         }
         .transition(.asymmetric(
             insertion: .opacity.combined(with: .move(edge: .top)),
@@ -244,52 +252,42 @@ struct EmailParseResultsCard: View {
         ))
     }
 
+    // Matches JobDetailView's save bar: same height, type and glass accent, so every
+    // primary CTA in the app is the same green.
     private var actionButtons: some View {
         VStack(spacing: 12) {
             Button(action: onSave) {
                 HStack {
                     Text(vm.saveSuccess ? "Added!" : "Add to Applications")
-                        .appFont(16, weight: .bold)
+                        .appFont(14, weight: .bold)
                     Spacer()
                     ZStack {
                         Circle()
                             .fill(.white.opacity(0.16))
-                            .frame(width: 32, height: 32)
+                            .frame(width: 28, height: 28)
                         AppIcon(vm.saveSuccess ? "checkmark" : "plus")
-                            .appFont(12, weight: .bold)
+                            .appFont(10, weight: .bold)
                     }
                 }
                 .foregroundStyle(.white)
-                .padding(.leading, 24)
+                .padding(.leading, 20)
                 .padding(.trailing, 8)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background {
-                    let c: Color = vm.isSaveDisabled ? .secondary.opacity(0.3)
-                                 : vm.saveSuccess    ? Color.green
-                                 : Color.accentColor
-                    Capsule()
-                        .fill(c)
-                }
-                .animation(.appSmooth, value: vm.saveSuccess)
+                .frame(height: 44)
+                .glassEffect(.regular.tint(vm.isSaveDisabled ? Color.secondary.opacity(0.3) : Color.accentColor).interactive(), in: .capsule)
             }
-            .buttonStyle(PressScaleButtonStyle())
-            .scaleEffect(vm.saveSuccess ? 1.02 : 1.0)
-            .animation(.appBouncy, value: vm.saveSuccess)
+            .buttonStyle(.plain)
             .disabled(vm.isSaveDisabled || vm.saveSuccess)
 
             Button(action: onCancel) {
                 Text("Cancel")
-                    .appFont(16, weight: .bold)
-                    .foregroundStyle(.white)
+                    .appFont(14, weight: .semibold)
+                    .foregroundStyle(Theme.destructive)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background {
-                        Capsule()
-                            .fill(Theme.destructive)
-                    }
+                    .frame(height: 44)
+                    .glassEffect(.regular.tint(Theme.destructive.opacity(0.12)).interactive(), in: .capsule)
             }
-            .buttonStyle(PressScaleButtonStyle())
+            .buttonStyle(.plain)
         }
     }
 }

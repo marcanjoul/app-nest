@@ -23,11 +23,15 @@ struct AddMenuView: View {
     @State private var isSelectingCSVFile = false
     @State private var csvImportRows: [CSVImportRow] = []
     @State private var isPresentingImport = false
-    @State private var showLinkedInError = false
+    /// Inline warning under the link field: (title, explanation).
+    @State private var linkError: (title: String, message: String)?
 
     // Email parse
     @State private var vm = EmailParseViewModel()
     @State private var isShowingEmailParse = false
+    /// Company of the application just added from an email. Non-nil swaps the card body for a
+    /// compact confirmation with "Parse New Email" / "Done", instead of collapsing the card.
+    @State private var lastSavedCompany: String?
     @FocusState private var isEmailEditorFocused: Bool
 
     private let linkParser = LinkParser()
@@ -146,7 +150,10 @@ struct AddMenuView: View {
                 AppHaptics.shared.light()
                 withAnimation(.appSmooth) {
                     isShowingEmailParse.toggle()
+                    lastSavedCompany = nil
                     if isShowingEmailParse {
+                        isShowingPasteLink = false
+                        isTextFieldFocused = false
                         isEmailEditorFocused = true
                     } else {
                         isEmailEditorFocused = false
@@ -159,7 +166,8 @@ struct AddMenuView: View {
                     iconColor: emailAccent,
                     title: "Parse Email",
                     subtitle: "Extract details from an email.",
-                    isProminent: true
+                    isProminent: true,
+                    isExpanded: isShowingEmailParse
                 ) {
                     AppIcon("chevron.down")
                         .appFont(12, weight: .bold)
@@ -175,6 +183,7 @@ struct AddMenuView: View {
                 VStack(spacing: 16) {
                     Divider().opacity(0.4)
 
+                    if lastSavedCompany == nil {
                     VStack(alignment: .leading, spacing: 0) {
                         if !vm.isEmailExpanded && !vm.emailText.isEmpty && !vm.highlights.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
@@ -240,9 +249,14 @@ struct AddMenuView: View {
                                 TextEditor(text: bvm.emailText)
                                     .scrollContentBackground(.hidden)
                                     .background(Color.clear)
-                                    .frame(height: vm.hasResult ? 90 : 180)
+                                    .frame(height: vm.hasResult ? 90 : 150)
                                     .font(.subheadline)
                                     .focused($isEmailEditorFocused)
+                                    // A paste lands as one big jump; typing never adds more than a few
+                                    // characters at once. Drop the keyboard so the Parse button shows.
+                                    .onChange(of: vm.emailText) { old, new in
+                                        if new.count - old.count > 20 { isEmailEditorFocused = false }
+                                    }
                             }
                             .padding(12)
                             .background {
@@ -258,30 +272,11 @@ struct AddMenuView: View {
                             }
                             .padding(.bottom, 12)
 
-                            Button {
+                            primaryCTA(vm.hasResult ? "Re-parse" : "Parse Email",
+                                       icon: vm.hasResult ? "arrow.clockwise" : "sparkles",
+                                       isDisabled: vm.isParseDisabled) {
                                 vm.parseEmail(defaultResume: defaultResume)
-                            } label: {
-                                HStack {
-                                    Text(vm.hasResult ? "Re-parse" : "Parse Email")
-                                        .appFont(15, weight: .bold)
-                                    Spacer()
-                                    ZStack {
-                                        Circle()
-                                            .fill(Theme.textOnPrimary.opacity(0.16))
-                                            .frame(width: 28, height: 28)
-                                        AppIcon(vm.hasResult ? "arrow.clockwise" : "sparkles")
-                                            .appFont(11, weight: .bold)
-                                    }
-                                }
-                                .foregroundStyle(Theme.textOnPrimary)
-                                .padding(.leading, 20)
-                                .padding(.trailing, 8)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .glassEffect(.regular.tint(vm.isParseDisabled ? Color.secondary.opacity(0.3) : emailAccent).interactive(), in: .capsule)
                             }
-                            .buttonStyle(PressScaleButtonStyle())
-                            .disabled(vm.isParseDisabled)
                             .padding(.bottom, 20)
                         }
                     }
@@ -292,12 +287,13 @@ struct AddMenuView: View {
                             vm: vm,
                             resumes: resumes,
                             onSave: {
+                                let company = vm.editCompany.isEmpty ? "Application" : vm.editCompany
                                 vm.saveApplication(
                                     modelContext: modelContext,
                                     cycles: cycles,
                                     selectedCycleID: appState.selectedCycleID
                                 ) {
-                                    isShowingEmailParse = false
+                                    lastSavedCompany = company
                                 }
                             },
                             onCancel: { vm.reset() }
@@ -305,44 +301,10 @@ struct AddMenuView: View {
                         .padding(.horizontal, 20)
                         .padding(.bottom, 20)
                     }
+                    }
 
-                    if vm.saveSuccess {
-                        VStack(spacing: 12) {
-                            HStack(spacing: 12) {
-                                Button {
-                                    vm.reset()
-                                    isEmailEditorFocused = true
-                                } label: {
-                                    Text("Parse New Email")
-                                        .appFont(14, weight: .semibold)
-                                        .foregroundStyle(Theme.textPrimary)
-                                        .frame(maxWidth: .infinity)
-                                        .frame(height: 44)
-                                        .background(Color.primary.opacity(0.06))
-                                        .clipShape(Capsule())
-                                }
-                                .buttonStyle(PressScaleButtonStyle())
-
-                                Button {
-                                    withAnimation(.appSmooth) {
-                                        isShowingEmailParse = false
-                                        vm.reset()
-                                    }
-                                } label: {
-                                    Text("Done")
-                                        .appFont(14, weight: .semibold)
-                                        .foregroundStyle(Theme.textPrimary)
-                                        .frame(maxWidth: .infinity)
-                                        .frame(height: 44)
-                                        .background(Color.primary.opacity(0.06))
-                                        .clipShape(Capsule())
-                                }
-                                .buttonStyle(PressScaleButtonStyle())
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 20)
-                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    if let saved = lastSavedCompany {
+                        savedConfirmation(company: saved)
                     }
                 }
                 .transition(.asymmetric(
@@ -371,6 +333,8 @@ struct AddMenuView: View {
                 withAnimation(.appSmooth) {
                     isShowingPasteLink.toggle()
                     if isShowingPasteLink {
+                        isShowingEmailParse = false
+                        isEmailEditorFocused = false
                         isTextFieldFocused = true
                     } else {
                         isTextFieldFocused = false
@@ -383,7 +347,8 @@ struct AddMenuView: View {
                     iconColor: linkAccent,
                     title: "Paste Job Link",
                     subtitle: "Auto-extract company and role.",
-                    isProminent: true
+                    isProminent: true,
+                    isExpanded: isShowingPasteLink
                 ) {
                     AppIcon("chevron.down")
                         .appFont(12, weight: .bold)
@@ -399,57 +364,55 @@ struct AddMenuView: View {
                 VStack(spacing: 12) {
                     Divider().opacity(0.4)
 
-                    HStack(spacing: 12) {
+                    VStack(spacing: 12) {
                         TextField("https://...", text: $pasteLinkURL)
                             .focused($isTextFieldFocused)
                             .appFont(15)
                             .foregroundStyle(Theme.textPrimary)
-                            .padding(12)
-                            .background(Color.primary.opacity(0.04))
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .strokeBorder(isTextFieldFocused ? linkAccent.opacity(0.5) : Color.primary.opacity(0.08), lineWidth: 1)
-                            )
+                            .keyboardType(.URL)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .submitLabel(.go)
+                            .onSubmit(parseLink)
+                            .padding(.horizontal, 16)
+                            .frame(height: 44)
+                            .background {
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .fill(Color.primary.opacity(0.05))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                            .strokeBorder(isTextFieldFocused ? linkAccent.opacity(0.55) : Color.primary.opacity(0.08),
+                                                          lineWidth: isTextFieldFocused ? 1.5 : 1)
+                                    )
+                            }
                             .onChange(of: pasteLinkURL) { _, _ in
-                                withAnimation(.appFastOut) { showLinkedInError = false }
+                                withAnimation(.appFastOut) { linkError = nil }
                             }
 
-                        Button {
-                            parseLink()
-                        } label: {
-                            Group {
-                                if isParsing {
-                                    ProgressView().tint(Theme.textOnPrimary)
-                                } else {
-                                    Text("Parse")
-                                }
-                            }
-                            .appFont(15, weight: .bold)
-                            .foregroundStyle(Theme.textOnPrimary)
-                            .frame(width: 72, height: 44)
-                            .background(pasteLinkURL.isEmpty ? Color.secondary.opacity(0.3) : linkAccent)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        if isParsing {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                        } else {
+                            primaryCTA("Parse Link", icon: "sparkles", isDisabled: !isPasteLinkValid, action: parseLink)
+                                .animation(.appFastOut, value: isPasteLinkValid)
                         }
-                        .disabled(pasteLinkURL.isEmpty || isParsing)
-                        .scaleEffect(isParsing ? 0.95 : 1.0)
-                        .animation(.appFastOut, value: pasteLinkURL.isEmpty)
                     }
                     .padding(.horizontal, 20)
-                    .padding(.bottom, showLinkedInError ? 12 : 20)
+                    .padding(.bottom, linkError != nil ? 12 : 20)
                     .padding(.top, 12)
 
-                    if showLinkedInError {
+                    if let linkError {
                         HStack(alignment: .top, spacing: 10) {
                             AppIcon("exclamationmark.triangle.fill")
                                 .appFont(14)
                                 .foregroundStyle(Color.orange)
 
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("LinkedIn Links Not Supported")
+                                Text(linkError.title)
                                     .appFont(13, weight: .semibold)
                                     .foregroundStyle(Theme.textPrimary)
-                                Text("LinkedIn obscures job details in their URLs. Please open the actual application link or add manually.")
+                                Text(linkError.message)
                                     .appFont(12)
                                     .foregroundStyle(Theme.textSecondary)
                                     .lineSpacing(2)
@@ -495,10 +458,84 @@ struct AddMenuView: View {
         .buttonStyle(PressScaleButtonStyle())
     }
 
+    // MARK: - Saved Confirmation
+
+    private func savedConfirmation(company: String) -> some View {
+        VStack(spacing: 16) {
+            AppLabel("Added \(company)", systemImage: "checkmark.circle.fill")
+                .appFont(15, weight: .semibold)
+                .foregroundStyle(Color.accentColor)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(spacing: 12) {
+                Button {
+                    withAnimation(.appSmooth) { lastSavedCompany = nil }
+                    isEmailEditorFocused = true
+                } label: {
+                    Text("Parse New Email")
+                        .appFont(14, weight: .semibold)
+                        .foregroundStyle(Theme.textPrimary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .glassEffect(.regular.interactive(), in: .capsule)
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    withAnimation(.appSmooth) {
+                        isShowingEmailParse = false
+                        lastSavedCompany = nil
+                    }
+                } label: {
+                    Text("Done")
+                        .appFont(14, weight: .bold)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .glassEffect(.regular.tint(Color.accentColor).interactive(), in: .capsule)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 20)
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
+    }
+
+    // MARK: - Primary CTA
+
+    /// Same spec as `JobDetailView.saveBar`: 44pt green glass capsule, 14pt bold label, icon in a 28pt circle.
+    private func primaryCTA(_ title: String, icon: String, isDisabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Text(title)
+                    .appFont(14, weight: .bold)
+                Spacer()
+                ZStack {
+                    Circle()
+                        .fill(.white.opacity(0.16))
+                        .frame(width: 28, height: 28)
+                    AppIcon(icon)
+                        .appFont(10, weight: .bold)
+                }
+            }
+            .foregroundStyle(.white)
+            .padding(.leading, 20)
+            .padding(.trailing, 8)
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .glassEffect(.regular.tint(isDisabled ? Color.secondary.opacity(0.3) : Color.accentColor).interactive(), in: .capsule)
+        }
+        .buttonStyle(.plain)
+        .disabled(isDisabled)
+    }
+
     // MARK: - Link Parsing
 
+    private var isPasteLinkValid: Bool { LinkParser.webURL(from: pasteLinkURL) != nil }
+
     private func parseLink() {
-        guard !pasteLinkURL.isEmpty else { return }
+        guard isPasteLinkValid else { return }
         #if canImport(UIKit)
         UIApplication.shared.dismissKeyboard()
         #endif
@@ -511,7 +548,12 @@ struct AddMenuView: View {
                 withAnimation(.appSmooth) {
                     isParsing = false
                     if result.isLinkedIn {
-                        showLinkedInError = true
+                        linkError = ("LinkedIn Links Not Supported",
+                                     "LinkedIn obscures job details in their URLs. Please open the actual application link or add manually.")
+                    } else if result.isNotJobLink {
+                        AppHaptics.shared.warning()
+                        linkError = ("Not a Job Link",
+                                     "This doesn't look like a job posting. Paste the link to the job or application page.")
                     } else {
                         parsedData = result
                         isPresentingParsedJob = true
@@ -535,6 +577,8 @@ struct CardRowHeader<Trailing: View>: View {
     let title: String
     let subtitle: String
     var isProminent: Bool = false
+    /// Open cards drop the description — the content below explains itself — and the title grows.
+    var isExpanded: Bool = false
     @ViewBuilder let trailing: () -> Trailing
 
     var body: some View {
@@ -550,16 +594,20 @@ struct CardRowHeader<Trailing: View>: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .appFont(isProminent ? 18 : 17, weight: .semibold)
+                    .appFont(isExpanded ? 22 : (isProminent ? 18 : 17), weight: isExpanded ? .bold : .semibold)
                     .foregroundStyle(Theme.textPrimary)
                     .lineLimit(2)
                     .minimumScaleFactor(0.85)
-                Text(subtitle)
-                    .appFont(13, weight: .medium)
-                    .foregroundStyle(Theme.textSecondary)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
+                if !isExpanded {
+                    Text(subtitle)
+                        .appFont(13, weight: .medium)
+                        .foregroundStyle(Theme.textSecondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .transition(.opacity)
+                }
             }
+            .animation(.appSmooth, value: isExpanded)
 
             Spacer()
 
