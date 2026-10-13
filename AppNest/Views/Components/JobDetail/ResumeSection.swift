@@ -96,10 +96,10 @@ struct ResumeSection: View {
                         Button(action: onViewAll) {
                             AppLabel("Select Another", systemImage: "tray.full")
                                 .appFont(13, weight: .semibold)
-                                .foregroundStyle(Color.accentColor)
+                                .foregroundStyle(Theme.buttonGreen)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
-                                .glassEffect(.regular.tint(Color.accentColor.opacity(0.10)).interactive(), in: .capsule)
+                                .glassEffect(.regular.tint(Theme.buttonGreen.opacity(0.10)).interactive(), in: .capsule)
                         }
                         .buttonStyle(PressScaleButtonStyle())
                     }

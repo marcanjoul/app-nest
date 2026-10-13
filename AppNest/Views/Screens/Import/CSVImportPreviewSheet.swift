@@ -242,10 +242,10 @@ struct CSVImportPreviewSheet: View {
                 withAnimation(.appSmooth) { activeFilter = .all }
             }
             .appFont(14, weight: .semibold)
-            .foregroundStyle(Color.accentColor)
+            .foregroundStyle(Theme.buttonGreen)
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
-            .glassEffect(.regular.tint(Color.accentColor.opacity(0.10)).interactive(), in: .capsule)
+            .glassEffect(.regular.tint(Theme.buttonGreen.opacity(0.10)).interactive(), in: .capsule)
             .buttonStyle(PressScaleButtonStyle())
         }
         .frame(maxHeight: .infinity)
@@ -298,13 +298,7 @@ struct CSVImportPreviewSheet: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(Color.white.opacity(0.05))
                 } else {
-                    let avatarColors = Theme.avatarColor(for: r.companyName)
-                    let initial = String(r.companyName.prefix(1)).uppercased()
-                    Circle()
-                        .fill(avatarColors.background)
-                    Text(initial.isEmpty ? "?" : initial)
-                        .appFont(14, weight: .bold)
-                        .foregroundStyle(avatarColors.foreground)
+                    InitialAvatar(name: r.companyName, fontSize: 14)
                 }
             }
             .frame(width: 44, height: 44)

@@ -24,7 +24,7 @@ struct JobDetailView: View {
     @State private var position:          String
     @State private var type:              ApplicationType?
     @State private var status:            ApplicationStatus?
-    @State private var season:            ApplicationSeason?
+    @State private var seasons:           [ApplicationSeason]
     @State private var workMode:          WorkMode?
     @State private var location:          String
     @State private var dateApplied:       Date
@@ -52,7 +52,6 @@ struct JobDetailView: View {
     @State private var keyboardIsVisible = false
     @State private var scrollTargetSection: FormSection?
     @State private var isLogoAutoFetched = false
-    @State private var isShowingOptionalDetails = false
     var isSheetPresentation: Bool = false
 
     private enum FormSection: Hashable {
@@ -61,8 +60,6 @@ struct JobDetailView: View {
 
     private var isNewApplication: Bool { job == nil }
     private var isCSVMode: Bool { csvRow != nil }
-    // ponytail: new applications start folded; edits and CSV rows may already hold optional data, so show it.
-    private var showsOptionalDetails: Bool { isShowingOptionalDetails || !isNewApplication || isCSVMode }
 
     private var hasChanges: Bool {
         guard let job else { return true }
@@ -81,7 +78,7 @@ struct JobDetailView: View {
             || position             != job.position
             || type                 != job.jobType
             || status               != job.status
-            || season               != job.season
+            || seasons              != job.seasons
             || workMode             != job.workMode
             || location.trimmingCharacters(in: .whitespaces) != (job.location ?? "")
             || dateApplied          != job.dateApplied
@@ -135,7 +132,7 @@ struct JobDetailView: View {
         _position               = State(initialValue: job?.position ?? prefillPosition)
         _type                   = State(initialValue: job?.jobType ?? prefillType)
         _status                 = State(initialValue: job?.status ?? prefillStatus ?? .applied)
-        _season                 = State(initialValue: job?.season)
+        _seasons                = State(initialValue: job?.seasons ?? [])
         _workMode               = State(initialValue: job?.workMode)
         _location               = State(initialValue: job?.location ?? "")
         _dateApplied            = State(initialValue: job?.dateApplied ?? Date())
@@ -165,7 +162,7 @@ struct JobDetailView: View {
         _position               = State(initialValue: r.position)
         _type                   = State(initialValue: r.jobType)
         _status                 = State(initialValue: r.status)
-        _season                 = State(initialValue: r.season)
+        _seasons                = State(initialValue: r.season.map { [$0] } ?? [])
         _workMode               = State(initialValue: r.workMode)
         _location               = State(initialValue: r.location)
         _dateApplied            = State(initialValue: r.dateApplied)
@@ -195,7 +192,7 @@ struct JobDetailView: View {
         r.position = position
         r.jobType = type
         r.status = status
-        r.season = season
+        r.season = seasons.first   // ponytail: CSV rows hold one season — the first wins
         r.dateApplied = dateApplied
         r.workMode = workMode
         r.location = location
@@ -318,7 +315,7 @@ struct JobDetailView: View {
                         .padding(.trailing, 8)
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
-                        .glassEffect(.regular.tint(isSaveDisabled ? Color.secondary.opacity(0.3) : Color.accentColor).interactive(), in: .capsule)
+                        .glassEffect(.regular.tint(isSaveDisabled ? Color.secondary.opacity(0.3) : Theme.buttonGreen).interactive(), in: .capsule)
                     }
                     .buttonStyle(PressScaleButtonStyle())
                     .disabled(!isNewApplication && !hasChanges && missingFields.isEmpty)
@@ -341,7 +338,7 @@ struct JobDetailView: View {
         position             = job.position
         type                 = job.jobType
         status               = job.status
-        season               = job.season
+        seasons              = job.seasons
         workMode             = job.workMode
         location             = job.location ?? ""
         dateApplied          = job.dateApplied
@@ -403,7 +400,7 @@ struct JobDetailView: View {
     }
 
     private var seasonChanged: Bool {
-        !isNewApplication && season != job?.season
+        !isNewApplication && seasons != (job?.seasons ?? [])
     }
 
     private var dateOrReminderChanged: Bool {
@@ -491,7 +488,7 @@ struct JobDetailView: View {
 
     @ViewBuilder
     private var seasonSectionView: some View {
-        SeasonPickerSection(season: $season)
+        SeasonPickerSection(seasons: $seasons)
             .transition(.asymmetric(
                 insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)),
                 removal: .opacity
@@ -578,7 +575,7 @@ struct JobDetailView: View {
         let companyLogoImageData: Data?
         let type: ApplicationType?
         let status: ApplicationStatus?
-        let season: ApplicationSeason?
+        let seasons: [ApplicationSeason]
         let workMode: WorkMode?
         let location: String
         let dateApplied: Date
@@ -598,7 +595,7 @@ struct JobDetailView: View {
             companyLogoImageData: companyLogoImageData,
             type: type,
             status: status,
-            season: season,
+            seasons: seasons,
             workMode: workMode,
             location: location,
             dateApplied: dateApplied,
@@ -626,36 +623,25 @@ struct JobDetailView: View {
                 locationSectionView
             }
 
-            if !showsOptionalDetails {
-                Button {
-                    withAnimation(.appSmooth) { isShowingOptionalDetails = true }
-                    AppHaptics.shared.light()
-                } label: {
-                    HStack(spacing: 6) {
-                        Text("More details")
-                        AppIcon("chevron.down")
-                    }
-                    .appFont(14, weight: .semibold)
-                    .foregroundStyle(Theme.textSecondary)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .contentShape(Rectangle())
+            // Optional sections start as one-line cards; any that already hold data start open.
+            Group {
+                CollapsibleSection(icon: "link", title: "Job Link",
+                                   startsExpanded: !jobURL.isEmpty) { jobLinkSectionView }
+                CollapsibleSection(icon: "dollarsign.circle", title: "Compensation",
+                                   startsExpanded: compensationKind != nil || !compensationAmount.isEmpty) { compensationSectionView }
+                if isCSVMode {
+                    csvCycleSectionView
                 }
-                .buttonStyle(.plain)
-                .padding(.top, 8)
-            } else {
-                Group {
-                    jobLinkSectionView
-                    compensationSectionView
-                    if isCSVMode {
-                        csvCycleSectionView
-                    }
-                    if !isCSVMode {
-                        resumeSectionView
-                    }
-                    notesSectionView
-                    if isInterviewStage && !isCSVMode {
-                        interviewKitSectionView
-                    }
+                if !isCSVMode {
+                    // The default resume is attached to every new application, so it doesn't count as data.
+                    CollapsibleSection(icon: "doc.richtext", title: "Resume",
+                                       startsExpanded: !isNewApplication && (resumeID != nil || resumeFileName != nil)) { resumeSectionView }
+                }
+                CollapsibleSection(icon: "square.and.pencil", title: "Notes",
+                                   startsExpanded: !jobNotes.isEmpty) { notesSectionView }
+                if isInterviewStage && !isCSVMode {
+                    CollapsibleSection(icon: "person.wave.2.fill", title: "Interview Kit",
+                                       startsExpanded: !companyResearch.isEmpty || !interviewNotes.isEmpty) { interviewKitSectionView }
                 }
             }
         }
@@ -665,7 +651,7 @@ struct JobDetailView: View {
     private var formStack: some View {
         formStackContent
             .onChange(of: type) { _, _ in
-                if !isSeasonAllowed { season = nil }
+                if !isSeasonAllowed { seasons = [] }
             }
             .animation(.appSmooth, value: isSeasonAllowed)
             .animation(.appSmooth, value: isInterviewStage)
@@ -756,60 +742,71 @@ struct JobDetailView: View {
     // MARK: - Floating Nav Bar
 
     private var floatingNavBar: some View {
-        HStack(spacing: 10) {
-            if !isSheetPresentation || isNewApplication {
-                Button {
-                    dismiss()
-                } label: {
-                    AppIcon(isNewApplication ? "xmark" : "chevron.left")
-                        .appFont(14, weight: .semibold)
-                        .foregroundStyle(Theme.textPrimary)
-                        .frame(width: 44, height: 44)
-                        .glassEffect(.regular.interactive(), in: .circle)
-                }
-                .buttonStyle(PressScaleButtonStyle())
-                .accessibilityLabel(isNewApplication ? "Cancel" : "Back")
-            }
-
-            Spacer()
-
-            HStack(spacing: 10) {
-                Button { isShowingLogoAttribution.toggle() } label: {
-                    AppIcon("info.circle")
-                        .appFont(15, weight: .medium)
-                        .foregroundStyle(Theme.textSecondary)
-                        .frame(width: 44, height: 44)
-                        .glassEffect(.regular.interactive(), in: .circle)
-                }
-                .buttonStyle(PressScaleButtonStyle())
-                .popover(isPresented: $isShowingLogoAttribution, arrowEdge: .top) {
-                    HStack(spacing: 4) {
-                        Text("Company logos from").foregroundStyle(.secondary)
-                        Link("Logo.dev", destination: URL(string: "https://logo.dev")!)
-                    }
-                    .font(.footnote)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .presentationCompactAdaptation(.popover)
-                }
-                .accessibilityLabel("Logo attribution")
-
-                if !isNewApplication {
-                    Button { isShowingDeleteConfirmation = true } label: {
-                        AppIcon("trash")
-                            .appFont(14, weight: .bold)
-                            .foregroundStyle(Theme.destructive)
-                            .frame(width: 44, height: 44)
-                            .glassEffect(.regular.tint(Theme.destructive.opacity(0.12)).interactive(), in: .circle)
-                    }
-                    .buttonStyle(PressScaleButtonStyle())
-                    .accessibilityLabel("Delete application")
-                }
+        // Sheets: info + delete on the left, × on the right (where iOS sheets close).
+        // Pushed: ‹ on the left, info + delete on the right.
+        let closes = isSheetPresentation || isNewApplication
+        return HStack(spacing: 10) {
+            if closes {
+                secondaryNavButtons
+                Spacer()
+                navCircleButton(icon: "xmark", label: "Close")
+            } else {
+                navCircleButton(icon: "chevron.left", label: "Back")
+                Spacer()
+                secondaryNavButtons
             }
         }
         .padding(.horizontal, 16)
         .padding(.top, 20)
         .padding(.bottom, 8)
+    }
+
+    private func navCircleButton(icon: String, label: String) -> some View {
+        Button { dismiss() } label: {
+            AppIcon(icon)
+                .appFont(14, weight: .semibold)
+                .foregroundStyle(Theme.textPrimary)
+                .frame(width: 44, height: 44)
+                .glassEffect(.regular.interactive(), in: .circle)
+        }
+        .buttonStyle(PressScaleButtonStyle())
+        .accessibilityLabel(label)
+    }
+
+    private var secondaryNavButtons: some View {
+        HStack(spacing: 10) {
+            Button { isShowingLogoAttribution.toggle() } label: {
+                AppIcon("info.circle")
+                    .appFont(15, weight: .medium)
+                    .foregroundStyle(Theme.textSecondary)
+                    .frame(width: 44, height: 44)
+                    .glassEffect(.regular.interactive(), in: .circle)
+            }
+            .buttonStyle(PressScaleButtonStyle())
+            .popover(isPresented: $isShowingLogoAttribution, arrowEdge: .top) {
+                HStack(spacing: 4) {
+                    Text("Company logos from").foregroundStyle(.secondary)
+                    Link("Logo.dev", destination: URL(string: "https://logo.dev")!)
+                }
+                .font(.footnote)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .presentationCompactAdaptation(.popover)
+            }
+            .accessibilityLabel("Logo attribution")
+
+            if !isNewApplication {
+                Button { isShowingDeleteConfirmation = true } label: {
+                    AppIcon("trash")
+                        .appFont(14, weight: .bold)
+                        .foregroundStyle(Theme.destructive)
+                        .frame(width: 44, height: 44)
+                        .glassEffect(.regular.tint(Theme.destructive.opacity(0.12)).interactive(), in: .circle)
+                }
+                .buttonStyle(PressScaleButtonStyle())
+                .accessibilityLabel("Delete application")
+            }
+        }
     }
 
     // MARK: - Save
@@ -826,7 +823,7 @@ struct JobDetailView: View {
             job.position            = position.trimmingCharacters(in: .whitespaces)
             job.jobType             = type
             job.status              = status
-            job.season              = season
+            job.seasons             = seasons
             job.workMode            = workMode
             job.location            = location.trimmingCharacters(in: .whitespaces).isEmpty ? nil : location.trimmingCharacters(in: .whitespaces)
             job.dateApplied         = dateApplied
@@ -854,7 +851,7 @@ struct JobDetailView: View {
                 position: position,
                 jobType: type,
                 status: status,
-                season: season,
+                season: seasons.first,
                 cycle: selectedCycle,
                 dateApplied: dateApplied,
                 jobURL: jobURL.trimmingCharacters(in: .whitespaces).isEmpty ? nil : jobURL.trimmingCharacters(in: .whitespaces),
@@ -868,6 +865,7 @@ struct JobDetailView: View {
                 salaryPeriod: resolvedSalaryPeriod,
                 reminderEnabled: wantsReminder
             )
+            newJob.seasons   = seasons
             newJob.workMode  = workMode
             newJob.location  = location.trimmingCharacters(in: .whitespaces).isEmpty ? nil : location.trimmingCharacters(in: .whitespaces)
             newJob.companyResearch = companyResearch.isEmpty ? nil : companyResearch

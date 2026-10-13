@@ -9,19 +9,6 @@ struct EmailParseResultsCard: View {
     let onSave: () -> Void
     let onCancel: () -> Void
 
-    @State private var showOptionalFields = false
-
-    /// A parsed email fills company/position/status and little else, so the optional
-    /// sections below are usually empty boxes the user has to scroll past. Show them
-    /// only when the parser actually found something — or when asked. The default resume
-    /// is attached on every parse, so it doesn't count as "found".
-    private var hasOptionalContent: Bool {
-        vm.editCompensationKind != nil
-        || vm.editCompensationAmount != nil
-        || !vm.editNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        || !vm.editJobURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
     private var compensationAmountBinding: Binding<String> {
         Binding(
             get: {
@@ -54,9 +41,6 @@ struct EmailParseResultsCard: View {
             actionButtons
                 .padding(.top, 4)
         }
-        // A fresh parse starts collapsed again. Lives here rather than on `formFields`,
-        // whose .id(parseCount) tears that subtree down before onChange could fire.
-        .onChange(of: vm.parseCount) { _, _ in showOptionalFields = false }
         .transition(.asymmetric(
             insertion: .move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.95)),
             removal: .opacity
@@ -86,12 +70,7 @@ struct EmailParseResultsCard: View {
             Spacer()
             PhotosPicker(selection: $vm.pickerItem, matching: .images) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(Theme.avatarFill(for: vm.editCompany.isEmpty ? "?" : vm.editCompany))
-                    let initial = vm.editCompany.trimmingCharacters(in: .whitespaces).first.map { String($0).uppercased() } ?? "?"
-                    Text(initial)
-                        .appFont(24, weight: .bold)
-                        .foregroundStyle(.white)
+                    InitialAvatar(name: vm.editCompany, fontSize: 24)
                         .opacity(vm.fetchedLogoData == nil ? 1 : 0)
                     if let data = vm.fetchedLogoData, let ui = UIImage(data: data) {
                         Image(uiImage: ui)
@@ -118,13 +97,13 @@ struct EmailParseResultsCard: View {
                 .overlay(alignment: .bottomTrailing) {
                     ZStack {
                         Circle()
-                            .fill(Color.accentColor)
+                            .fill(Theme.buttonGreen)
                             .frame(width: 20, height: 20)
                         AppIcon("pencil")
                             .appFont(10, weight: .bold)
                             .foregroundStyle(.white)
                     }
-                    .shadow(color: Color.accentColor.opacity(0.28), radius: 4, y: 2)
+                    .shadow(color: Theme.buttonGreen.opacity(0.28), radius: 4, y: 2)
                     .offset(x: 2, y: 2)
                 }
             }
@@ -169,7 +148,7 @@ struct EmailParseResultsCard: View {
                     isEmbedded: true
                 )
                 if isSeasonAllowed {
-                    SeasonPickerSection(season: $vm.editSeason, isEmbedded: true)
+                    SeasonPickerSection(seasons: $vm.editSeasons, isEmbedded: true)
                         .transition(.asymmetric(
                             insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)),
                             removal: .opacity
@@ -179,50 +158,43 @@ struct EmailParseResultsCard: View {
             .padding(4)
             .surface()
 
-            if showOptionalFields || hasOptionalContent {
-                optionalSections
-            } else {
-                Button {
-                    withAnimation(.appSmooth) { showOptionalFields = true }
-                    AppHaptics.shared.light()
-                } label: {
-                    HStack(spacing: 6) {
-                        Text("More details")
-                        AppIcon("chevron.down")
-                    }
-                    .appFont(14, weight: .semibold)
-                    .foregroundStyle(Theme.textSecondary)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
+            optionalSections
         }
         .animation(.appSmooth, value: isSeasonAllowed)
         .animation(.appSmooth, value: isInterviewStage)
-        .animation(.appSmooth, value: showOptionalFields || hasOptionalContent)
         .onChange(of: vm.editJobType) { _, _ in
-            if !isSeasonAllowed { vm.editSeason = nil }
+            if !isSeasonAllowed { vm.editSeasons = [] }
         }
         .id(vm.parseCount)
     }
 
+    /// One-line collapsed cards; a section opens by itself only when the parser filled it.
+    /// `formFields` is re-identified per parse, so every new parse starts collapsed again.
     private var optionalSections: some View {
         VStack(spacing: 16) {
-            DateAppliedSection(
-                dateApplied: $vm.editDate,
-                status: vm.editStatus,
-                reminderEnabled: $vm.editReminderEnabled,
-                reminderTime: $vm.editReminderTime
-            )
-            JobLinkSection(jobURL: $vm.editJobURL)
-            Group {
+            CollapsibleSection(icon: "calendar", title: vm.editStatus == .toApply ? "Date to Apply" : "Date Applied",
+                               startsExpanded: false) {
+                DateAppliedSection(
+                    dateApplied: $vm.editDate,
+                    status: vm.editStatus,
+                    reminderEnabled: $vm.editReminderEnabled,
+                    reminderTime: $vm.editReminderTime
+                )
+            }
+            CollapsibleSection(icon: "link", title: "Job Link",
+                               startsExpanded: !vm.editJobURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) {
+                JobLinkSection(jobURL: $vm.editJobURL)
+            }
+            CollapsibleSection(icon: "dollarsign.circle", title: "Compensation",
+                               startsExpanded: vm.editCompensationKind != nil || vm.editCompensationAmount != nil) {
                 CompensationSection(
                     kind: $vm.editCompensationKind,
                     amount: compensationAmountBinding,
                     currency: compensationCurrencyBinding,
                     salaryPeriod: salaryPeriodBinding
                 )
+            }
+            CollapsibleSection(icon: "doc.richtext", title: "Resume", startsExpanded: false) {
                 ResumeSection(
                     resumes: resumes,
                     attachedResume: vm.editAttachedResume,
@@ -233,23 +205,21 @@ struct EmailParseResultsCard: View {
                     onPick: {},
                     onClear: { vm.editAttachedResume = nil }
                 )
+            }
+            CollapsibleSection(icon: "square.and.pencil", title: "Notes",
+                               startsExpanded: !vm.editNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) {
                 JobNotesSection(jobNotes: $vm.editNotes)
-                if isInterviewStage {
+            }
+            if isInterviewStage {
+                CollapsibleSection(icon: "person.wave.2.fill", title: "Interview Kit", startsExpanded: false) {
                     InterviewKitSection(
                         companyResearch: $vm.editCompanyResearch,
                         interviewNotes: $vm.editInterviewNotes
                     )
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .move(edge: .bottom)).combined(with: .scale(scale: 0.96, anchor: .top)),
-                        removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .top))
-                    ))
                 }
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .transition(.asymmetric(
-            insertion: .opacity.combined(with: .move(edge: .top)),
-            removal: .opacity
-        ))
     }
 
     // Matches JobDetailView's save bar: same height, type and glass accent, so every
@@ -274,7 +244,7 @@ struct EmailParseResultsCard: View {
                 .padding(.trailing, 8)
                 .frame(maxWidth: .infinity)
                 .frame(height: 44)
-                .glassEffect(.regular.tint(vm.isSaveDisabled ? Color.secondary.opacity(0.3) : Color.accentColor).interactive(), in: .capsule)
+                .glassEffect(.regular.tint(vm.isSaveDisabled ? Color.secondary.opacity(0.3) : Theme.buttonGreen).interactive(), in: .capsule)
             }
             .buttonStyle(.plain)
             .disabled(vm.isSaveDisabled || vm.saveSuccess)

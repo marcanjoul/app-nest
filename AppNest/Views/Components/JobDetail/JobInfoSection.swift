@@ -13,19 +13,11 @@ struct JobInfoSection: View {
     var onAutoFetchStateChanged: ((Bool) -> Void)? = nil
 
     private enum Field: Hashable { case company, position }
+    private static let logoShape = RoundedRectangle(cornerRadius: 24, style: .continuous)
     @FocusState private var focused: Field?
     @Environment(\.colorScheme) private var colorScheme
     @State private var isFetchingLogo = false
     @State private var isLogoAutoFetched = false
-
-    /// ponytail: was a local copy of Theme.avatarColors indexed by `abs(key.hashValue)`.
-    /// Swift seeds `hashValue` per process, so the logo changed colour on every launch and
-    /// disagreed with the job card behind it. Theme.avatarFill hashes the full company name
-    /// with Theme.stableHash, so detail and card now always match.
-    private var accentTint: Color {
-        let trimmed = companyName.trimmingCharacters(in: .whitespaces)
-        return Theme.avatarFill(for: trimmed.isEmpty ? "AppNest" : trimmed)
-    }
 
     private var logoImage: Image? {
         guard let data = companyLogoImageData, let ui = UIImage(data: data) else { return nil }
@@ -37,23 +29,12 @@ struct JobInfoSection: View {
         return UIImage(data: data) != nil
     }
 
-    private var logoInitial: String {
-        let trimmed = companyName.trimmingCharacters(in: .whitespaces)
-        guard let first = trimmed.first else { return "?" }
-        return String(first).uppercased()
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             PhotosPicker(selection: $pickerItem, matching: .images) {
                 ZStack {
-                    ZStack {
-                        Circle()
-                            .fill(accentTint)
-                        Text(logoInitial)
-                            .appFont(30, weight: .heavy)
-                            .foregroundStyle(.white)
-                    }
+                    // Same pastel placeholder as the job card and profile — shown until a logo loads.
+                    InitialAvatar(name: companyName, fontSize: 30)
                     .opacity(hasLogo ? 0 : 1)
                     .animation(.appFastOut, value: hasLogo)
 
@@ -70,15 +51,16 @@ struct JobInfoSection: View {
                     }
                 }
                 .frame(width: 72, height: 72)
-                .clipShape(Circle())
+                // Same rounded square as the job card's 60pt / r20 avatar, scaled to 72pt.
+                .clipShape(Self.logoShape)
                 .background {
                     if isFetchingLogo {
-                        Circle()
+                        Self.logoShape
                             .fill(Color.primary.opacity(0.12))
                     }
                 }
                 .overlay(
-                    Circle()
+                    Self.logoShape
                         .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
                 )
                 .shadow(color: .black.opacity(0.20), radius: 8, y: 4)
@@ -93,7 +75,7 @@ struct JobInfoSection: View {
                             .appFont(9, weight: .bold)
                             .foregroundStyle(.white)
                             .frame(width: 18, height: 18)
-                            .background(Circle().fill(accentTint))
+                            .background(Circle().fill(Theme.buttonGreen))
                     }
                     .offset(x: 2, y: 2)
                 }
@@ -153,65 +135,85 @@ struct JobInfoSection: View {
                 withAnimation(.appFastOut) { isFetchingLogo = false }
             }
 
-            // Company name — grouped tightly with the logo (proximity)
-            TextField("Company Name *", text: $companyName)
-                .multilineTextAlignment(.center)
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-                .appFont(13, weight: .semibold)
-                .foregroundStyle(Theme.textSecondary)
-                .textInputAutocapitalization(.words)
-                .focused($focused, equals: .company)
-                .submitLabel(.next)
-                .onSubmit { focused = .position }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
-                .padding(.bottom, 6)
-                .overlay(alignment: .bottom) {
-                    Text(companyName.isEmpty ? "Company Name *" : companyName)
-                        .appFont(13, weight: .semibold)
-                        .lineLimit(1)
-                        .fixedSize()
-                        .hidden()
-                        .overlay(alignment: .bottom) {
-                            Rectangle()
-                                .fill(focused == .company ? Color.accentColor : Color.primary.opacity(0.10))
-                                .frame(height: 1)
-                                .animation(.appCrisp, value: focused == .company)
-                        }
+            VStack(spacing: 12) {
+                boxedField(.company, label: "Company", icon: "building.2", placeholder: "Company name",
+                           text: $companyName, fontSize: 17, capitalization: .words, submit: .next) {
+                    focused = .position
                 }
-
-            // Position title — clear visual separation from identity group above
-            TextField("Position Title *", text: $position)
-                .multilineTextAlignment(.center)
-                .lineLimit(1)
-                .minimumScaleFactor(0.4)
-                .appFont(24, weight: .bold)
-                .foregroundStyle(Theme.textPrimary)
-                .focused($focused, equals: .position)
-                .submitLabel(.done)
-                .onSubmit { focused = nil }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 20)
-                .padding(.top, 22)
-                .padding(.bottom, 9)
-                .overlay(alignment: .bottom) {
-                    Text(position.isEmpty ? "Position Title *" : position)
-                        .appFont(24, weight: .bold)
-                        .lineLimit(1)
-                        .fixedSize()
-                        .hidden()
-                        .overlay(alignment: .bottom) {
-                            Rectangle()
-                                .fill(focused == .position ? Color.accentColor : Color.primary.opacity(0.12))
-                                .frame(height: focused == .position ? 2 : 1)
-                                .animation(.appCrisp, value: focused == .position)
-                        }
+                boxedField(.position, label: "Position", icon: "briefcase", placeholder: "Job title",
+                           text: $position, fontSize: 17, capitalization: .words, submit: .done) {
+                    focused = nil
                 }
+            }
+            .padding(.top, 16)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
         .padding(.bottom, 4)
+    }
+
+    // MARK: - Boxed field
+
+    /// Labelled box, same look as the parse card's `EditableFieldRow`. While editing, a long
+    /// value scrolls so the cursor end stays visible (the front is cut off). Once focus leaves,
+    /// the value shows from the start with "…" at the end instead.
+    // ponytail: the truncated label is a Text laid over a transparent TextField — TextField
+    // can't tail-truncate on its own. Hit-testing passes through, so tapping still edits.
+    @ViewBuilder
+    private func boxedField(_ field: Field, label: String, icon: String, placeholder: String,
+                            text: Binding<String>, fontSize: CGFloat,
+                            capitalization: TextInputAutocapitalization, submit: SubmitLabel,
+                            onSubmit: @escaping () -> Void) -> some View {
+        let isFocused = focused == field
+        let isEmpty = text.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty
+        VStack(alignment: .leading, spacing: 6) {
+            // Label sits above the box, not inside it.
+            HStack(spacing: 6) {
+                AppIcon(icon)
+                    .appFont(11, weight: .semibold)
+                    .frame(width: 14)
+                Text(label)
+                    .appFont(12, weight: .medium)
+                Text("*")
+                    .appFont(12, weight: .bold)
+                    .foregroundStyle(.orange)
+            }
+            .foregroundStyle(Theme.textSecondary)
+            .padding(.leading, 4)
+
+            TextField(placeholder, text: text)
+                .appFont(fontSize, weight: .semibold)
+                .foregroundStyle(isFocused || isEmpty ? Theme.textPrimary : .clear)
+                .textInputAutocapitalization(capitalization)
+                .lineLimit(1)
+                .focused($focused, equals: field)
+                .submitLabel(submit)
+                .onSubmit(onSubmit)
+                .overlay(alignment: .leading) {
+                    if !isFocused && !isEmpty {
+                        Text(text.wrappedValue)
+                            .appFont(fontSize, weight: .semibold)
+                            .foregroundStyle(Theme.textPrimary)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(isFocused ? Color.accentColor.opacity(0.04) : Color.primary.opacity(0.04))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .strokeBorder(isFocused ? Color.accentColor.opacity(0.5) : Color.primary.opacity(0.07),
+                                              lineWidth: isFocused ? 1.5 : 1)
+                        }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { focused = field }
+        }
+        .animation(.appFastOut, value: isFocused)
     }
 }

@@ -14,7 +14,8 @@ struct EditableFieldRow: View {
     private var isEmpty: Bool { text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 6) {
+            // Label sits above the box, not inside it.
             HStack(spacing: 6) {
                 AppIcon(icon)
                     .appFont(11, weight: .semibold)
@@ -29,29 +30,31 @@ struct EditableFieldRow: View {
                         .foregroundStyle(.orange.opacity(0.85))
                 }
             }
+            .padding(.leading, 4)
 
             TextField(placeholder.isEmpty ? label : placeholder, text: $text, axis: axis)
-                .font(.subheadline.weight(.medium))
+                .appFont(17, weight: .semibold)
                 .foregroundStyle(Theme.textPrimary)
                 .focused($isFocused)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(
-                    isFocused ? Color.accentColor.opacity(0.04) :
-                    isEmpty   ? Color.orange.opacity(0.06) :
-                    Color.primary.opacity(0.04)
-                )
-                .overlay {
+                .padding(.horizontal, 12)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(
-                            isFocused ? Color.accentColor.opacity(0.5) :
-                            isEmpty   ? Color.orange.opacity(0.28) :
-                            Color.primary.opacity(0.07),
-                            lineWidth: isFocused ? 1.5 : 1
+                        .fill(
+                            isFocused ? Color.accentColor.opacity(0.04) :
+                            isEmpty   ? Color.orange.opacity(0.06) :
+                            Color.primary.opacity(0.04)
                         )
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .strokeBorder(
+                                    isFocused ? Color.accentColor.opacity(0.5) :
+                                    isEmpty   ? Color.orange.opacity(0.28) :
+                                    Color.primary.opacity(0.07),
+                                    lineWidth: isFocused ? 1.5 : 1
+                                )
+                        }
                 }
         }
         .animation(.appFastOut, value: isFocused)

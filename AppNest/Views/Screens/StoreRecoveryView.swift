@@ -23,7 +23,7 @@ struct StoreRecoveryView: View {
                         icon: "checkmark.circle.fill",
                         tint: .green,
                         title: "Restored from \(restored.displayName)",
-                        message: "Quit AppNest completely and open it again to finish."
+                        message: "Quit App Nest completely and open it again to finish."
                     )
                 } else if snapshots.isEmpty {
                     banner(

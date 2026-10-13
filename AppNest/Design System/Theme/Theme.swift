@@ -17,6 +17,12 @@ enum Theme {
 
     static let destructive = Color(red: 0.93, green: 0.33, blue: 0.40)
 
+    // MARK: - Button Green
+
+    /// Every green button — filled CTAs and light-tinted capsule buttons. Taken from the
+    /// "Upload Resume" pill. Selection states and icons keep `accent`.
+    static let buttonGreen = Color(red: 0.30, green: 0.80, blue: 0.45)
+
     // MARK: - Background
 
     static let background = Color(UIColor { trait in
@@ -75,22 +81,6 @@ enum Theme {
         return StatusStyle(tintColor: c, fillColor: c.opacity(0.12), iconName: status.iconName)
     }
 
-
-// MARK: - Avatar Colors
-
-    static let avatarColors: [Color] = [
-        Color(red: 0.36, green: 0.66, blue: 0.96),
-        Color(red: 0.96, green: 0.73, blue: 0.28),
-        Color(red: 0.30, green: 0.80, blue: 0.45),
-        Color(red: 0.93, green: 0.38, blue: 0.44),
-        Color(red: 0.62, green: 0.52, blue: 0.96),
-        Color(red: 0.96, green: 0.52, blue: 0.62),
-    ]
-
-    static func avatarFill(for name: String) -> Color {
-        let hash = stableHash(name)
-        return avatarColors[hash % avatarColors.count]
-    }
 
     // MARK: - Avatar Palette (light-mode)
 

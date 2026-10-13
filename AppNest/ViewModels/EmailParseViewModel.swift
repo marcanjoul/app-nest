@@ -18,7 +18,7 @@ final class EmailParseViewModel {
     var editPosition = ""
     var editJobType: ApplicationType? = nil
     var editStatus: ApplicationStatus = .applied
-    var editSeason: ApplicationSeason? = nil
+    var editSeasons: [ApplicationSeason] = []
     var editDate: Date? = nil
     var editCompensationKind: CompensationKind? = nil
     var editCompensationAmount: Double? = nil
@@ -71,7 +71,7 @@ final class EmailParseViewModel {
         editPosition = ""
         editJobType = nil
         editStatus = .applied
-        editSeason = nil
+        editSeasons = []
         editDate = nil
         editCompensationKind = nil
         editCompensationAmount = nil
@@ -119,7 +119,7 @@ final class EmailParseViewModel {
             editPosition = result.position ?? ""
             editJobType = result.jobType
             editStatus = result.status ?? .applied
-            editSeason = result.season
+            editSeasons = result.season.map { [$0] } ?? []
             editDate = result.dateApplied
             editCompensationKind = nil
             editCompensationAmount = nil
@@ -150,7 +150,7 @@ final class EmailParseViewModel {
             position: editPosition.isEmpty ? "Unknown Position" : editPosition,
             jobType: editJobType,
             status: editStatus,
-            season: editSeason,
+            season: editSeasons.first,
             cycle: selectedCycle,
             dateApplied: editDate ?? Date(),
             jobURL: editJobURL.trimmingCharacters(in: .whitespaces).isEmpty ? nil : editJobURL.trimmingCharacters(in: .whitespaces),
@@ -167,6 +167,7 @@ final class EmailParseViewModel {
         )
         newJob.companyResearch = editCompanyResearch.isEmpty ? nil : editCompanyResearch
         newJob.interviewNotes  = editInterviewNotes.isEmpty  ? nil : editInterviewNotes
+        newJob.seasons = editSeasons
         modelContext.insert(newJob)
         AppHaptics.shared.success()
         withAnimation(.appSmooth) { saveSuccess = true }

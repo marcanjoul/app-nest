@@ -80,7 +80,7 @@ struct ApplicationView: View {
         }
         if !selectedSeasons.isEmpty {
             result = result.filter { job in
-                job.season.map { selectedSeasons.contains($0) } ?? false
+                !selectedSeasons.isDisjoint(with: job.seasons)
             }
         }
         if !selectedWorkModes.isEmpty {
@@ -361,7 +361,7 @@ struct ApplicationView: View {
             }
         )) {            NavigationStack { CyclePickerSheet(isPresented: $isShowingCyclePicker) }
                 .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
+                .presentationDragIndicator(.hidden)
         }
         .alert("New Cycle", isPresented: $isAddingFirstCycle) {
             TextField("e.g. Summer 2026", text: $newCycleName)
@@ -464,10 +464,10 @@ struct ApplicationView: View {
             }
             .buttonStyle(PressScaleButtonStyle())
             .appFont(13, weight: .bold)
-            .foregroundStyle(Color.accentColor)
+            .foregroundStyle(Theme.buttonGreen)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .glassEffect(.regular.tint(Color.accentColor.opacity(0.12)).interactive(), in: .capsule)
+            .glassEffect(.regular.tint(Theme.buttonGreen.opacity(0.12)).interactive(), in: .capsule)
         }
     }
 
@@ -507,7 +507,7 @@ struct ApplicationView: View {
                 escapeCSV(app.position),
                 escapeCSV(app.jobType?.rawValue ?? ""),
                 escapeCSV(app.status?.rawValue ?? ""),
-                escapeCSV(app.season?.rawValue ?? ""),
+                escapeCSV(app.seasons.map(\.rawValue).joined(separator: " / ")),
                 escapeCSV(app.workMode?.rawValue ?? ""),
                 escapeCSV(app.location ?? ""),
                 escapeCSV(dateFormatter.string(from: app.dateApplied)),
@@ -520,7 +520,7 @@ struct ApplicationView: View {
         }.joined(separator: "\n")
 
         let csv = header + rows
-        let fileName = "AppNest_Export_\(Date().formatted(.dateTime.year().month().day())).csv"
+        let fileName = "App Nest Export \(Date().formatted(.dateTime.year().month().day())).csv"
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
 
         do {
@@ -888,7 +888,7 @@ struct ApplicationView: View {
     private var emptyStateActions: some View {
         Button {
             AppHaptics.shared.light()
-            appState.selectedTab = 1 // Navigate to Add tab
+            appState.isShowingAdd = true
         } label: {
             HStack(spacing: 12) {
                 Text("Add a Job")
@@ -905,7 +905,7 @@ struct ApplicationView: View {
             .padding(.leading, 18)
             .padding(.trailing, 8)
             .frame(height: 38)
-            .glassEffect(.regular.tint(Color.accentColor).interactive(), in: .capsule)
+            .glassEffect(.regular.tint(Theme.buttonGreen).interactive(), in: .capsule)
         }
         .buttonStyle(PressScaleButtonStyle())
         .padding(.top, 10)
@@ -935,10 +935,10 @@ struct ApplicationView: View {
                     AppHaptics.shared.light()
                 }
                 .appFont(13, weight: .semibold)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Theme.buttonGreen)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .glassEffect(.regular.tint(Color.accentColor.opacity(0.10)).interactive(), in: .capsule)
+                .glassEffect(.regular.tint(Theme.buttonGreen.opacity(0.10)).interactive(), in: .capsule)
                 .buttonStyle(PressScaleButtonStyle())
             } else {
                 AppIcon("magnifyingglass")
@@ -953,10 +953,10 @@ struct ApplicationView: View {
                         AppHaptics.shared.light()
                     }
                     .appFont(13, weight: .semibold)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Theme.buttonGreen)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .glassEffect(.regular.tint(Color.accentColor.opacity(0.10)).interactive(), in: .capsule)
+                    .glassEffect(.regular.tint(Theme.buttonGreen.opacity(0.10)).interactive(), in: .capsule)
                     .buttonStyle(PressScaleButtonStyle())
 
                     if hasActiveFilters {

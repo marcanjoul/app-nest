@@ -20,7 +20,6 @@ struct DarkJobCardView: View {
         Self.relativeDateFormatter.localizedString(for: job.dateApplied, relativeTo: Date())
     }
 
-    private var initial: String { String(job.companyName.prefix(1)).uppercased() }
 
     #if canImport(UIKit)
     // ponytail: UIImage(data:) decodes on every body pass — cache it. Key includes byte
@@ -127,18 +126,10 @@ struct DarkJobCardView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.white.opacity(0.05))
         } else {
-            Text(initial)
-                .appFont(20, weight: .bold)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Theme.avatarFill(for: job.companyName))
+            InitialAvatar(name: job.companyName, fontSize: 20)
         }
         #else
-        Text(initial)
-            .appFont(20, weight: .bold)
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Theme.avatarFill(for: job.companyName))
+        InitialAvatar(name: job.companyName, fontSize: 20)
         #endif
     }
 }

@@ -135,8 +135,28 @@ class JobApplication {
     /// Current status of the application in the hiring process.
     var status: ApplicationStatus?
     
-    /// Season when the position is expected to start.
+    /// Season when the position is expected to start — the first of `seasons`. Kept as its own
+    /// column so stores and CSVs written before multi-season keep reading correctly.
     var season: ApplicationSeason?
+
+    /// Every season the role spans (e.g. Summer + Fall co-ops), comma-joined. Empty for jobs
+    /// saved before multi-season; `seasons` falls back to `season` for those.
+    // ponytail: a joined String, not [ApplicationSeason] — a new String column with a default
+    // is a guaranteed lightweight migration; a Codable array column is not.
+    var seasonsRaw: String = ""
+
+    /// All seasons, in calendar order. Setting it keeps `season` = the first one.
+    var seasons: [ApplicationSeason] {
+        get {
+            let parsed = seasonsRaw.split(separator: ",").compactMap { ApplicationSeason(rawValue: String($0)) }
+            return parsed.isEmpty ? (season.map { [$0] } ?? []) : parsed
+        }
+        set {
+            let ordered = ApplicationSeason.allCases.filter(newValue.contains)
+            seasonsRaw = ordered.map(\.rawValue).joined(separator: ",")
+            season = ordered.first
+        }
+    }
 
     /// Whether the position is remote, hybrid, or on-site.
     var workMode: WorkMode?

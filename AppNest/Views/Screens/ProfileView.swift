@@ -57,10 +57,6 @@ struct ProfileView: View {
     /// Keyed off the initial, not the full name: hashing the whole string reshuffled the
     /// colour on every keystroke while typing. The avatar only ever shows one letter, so
     /// the colour should settle as soon as that letter does.
-    private var avatarColorKey: String {
-        profileInitial.isEmpty ? "AppNest" : profileInitial
-    }
-
     // MARK: - Pipeline data
 
 
@@ -131,7 +127,7 @@ struct ProfileView: View {
         .sheet(isPresented: $isShowingCyclePicker) {
             NavigationStack { CyclePickerSheet(isPresented: $isShowingCyclePicker) }
                 .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
+                .presentationDragIndicator(.hidden)
         }
         .onChange(of: avatarSelection) { _, newValue in
             guard let newValue else { return }
@@ -152,13 +148,13 @@ struct ProfileView: View {
                     .overlay(alignment: .bottomTrailing) {
                         ZStack {
                             Circle()
-                                .fill(Color.accentColor)
+                                .fill(Theme.buttonGreen)
                                 .frame(width: 26, height: 26)
                             AppIcon("camera.fill")
                                 .appFont(11, weight: .bold)
                                 .foregroundStyle(.white)
                         }
-                        .shadow(color: Color.accentColor.opacity(0.28), radius: 4, y: 2)
+                        .shadow(color: Theme.buttonGreen.opacity(0.28), radius: 4, y: 2)
                         .offset(x: 2, y: 2)
                     }
             }
@@ -271,19 +267,7 @@ struct ProfileView: View {
 
     @ViewBuilder
     private var initialAvatar: some View {
-        let colors = Theme.avatarColor(for: avatarColorKey)
-        ZStack {
-            colors.background
-            if profileInitial.isEmpty {
-                AppIcon("person.fill")
-                    .appFont(34, weight: .bold)
-                    .foregroundStyle(colors.foreground)
-            } else {
-                Text(profileInitial)
-                    .appFont(36, weight: .bold)
-                    .foregroundStyle(colors.foreground)
-            }
-        }
+        InitialAvatar(name: profileInitial, fontSize: 36, emptyIcon: "person.fill")
     }
 
     // MARK: - Cycle chip
@@ -388,10 +372,10 @@ struct ProfileView: View {
                             Button { isShowingResumeManager = true } label: {
                                 AppLabel("View All", systemImage: "tray.full")
                                     .appFont(13, weight: .semibold)
-                                    .foregroundStyle(Color.accentColor)
+                                    .foregroundStyle(Theme.buttonGreen)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 6)
-                                    .glassEffect(.regular.tint(Color.accentColor.opacity(0.10)).interactive(), in: .capsule)
+                                    .glassEffect(.regular.tint(Theme.buttonGreen.opacity(0.10)).interactive(), in: .capsule)
                             }
                             .buttonStyle(PressScaleButtonStyle())
                         }

@@ -6,6 +6,7 @@ struct AddMenuView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \ResumeDocument.createdAt, order: .reverse) private var resumes: [ResumeDocument]
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
@@ -45,6 +46,7 @@ struct AddMenuView: View {
         ZStack {
             AmbientBackground()
 
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     addHeader
@@ -53,6 +55,7 @@ struct AddMenuView: View {
                     pasteLinkCard
 
                     emailParseCard
+                        .id("emailParseCard")
                         .padding(.horizontal, isShowingEmailParse ? -16 : 0)
                         .animation(.appSmooth, value: isShowingEmailParse)
 
@@ -81,6 +84,13 @@ struct AddMenuView: View {
                 .padding(.bottom, 24)
             }
             .scrollBounceBehavior(.basedOnSize)
+            // In the sheet the email card sits below the link card; lift it to the top so the
+            // editor *and* its Parse button clear the keyboard.
+            .onChange(of: isShowingEmailParse) { _, isOpen in
+                guard isOpen else { return }
+                withAnimation(.appSmooth) { proxy.scrollTo("emailParseCard", anchor: .top) }
+            }
+            }
         }
         .toolbar(.hidden, for: .navigationBar)
         .dismissKeyboardToolbar()
@@ -128,16 +138,27 @@ struct AddMenuView: View {
     }
 
     private var addHeader: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        HStack(alignment: .center) {
             Text("Add a Job")
                 .appFont(34, weight: .bold)
                 .foregroundStyle(Theme.textPrimary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
+                .accessibilityAddTraits(.isHeader)
 
+            Spacer()
+
+            // Same 44pt glass circle as JobDetailView's close button.
+            Button { dismiss() } label: {
+                AppIcon("xmark")
+                    .appFont(14, weight: .semibold)
+                    .foregroundStyle(Theme.textPrimary)
+                    .frame(width: 44, height: 44)
+                    .glassEffect(.regular.interactive(), in: .circle)
+            }
+            .buttonStyle(PressScaleButtonStyle())
+            .accessibilityLabel("Close")
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Email Parse Card
@@ -249,7 +270,7 @@ struct AddMenuView: View {
                                 TextEditor(text: bvm.emailText)
                                     .scrollContentBackground(.hidden)
                                     .background(Color.clear)
-                                    .frame(height: vm.hasResult ? 90 : 150)
+                                    .frame(height: 90)
                                     .font(.subheadline)
                                     .focused($isEmailEditorFocused)
                                     // A paste lands as one big jump; typing never adds more than a few
@@ -492,7 +513,7 @@ struct AddMenuView: View {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
-                        .glassEffect(.regular.tint(Color.accentColor).interactive(), in: .capsule)
+                        .glassEffect(.regular.tint(Theme.buttonGreen).interactive(), in: .capsule)
                 }
                 .buttonStyle(.plain)
             }
@@ -524,7 +545,7 @@ struct AddMenuView: View {
             .padding(.trailing, 8)
             .frame(maxWidth: .infinity)
             .frame(height: 44)
-            .glassEffect(.regular.tint(isDisabled ? Color.secondary.opacity(0.3) : Color.accentColor).interactive(), in: .capsule)
+            .glassEffect(.regular.tint(isDisabled ? Color.secondary.opacity(0.3) : Theme.buttonGreen).interactive(), in: .capsule)
         }
         .buttonStyle(.plain)
         .disabled(isDisabled)

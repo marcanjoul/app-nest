@@ -136,7 +136,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 147237C02E75AF4D00192B0B /* Build configuration list for PBXProject "AppNest" */;
+			buildConfigurationList = 147237C02E75AF4D00192B0B /* Build configuration list for PBXProject "App Nest" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -435,7 +435,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		147237C02E75AF4D00192B0B /* Build configuration list for PBXProject "AppNest" */ = {
+		147237C02E75AF4D00192B0B /* Build configuration list for PBXProject "App Nest" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				147237CE2E75AF4E00192B0B /* Debug */,

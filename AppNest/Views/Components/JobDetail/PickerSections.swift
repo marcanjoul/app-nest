@@ -5,7 +5,7 @@ struct TypePickerSection: View {
     var isEmbedded = false
 
     var body: some View {
-        ChoiceSection(title: "Job type", icon: "list.bullet", selection: $type,
+        ChoiceSection(title: "Job type", icon: "list.bullet", selection: .single($type),
                       options: ApplicationType.allCases, isEmbedded: isEmbedded,
                       isRequired: !isEmbedded, color: { $0.color }, symbol: { $0.iconName })
     }
@@ -16,27 +16,52 @@ struct StatusPickerSection: View {
     var isEmbedded = false
 
     var body: some View {
-        ChoiceSection(title: "Status", icon: "rectangle.and.hand.point.up.left.fill", selection: $status,
+        ChoiceSection(title: "Status", icon: "rectangle.and.hand.point.up.left.fill", selection: .single($status),
                       options: ApplicationStatus.allCases, isEmbedded: isEmbedded,
                       isRequired: !isEmbedded, color: { $0.color }, symbol: { $0.iconName })
     }
 }
 
+/// Multi-select — a co-op or internship can span two seasons (Summer + Fall).
 struct SeasonPickerSection: View {
-    @Binding var season: ApplicationSeason?
+    @Binding var seasons: [ApplicationSeason]
     var isEmbedded = false
 
     var body: some View {
-        ChoiceSection(title: "Season", icon: "sun.snow.fill", selection: $season,
+        ChoiceSection(title: "Season", icon: "sun.snow.fill", selection: .multiple($seasons),
                       options: ApplicationSeason.allCases, isEmbedded: isEmbedded,
                       color: { $0.color }, symbol: { $0.iconName })
+    }
+}
+
+/// What a `ChoiceSection` writes to: one optional value, or a list.
+enum ChoiceSelection<Option: Hashable> {
+    case single(Binding<Option?>)
+    case multiple(Binding<[Option]>)
+
+    func contains(_ option: Option) -> Bool {
+        switch self {
+        case .single(let b):   return b.wrappedValue == option
+        case .multiple(let b): return b.wrappedValue.contains(option)
+        }
+    }
+
+    /// Tapping a selected pill clears it; tapping another selects it (and, single-select, replaces).
+    func toggle(_ option: Option) {
+        switch self {
+        case .single(let b):
+            b.wrappedValue = b.wrappedValue == option ? nil : option
+        case .multiple(let b):
+            if let i = b.wrappedValue.firstIndex(of: option) { b.wrappedValue.remove(at: i) }
+            else { b.wrappedValue.append(option) }
+        }
     }
 }
 
 private struct ChoiceSection<Option: Hashable & RawRepresentable>: View where Option.RawValue == String {
     let title: String
     let icon: String
-    @Binding var selection: Option?
+    let selection: ChoiceSelection<Option>
     let options: [Option]
     var isEmbedded: Bool
     var isRequired = false
@@ -44,11 +69,10 @@ private struct ChoiceSection<Option: Hashable & RawRepresentable>: View where Op
     let symbol: (Option) -> String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// The selected pill moves to the head of the row so the current choice is always the
-    /// one you can see, however far down `allCases` it sits.
+    /// Selected pills move to the head of the row so the current choice is always the one
+    /// you can see, however far down `allCases` it sits.
     private var orderedOptions: [Option] {
-        guard let selected = selection else { return options }
-        return [selected] + options.filter { $0 != selected }
+        options.filter(selection.contains) + options.filter { !selection.contains($0) }
     }
 
     var body: some View {
@@ -58,10 +82,10 @@ private struct ChoiceSection<Option: Hashable & RawRepresentable>: View where Op
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(orderedOptions, id: \.self) { option in
-                            SelectablePill(option: option, isSelected: option == selection,
+                            SelectablePill(option: option, isSelected: selection.contains(option),
                                            color: color(option), icon: symbol(option)) {
                                 withAnimation(reduceMotion ? nil : .appCrisp) {
-                                    selection = selection == option ? nil : option
+                                    selection.toggle(option)
                                 }
                                 AppHaptics.shared.light()
                             }
@@ -72,7 +96,7 @@ private struct ChoiceSection<Option: Hashable & RawRepresentable>: View where Op
                     .padding(.horizontal, 2)
                 }
                 // Reordering alone leaves the row scrolled wherever the tap happened.
-                .onChange(of: selection) { _, _ in
+                .onChange(of: orderedOptions) { _, _ in
                     guard let first = orderedOptions.first else { return }
                     withAnimation(reduceMotion ? nil : .appSmooth) {
                         proxy.scrollTo(first, anchor: .leading)

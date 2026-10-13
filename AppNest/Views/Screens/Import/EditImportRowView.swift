@@ -35,7 +35,11 @@ struct EditImportRowView: View {
                     TypePickerSection(type: $row.jobType)
                     StatusPickerSection(status: $row.status)
                     if isSeasonAllowed {
-                        SeasonPickerSection(season: $row.season)
+                        SeasonPickerSection(seasons: Binding(
+                            // CSV rows hold one season; the last pill tapped wins.
+                            get: { row.season.map { [$0] } ?? [] },
+                            set: { row.season = $0.last }
+                        ))
                             .transition(.asymmetric(
                                 insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)),
                                 removal: .opacity
@@ -114,7 +118,7 @@ struct EditImportRowView: View {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 15)
-                        .glassEffect(.regular.tint(Color.accentColor).interactive(), in: .capsule)
+                        .glassEffect(.regular.tint(Theme.buttonGreen).interactive(), in: .capsule)
                 }
                 .buttonStyle(PressScaleButtonStyle())
             }

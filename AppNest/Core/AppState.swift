@@ -10,6 +10,8 @@ class AppState {
         didSet { UserDefaults.standard.set(selectedCycleID?.uuidString, forKey: "appnest.selectedCycleID") }
     }
     var selectedTab: Int = 0
+    /// Presents the Add sheet from the floating "+" beside the tab bar.
+    var isShowingAdd = false
 
     // MARK: - Navigation & Interaction
     
