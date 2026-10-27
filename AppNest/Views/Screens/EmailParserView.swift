@@ -94,7 +94,7 @@ struct EmailParserView: View {
             // Header row
             HStack(alignment: .center) {
                 AppLabel("Paste Email", systemImage: "envelope.open.fill")
-                    .appFont(15, weight: .semibold)
+                    .appFont(.body, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
 
                 Spacer()
@@ -110,7 +110,7 @@ struct EmailParserView: View {
                             AppIcon("chevron.left")
                                 .appFont(11, weight: .semibold)
                             Text("Edit email")
-                                .font(.caption.weight(.medium))
+                                .appFont(.footnote, weight: .medium)
                         }
                         .foregroundStyle(Theme.buttonGreen)
                         .padding(.horizontal, 10)
@@ -137,12 +137,12 @@ struct EmailParserView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     if vm.isHighlightExpanded {
                         Text(vm.buildHighlightedString(vm.emailText, spans: vm.highlights))
-                            .appFont(13)
+                            .appFont(.footnote)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .foregroundStyle(Theme.textSecondary)
                     } else {
                         Text(vm.buildHighlightedString(vm.emailText, spans: vm.highlights))
-                            .appFont(13)
+                            .appFont(.footnote)
                             .lineLimit(3)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .foregroundStyle(Theme.textSecondary)
@@ -153,11 +153,11 @@ struct EmailParserView: View {
                     } label: {
                         HStack(spacing: 4) {
                             Text(vm.isHighlightExpanded ? "Show less" : "Show full email")
-                                .font(.caption.weight(.medium))
+                                .appFont(.footnote, weight: .medium)
                             AppIcon(vm.isHighlightExpanded ? "chevron.up" : "chevron.down")
-                                .font(.caption2.weight(.semibold))
+                                .appFont(.caption, weight: .semibold)
                         }
-                        .foregroundStyle(Color.accentColor.opacity(0.85))
+                        .foregroundStyle(Theme.accent.opacity(0.85))
                     }
                 }
                 .padding(.top, 10)
@@ -167,7 +167,7 @@ struct EmailParserView: View {
             if vm.isEmailExpanded {
                 if vm.emailText.isEmpty {
                     Text("Paste a job application email to extract its details.")
-                        .font(.subheadline)
+                        .appFont(.body)
                         .foregroundStyle(Theme.textSecondary)
                         .padding(.top, 10)
                         .transition(.opacity.combined(with: .move(edge: .top)))
@@ -177,7 +177,7 @@ struct EmailParserView: View {
                     if vm.emailText.isEmpty {
                         Text("Paste your email here…")
                             .foregroundStyle(.secondary)
-                            .font(.subheadline)
+                            .appFont(.body)
                             .padding(.top, 8)
                             .padding(.leading, 4)
                     }
@@ -185,7 +185,7 @@ struct EmailParserView: View {
                         .scrollContentBackground(.hidden)
                         .background(Color.clear)
                         .frame(minHeight: vm.hasResult ? 90 : 180)
-                        .font(.subheadline)
+                        .appFont(.body)
                         .focused($isEditorFocused)
                 }
                 .padding(12)
@@ -195,7 +195,7 @@ struct EmailParserView: View {
                         .overlay(
                             RoundedRectangle(cornerRadius: 20, style: .continuous)
                                 .strokeBorder(
-                                    isEditorFocused ? Color.accentColor.opacity(0.55) : Color.primary.opacity(0.08),
+                                    isEditorFocused ? Theme.accent.opacity(0.55) : Color.primary.opacity(0.08),
                                     lineWidth: isEditorFocused ? 1.5 : 1
                                 )
                         )
@@ -216,7 +216,7 @@ struct EmailParserView: View {
                         AppIcon(vm.hasResult ? "arrow.clockwise.circle.fill" : "sparkles")
                             .transition(.scale.combined(with: .opacity))
                         Text(vm.hasResult ? "Re-parse" : "Parse Email")
-                            .appFont(16, weight: .semibold)
+                            .appFont(.body, weight: .semibold)
                     }
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)

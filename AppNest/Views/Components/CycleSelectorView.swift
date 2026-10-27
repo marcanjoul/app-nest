@@ -64,8 +64,8 @@ struct CyclePickerSheet: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Done") { isPresented = false }
-                    .appFont(14, weight: .semibold)
-                    .foregroundStyle(Color.accentColor)
+                    .appFont(.body, weight: .semibold)
+                    .foregroundStyle(Theme.accent)
             }
         }
         .alert("New Cycle", isPresented: $isAddingCycle) {
@@ -111,8 +111,8 @@ struct CyclePickerSheet: View {
         } label: {
             pickerRowContent(
                 icon: isActive ? "checkmark" : "tray.2.fill",
-                iconColor: isActive ? Color.accentColor : Theme.textSecondary,
-                circleFill: isActive ? Color.accentColor : Color.primary.opacity(0.08),
+                iconColor: isActive ? Theme.accent : Theme.textSecondary,
+                circleFill: isActive ? Theme.accent : Color.primary.opacity(0.08),
                 title: "All Applications",
                 subtitle: "\(totalCount) app\(totalCount == 1 ? "" : "s")",
                 isActive: isActive
@@ -130,8 +130,8 @@ struct CyclePickerSheet: View {
         } label: {
             pickerRowContent(
                 icon: isActive ? "checkmark" : "tray.fill",
-                iconColor: isActive ? Color.accentColor : Theme.textSecondary,
-                circleFill: isActive ? Color.accentColor : Color.primary.opacity(0.08),
+                iconColor: isActive ? Theme.accent : Theme.textSecondary,
+                circleFill: isActive ? Theme.accent : Color.primary.opacity(0.08),
                 title: cycle.name,
                 subtitle: "\(cycle.applications.count) app\(cycle.applications.count == 1 ? "" : "s")",
                 isActive: isActive
@@ -167,11 +167,11 @@ struct CyclePickerSheet: View {
         } label: {
             pickerRowContent(
                 icon: "plus",
-                iconColor: Color.accentColor,
-                circleFill: Color.accentColor.opacity(0.12),
+                iconColor: Theme.accent,
+                circleFill: Theme.accent.opacity(0.12),
                 title: "New Cycle",
                 subtitle: nil,
-                titleColor: Color.accentColor,
+                titleColor: Theme.accent,
                 isActive: false
             )
         }
@@ -202,11 +202,11 @@ struct CyclePickerSheet: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .appFont(15, weight: .semibold)
+                    .appFont(.body, weight: .semibold)
                     .foregroundStyle(titleColor)
                 if let subtitle {
                     Text(subtitle)
-                        .appFont(12, weight: .medium)
+                        .appFont(.footnote, weight: .medium)
                         .foregroundStyle(Theme.textSecondary)
                 }
             }
@@ -221,7 +221,7 @@ struct CyclePickerSheet: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .strokeBorder(
-                            isActive ? Color.accentColor.opacity(0.4) : Theme.cardBorder,
+                            isActive ? Theme.accent.opacity(0.4) : Theme.cardBorder,
                             lineWidth: isActive ? 1.5 : 1
                         )
                 )

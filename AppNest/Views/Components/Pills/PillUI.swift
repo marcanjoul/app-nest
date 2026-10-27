@@ -24,7 +24,7 @@ struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == 
                         .foregroundStyle(isSelected ? .white : color)
                 }
                 Text(option.rawValue)
-                    .appFont(isSelected ? 14 : 13, weight: isSelected ? .bold : .semibold)
+                    .appFont(.footnote, weight: isSelected ? .bold : .semibold)
                     .foregroundStyle(isSelected ? .white : color.opacity(0.88))
             }
             .padding(.horizontal, isSelected ? 14 : 12)
@@ -190,7 +190,7 @@ struct DarkStatusPill: View {
             AppIcon(style.iconName)
                 .appFont(12, weight: .semibold)
             Text(displayText)
-                .appFont(13, weight: .semibold)
+                .appFont(.footnote, weight: .semibold)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
@@ -216,7 +216,7 @@ struct DarkTypeTag: View {
                     .appFont(11, weight: .bold)
             }
             Text(text)
-                .appFont(12, weight: .bold)
+                .appFont(.footnote, weight: .bold)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
@@ -261,13 +261,13 @@ struct StatChip: View {
                     .foregroundStyle(isSelected ? Color.white : style.tintColor)
 
                 Text("\(number)")
-                    .appFont(20, weight: .bold)
+                    .appFont(.title, weight: .bold)
                     .foregroundStyle(isSelected ? Color.white : Theme.textPrimary)
                     .contentTransition(.numericText())
                     .animation(.appCrisp, value: number)
 
                 Text(label)
-                    .appFont(11, weight: .semibold)
+                    .appFont(.caption, weight: .semibold)
                     .foregroundStyle(isSelected ? Color.white.opacity(0.88) : Theme.textSecondary)
                     .lineLimit(1)
             }

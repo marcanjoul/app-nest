@@ -44,19 +44,20 @@ struct DarkJobCardView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(job.position)
-                    .appFont(16, weight: .bold)
+                    .appFont(.headline, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
+                    .padding(.bottom, -2)   // 4pt to the company line; the rest of the stack stays at 6
 
                 HStack {
                     Text(job.companyName)
-                        .appFont(14)
+                        .appFont(.body)
                         .foregroundStyle(Theme.textSecondary)
                         .lineLimit(1)
                     Spacer()
                     Text(dateText)
-                        .appFont(11)
+                        .appFont(.caption)
                         .foregroundStyle(.secondary)
                 }
 

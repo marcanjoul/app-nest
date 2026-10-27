@@ -14,7 +14,7 @@ struct JobCardSwipeRow: View {
             Button { onToggleSelection() } label: {
                 AppIcon(isSelected ? "checkmark.circle.fill" : "circle")
                     .appFont(22, weight: .medium)
-                    .foregroundStyle(isSelected ? Color.accentColor : Theme.textSecondary.opacity(0.5))
+                    .foregroundStyle(isSelected ? Theme.accent : Theme.textSecondary.opacity(0.5))
                     .contentTransition(.symbolEffect(.replace.downUp))
                     .animation(.appCrisp, value: isSelected)
             }

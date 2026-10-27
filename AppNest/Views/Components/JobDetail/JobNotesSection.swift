@@ -11,7 +11,7 @@ struct JobNotesSection: View {
                 if jobNotes.isEmpty {
                     Text("Add notes about this job…")
                         .foregroundStyle(.secondary)
-                        .font(.subheadline)
+                        .appFont(.body)
                         .padding(.horizontal, 4)
                         .padding(.top, 8)
                 }
@@ -19,7 +19,7 @@ struct JobNotesSection: View {
                     .scrollContentBackground(.hidden)
                     .background(Color.clear)
                     .frame(minHeight: 130)
-                    .font(.subheadline)
+                    .appFont(.body)
             }
             .padding(12)
             .background {

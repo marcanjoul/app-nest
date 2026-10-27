@@ -47,7 +47,7 @@ struct CycleListView: View {
                             } label: {
                                 AppLabel("Rename", systemImage: "pencil")
                             }
-                            .tint(Color.accentColor)
+                            .tint(Theme.accent)
                         }
                         .opacity(appState.cycleListHasAppeared ? 1 : 0)
                         .offset(y: appState.cycleListHasAppeared ? 0 : 12)
@@ -76,7 +76,7 @@ struct CycleListView: View {
                 } label: {
                     AppIcon("plus")
                         .appFont(14, weight: .bold)
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Theme.accent)
                 }
             }
         }
@@ -127,10 +127,10 @@ struct CycleListView: View {
                 .appFont(44)
                 .foregroundStyle(Theme.textSecondary.opacity(0.45))
             Text("No cycles yet")
-                .font(.title3.weight(.semibold))
+                .appFont(.title, weight: .semibold)
                 .foregroundStyle(Theme.textPrimary)
             Text("Create a cycle to group your applications by season or search.")
-                .font(.subheadline)
+                .appFont(.body)
                 .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 30)
@@ -139,7 +139,7 @@ struct CycleListView: View {
                 isAddingCycle = true
             } label: {
                 AppLabel("New Cycle", systemImage: "plus")
-                    .appFont(14, weight: .semibold)
+                    .appFont(.body, weight: .semibold)
                     .foregroundStyle(.white)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 11)
@@ -224,17 +224,17 @@ struct CycleRow: View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(cycle.name)
-                    .appFont(16, weight: .semibold)
-                    .foregroundStyle(isActive ? Color.accentColor : Theme.textPrimary)
+                    .appFont(.body, weight: .semibold)
+                    .foregroundStyle(isActive ? Theme.accent : Theme.textPrimary)
                     .animation(.appCrisp, value: isActive)
                 Text("\(cycle.applications.count) application\(cycle.applications.count == 1 ? "" : "s")")
-                    .appFont(12, weight: .medium)
+                    .appFont(.footnote, weight: .medium)
                     .foregroundStyle(Theme.textSecondary)
             }
             Spacer()
             AppIcon("checkmark")
                 .appFont(12, weight: .bold)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Theme.accent)
                 .opacity(isActive ? 1 : 0)
                 .scaleEffect(isActive ? 1 : 0.9)
                 .animation(.appBouncy, value: isActive)
@@ -247,7 +247,7 @@ struct CycleRow: View {
                 .overlay {
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .strokeBorder(
-                            isActive ? Color.accentColor.opacity(0.45) : Theme.cardBorder,
+                            isActive ? Theme.accent.opacity(0.45) : Theme.cardBorder,
                             lineWidth: isActive ? 1.5 : 1
                         )
                 }

@@ -38,9 +38,9 @@ struct LocationSection: View {
 
             if showLocationField {
                 TextField("City, state, or country", text: $location)
-                    .appFont(15)
+                    .appFont(.body)
                     .foregroundStyle(Theme.textPrimary)
-                    .tint(.accentColor)
+                    .tint(Theme.accent)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
                     .background {

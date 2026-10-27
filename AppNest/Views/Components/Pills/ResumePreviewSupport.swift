@@ -44,9 +44,9 @@ struct ResumePreview: View {
         HStack(spacing: 8) {
             AppIcon("doc.text.fill")
                 .appFont(13, weight: .semibold)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Theme.accent)
             Text(fileName)
-                .appFont(14, weight: .semibold)
+                .appFont(.body, weight: .semibold)
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .foregroundStyle(Theme.textPrimary)
@@ -71,7 +71,7 @@ struct ResumePreview: View {
                 .appFont(36, weight: .semibold)
                 .foregroundStyle(Theme.textSecondary)
             Text("Unable to load preview")
-                .font(.caption)
+                .appFont(.footnote)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -114,7 +114,7 @@ struct FullscreenResumeViewer: View {
                             .appFont(44, weight: .semibold)
                             .foregroundStyle(Theme.textSecondary)
                         Text("Unable to load this resume")
-                            .font(.subheadline)
+                            .appFont(.body)
                             .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

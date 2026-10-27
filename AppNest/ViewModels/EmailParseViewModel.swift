@@ -197,7 +197,7 @@ final class EmailParseViewModel {
 
     func highlightColor(for field: HighlightField) -> Color {
         switch field {
-        case .company:  return Color.accentColor
+        case .company:  return Theme.accent
         case .position: return Color(red: 0.96, green: 0.73, blue: 0.28)
         case .status:   return Color(red: 0.30, green: 0.80, blue: 0.45)
         case .date:     return Color(red: 0.62, green: 0.52, blue: 0.96)

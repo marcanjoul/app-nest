@@ -1,23 +1,69 @@
 import SwiftUI
 
+// MARK: - Type Scale
+
+/// The app's type scale: six roles, each about 1.15–1.3× the next. Text names a role, never a
+/// point size; icons still take exact sizes through `appFont(_ size:)`. Each role scales with
+/// Dynamic Type along its matching system text style, so captions grow like captions.
+enum AppTextStyle {
+    case largeTitle, title, headline, body, footnote, caption
+
+    var size: CGFloat {
+        switch self {
+        case .largeTitle: 34
+        case .title:      22
+        case .headline:   17
+        case .body:       15
+        case .footnote:   13
+        case .caption:    11
+        }
+    }
+
+    /// The system style whose Dynamic Type curve this role follows (same base size).
+    var textStyle: Font.TextStyle {
+        switch self {
+        case .largeTitle: .largeTitle
+        case .title:      .title2
+        case .headline:   .headline
+        case .body:       .subheadline
+        case .footnote:   .footnote
+        case .caption:    .caption2
+        }
+    }
+
+    /// Titles and headlines use the display face (`Theme.displayFont`); smaller text stays SF.
+    var usesDisplayFont: Bool { self == .largeTitle || self == .title || self == .headline }
+}
+
 // MARK: - Scaled Font
 
 struct ScaledSystemFont: ViewModifier {
     @ScaledMetric private var scaledSize: CGFloat
     private let weight: Font.Weight
+    private let usesDisplayFont: Bool
 
-    init(_ size: CGFloat, weight: Font.Weight = .regular) {
-        self._scaledSize = ScaledMetric(wrappedValue: size)
+    init(_ size: CGFloat, weight: Font.Weight = .regular, relativeTo textStyle: Font.TextStyle = .body, usesDisplayFont: Bool = false) {
+        self._scaledSize = ScaledMetric(wrappedValue: size, relativeTo: textStyle)
         self.weight = weight
+        self.usesDisplayFont = usesDisplayFont
     }
 
     func body(content: Content) -> some View {
-        content.font(.system(size: scaledSize, weight: weight))
+        let font = (usesDisplayFont ? Theme.displayFont(size: scaledSize, weight: weight) : nil)
+            ?? .system(size: scaledSize, weight: weight)
+        return content.font(font)
             .environment(\.appIconSize, scaledSize)
     }
 }
 
 extension View {
+    /// Text: pick a role from the type scale.
+    func appFont(_ style: AppTextStyle, weight: Font.Weight = .regular) -> some View {
+        modifier(ScaledSystemFont(style.size, weight: weight, relativeTo: style.textStyle,
+                                  usesDisplayFont: style.usesDisplayFont))
+    }
+
+    /// Icons and other graphics that need an exact size.
     func appFont(_ size: CGFloat, weight: Font.Weight = .regular) -> some View {
         modifier(ScaledSystemFont(size, weight: weight))
     }
@@ -53,7 +99,7 @@ struct ChangedHighlight: ViewModifier {
             .overlay {
                 RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
                     .strokeBorder(
-                        Color.accentColor.opacity(isChanged ? 0.35 : 0),
+                        Theme.accent.opacity(isChanged ? 0.35 : 0),
                         lineWidth: isChanged ? 1.5 : 0
                     )
                     .animation(.appSmooth, value: isChanged)
@@ -61,7 +107,7 @@ struct ChangedHighlight: ViewModifier {
             .background {
                 if isChanged {
                     RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                        .fill(Color.accentColor.opacity(0.02))
+                        .fill(Theme.accent.opacity(0.02))
                 }
             }
     }

@@ -59,7 +59,7 @@ struct InterviewKitSection: View {
                 .appFont(11, weight: .semibold)
                 .foregroundStyle(Theme.textSecondary)
             Text(title)
-                .appFont(12, weight: .semibold)
+                .appFont(.footnote, weight: .semibold)
                 .foregroundStyle(Theme.textSecondary)
         }
     }
@@ -70,7 +70,7 @@ struct InterviewKitSection: View {
             if text.wrappedValue.isEmpty {
                 Text(placeholder)
                     .foregroundStyle(.secondary)
-                    .font(.subheadline)
+                    .appFont(.body)
                     .padding(.horizontal, 4)
                     .padding(.top, 8)
             }
@@ -78,7 +78,7 @@ struct InterviewKitSection: View {
                 .scrollContentBackground(.hidden)
                 .background(Color.clear)
                 .frame(minHeight: 100)
-                .font(.subheadline)
+                .appFont(.body)
         }
         .padding(12)
         .background {

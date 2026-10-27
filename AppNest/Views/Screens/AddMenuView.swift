@@ -51,9 +51,6 @@ struct AddMenuView: View {
             ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    addHeader
-                        .padding(.bottom, 2)
-
                     pasteLinkCard
 
                     emailParseCard
@@ -74,13 +71,13 @@ struct AddMenuView: View {
                         title: "Add Manually",
                         subtitle: "Enter details from scratch.",
                         icon: "square.and.pencil",
-                        color: Color.accentColor
+                        color: Theme.accent
                     ) {
                         isPresentingManualAdd = true
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 22)
+                .padding(.top, 8)
                 .padding(.bottom, 24)
             }
             .scrollBounceBehavior(.basedOnSize)
@@ -98,7 +95,13 @@ struct AddMenuView: View {
             }
             }
         }
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationTitle("Add a Job")
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(role: .close) { dismiss() }
+            }
+        }
         .dismissKeyboardToolbar()
         .sheet(isPresented: Binding(
             get: { isPresentingManualAdd },
@@ -140,30 +143,6 @@ struct AddMenuView: View {
         }
         .task(id: vm.editCompany) {
             await vm.fetchLogo(isDark: colorScheme == .dark)
-        }
-    }
-
-    private var addHeader: some View {
-        HStack(alignment: .center) {
-            Text("Add a Job")
-                .appFont(34, weight: .bold)
-                .foregroundStyle(Theme.textPrimary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-                .accessibilityAddTraits(.isHeader)
-
-            Spacer()
-
-            // Same 44pt glass circle as JobDetailView's close button.
-            Button { dismiss() } label: {
-                AppIcon("xmark")
-                    .appFont(14, weight: .semibold)
-                    .foregroundStyle(Theme.textPrimary)
-                    .frame(width: 44, height: 44)
-                    .glassEffect(.regular.interactive(), in: .circle)
-            }
-            .buttonStyle(PressScaleButtonStyle())
-            .accessibilityLabel("Close")
         }
     }
 
@@ -225,7 +204,7 @@ struct AddMenuView: View {
                                             AppIcon("pencil")
                                                 .appFont(10, weight: .semibold)
                                             Text("Edit")
-                                                .font(.caption.weight(.semibold))
+                                                .appFont(.footnote, weight: .semibold)
                                         }
                                         .foregroundStyle(Theme.textSecondary)
                                         .padding(.horizontal, 9)
@@ -243,7 +222,7 @@ struct AddMenuView: View {
                                 }
 
                                 Text(vm.buildHighlightedString(vm.emailText, spans: vm.highlights))
-                                    .appFont(13)
+                                    .appFont(.footnote)
                                     .lineLimit(vm.isHighlightExpanded ? nil : 3)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .foregroundStyle(Theme.textSecondary)
@@ -253,11 +232,11 @@ struct AddMenuView: View {
                                 } label: {
                                     HStack(spacing: 4) {
                                         Text(vm.isHighlightExpanded ? "Show less" : "Show full email")
-                                            .font(.caption.weight(.medium))
+                                            .appFont(.footnote, weight: .medium)
                                         AppIcon(vm.isHighlightExpanded ? "chevron.up" : "chevron.down")
-                                            .font(.caption2.weight(.semibold))
+                                            .appFont(.caption, weight: .semibold)
                                     }
-                                    .foregroundStyle(Color.accentColor.opacity(0.85))
+                                    .foregroundStyle(Theme.accent.opacity(0.85))
                                 }
                             }
                             .padding(.bottom, 12)
@@ -268,7 +247,7 @@ struct AddMenuView: View {
                                 if vm.emailText.isEmpty {
                                     Text("Paste your email here…")
                                         .foregroundStyle(.secondary)
-                                        .font(.subheadline)
+                                        .appFont(.body)
                                         .padding(.top, 8)
                                         .padding(.leading, 4)
                                 }
@@ -276,7 +255,7 @@ struct AddMenuView: View {
                                     .scrollContentBackground(.hidden)
                                     .background(Color.clear)
                                     .frame(height: 90)
-                                    .font(.subheadline)
+                                    .appFont(.body)
                                     .focused($isEmailEditorFocused)
                                     // A paste lands as one big jump; typing never adds more than a few
                                     // characters at once. Drop the keyboard so the Parse button shows.
@@ -413,7 +392,7 @@ struct AddMenuView: View {
                     VStack(spacing: 12) {
                         TextField("https://...", text: $pasteLinkURL)
                             .focused($isTextFieldFocused)
-                            .appFont(15)
+                            .appFont(.body)
                             .foregroundStyle(Theme.textPrimary)
                             .keyboardType(.URL)
                             .textInputAutocapitalization(.never)
@@ -456,10 +435,10 @@ struct AddMenuView: View {
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(linkError.title)
-                                    .appFont(13, weight: .semibold)
+                                    .appFont(.footnote, weight: .semibold)
                                     .foregroundStyle(Theme.textPrimary)
                                 Text(linkError.message)
-                                    .appFont(12)
+                                    .appFont(.footnote)
                                     .foregroundStyle(Theme.textSecondary)
                                     .lineSpacing(2)
                             }
@@ -511,7 +490,7 @@ struct AddMenuView: View {
         Button(action: action) {
             HStack {
                 Text(title)
-                    .appFont(14, weight: .bold)
+                    .appFont(.body, weight: .bold)
                 Spacer()
                 ZStack {
                     Circle()
@@ -595,13 +574,13 @@ struct CardRowHeader<Trailing: View>: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .appFont(isExpanded ? 22 : (isProminent ? 18 : 17), weight: isExpanded ? .bold : .semibold)
+                    .appFont(isExpanded ? .title : .headline, weight: isExpanded ? .bold : .semibold)
                     .foregroundStyle(Theme.textPrimary)
                     .lineLimit(2)
                     .minimumScaleFactor(0.85)
                 if !isExpanded {
                     Text(subtitle)
-                        .appFont(13, weight: .medium)
+                        .appFont(.footnote, weight: .medium)
                         .foregroundStyle(Theme.textSecondary)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
@@ -663,10 +642,10 @@ private struct SavedEmailConfirmation: View {
 
                 VStack(spacing: 4) {
                     Text("Added to Applications")
-                        .appFont(16, weight: .bold)
+                        .appFont(.body, weight: .bold)
                         .foregroundStyle(Theme.textPrimary)
                     Text(position.isEmpty ? company : "\(position) · \(company)")
-                        .appFont(13, weight: .medium)
+                        .appFont(.footnote, weight: .medium)
                         .foregroundStyle(Theme.textSecondary)
                         .lineLimit(1)
                 }
@@ -681,7 +660,7 @@ private struct SavedEmailConfirmation: View {
             HStack(spacing: 12) {
                 Button(action: onParseNew) {
                     Text("Parse New Email")
-                        .appFont(14, weight: .semibold)
+                        .appFont(.body, weight: .semibold)
                         .foregroundStyle(Theme.textPrimary)
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
@@ -691,7 +670,7 @@ private struct SavedEmailConfirmation: View {
 
                 Button(action: onDone) {
                     Text("Done")
-                        .appFont(14, weight: .bold)
+                        .appFont(.body, weight: .bold)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)

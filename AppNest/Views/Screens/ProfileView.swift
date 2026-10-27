@@ -176,10 +176,10 @@ struct ProfileView: View {
                     text: $profileDisplayName,
                     prompt: Text("Your Name").foregroundColor(Theme.textSecondary)
                 )
-                .appFont(24, weight: .bold)
+                .appFont(.title, weight: .bold)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Theme.textPrimary)
-                .tint(.accentColor)
+                .tint(Theme.accent)
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
                 .focused($isNameFocused)
@@ -195,10 +195,10 @@ struct ProfileView: View {
                 HStack(spacing: 0) {
                     VStack(spacing: 4) {
                         Text("\(totalCount)")
-                            .appFont(18, weight: .bold)
+                            .appFont(.headline, weight: .bold)
                             .foregroundStyle(Theme.textPrimary)
                         Text("Apps")
-                            .appFont(11, weight: .bold)
+                            .appFont(.caption, weight: .bold)
                             .foregroundStyle(Theme.textSecondary)
                     }
                     .frame(maxWidth: .infinity)
@@ -209,10 +209,10 @@ struct ProfileView: View {
 
                     VStack(spacing: 4) {
                         Text("\(count(for: .interview))")
-                            .appFont(18, weight: .bold)
+                            .appFont(.headline, weight: .bold)
                             .foregroundStyle(Theme.textPrimary)
                         Text("Interviews")
-                            .appFont(11, weight: .bold)
+                            .appFont(.caption, weight: .bold)
                             .foregroundStyle(Theme.textSecondary)
                     }
                     .frame(maxWidth: .infinity)
@@ -223,10 +223,10 @@ struct ProfileView: View {
 
                     VStack(spacing: 4) {
                         Text("\(count(for: .offer))")
-                            .appFont(18, weight: .bold)
+                            .appFont(.headline, weight: .bold)
                             .foregroundStyle(Theme.textPrimary)
                         Text("Offers")
-                            .appFont(11, weight: .bold)
+                            .appFont(.caption, weight: .bold)
                             .foregroundStyle(Theme.textSecondary)
                     }
                     .frame(maxWidth: .infinity)
@@ -285,19 +285,19 @@ struct ProfileView: View {
                         Text("All Applications")
                     }
                 }
-                .appFont(13, weight: .bold)
+                .appFont(.footnote, weight: .bold)
                 .lineLimit(1)
                 AppIcon("chevron.down")
                     .appFont(10, weight: .black)
             }
-            .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : Theme.textSecondary)
+            .foregroundStyle(appState.selectedCycleID != nil ? Theme.accent : Theme.textSecondary)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(
                 Capsule()
-                    .fill(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.11) : Color.primary.opacity(0.07))
+                    .fill(appState.selectedCycleID != nil ? Theme.accent.opacity(0.11) : Color.primary.opacity(0.07))
                     .overlay(Capsule().strokeBorder(
-                        appState.selectedCycleID != nil ? Color.accentColor.opacity(0.28) : Color.primary.opacity(0.08),
+                        appState.selectedCycleID != nil ? Theme.accent.opacity(0.28) : Color.primary.opacity(0.08),
                         lineWidth: 1
                     ))
             )
@@ -371,7 +371,7 @@ struct ProfileView: View {
                         if resumes.count > 5 {
                             Button { isShowingResumeManager = true } label: {
                                 AppLabel("View All", systemImage: "tray.full")
-                                    .appFont(13, weight: .semibold)
+                                    .appFont(.footnote, weight: .semibold)
                                     .foregroundStyle(Theme.buttonGreen)
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 6)
@@ -412,7 +412,7 @@ struct ProfileView: View {
                     isShowingResetConfirmation = true
                 } label: {
                     AppLabel("Reset All Data", systemImage: "trash.fill")
-                        .appFont(15, weight: .medium)
+                        .appFont(.body, weight: .medium)
                         .foregroundStyle(Theme.destructive)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -542,16 +542,16 @@ private struct ActivityHeatmapView: View {
             
             HStack {
                 Text("Last 90 days")
-                    .appFont(10, weight: .medium)
+                    .appFont(.caption, weight: .medium)
                     .foregroundStyle(Theme.textTertiary)
                 Spacer()
                 HStack(spacing: 4) {
-                    Text("Less").appFont(8)
+                    Text("Less").appFont(.caption)
                     Rectangle().fill(heatmapColor(for: 0)).frame(width: 8, height: 8).cornerRadius(1)
                     Rectangle().fill(heatmapColor(for: 1)).frame(width: 8, height: 8).cornerRadius(1)
                     Rectangle().fill(heatmapColor(for: 2)).frame(width: 8, height: 8).cornerRadius(1)
                     Rectangle().fill(heatmapColor(for: 3)).frame(width: 8, height: 8).cornerRadius(1)
-                    Text("More").appFont(8)
+                    Text("More").appFont(.caption)
                 }
                 .foregroundStyle(Theme.textTertiary)
             }
@@ -560,10 +560,10 @@ private struct ActivityHeatmapView: View {
     
     private func heatmapColor(for count: Int) -> Color {
         if count == 0 { return Color.primary.opacity(0.04) }
-        if count == 1 { return Color.accentColor.opacity(0.25) }
-        if count == 2 { return Color.accentColor.opacity(0.5) }
-        if count == 3 { return Color.accentColor.opacity(0.75) }
-        return Color.accentColor
+        if count == 1 { return Theme.accent.opacity(0.25) }
+        if count == 2 { return Theme.accent.opacity(0.5) }
+        if count == 3 { return Theme.accent.opacity(0.75) }
+        return Theme.accent
     }
 }
 

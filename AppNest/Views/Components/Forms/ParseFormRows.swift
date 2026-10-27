@@ -22,18 +22,18 @@ struct EditableFieldRow: View {
                     .foregroundStyle(isEmpty ? .orange : Theme.textSecondary)
                     .frame(width: 14)
                 Text(label)
-                    .font(.caption)
+                    .appFont(.footnote)
                     .foregroundStyle(Theme.textSecondary)
                 if isEmpty {
                     Text("· Fill in")
-                        .font(.caption2)
+                        .appFont(.caption)
                         .foregroundStyle(.orange.opacity(0.85))
                 }
             }
             .padding(.leading, 4)
 
             TextField(placeholder.isEmpty ? label : placeholder, text: $text, axis: axis)
-                .appFont(17, weight: .semibold)
+                .appFont(.headline, weight: .semibold)
                 .foregroundStyle(Theme.textPrimary)
                 .focused($isFocused)
                 .padding(.horizontal, 12)
@@ -42,14 +42,14 @@ struct EditableFieldRow: View {
                 .background {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(
-                            isFocused ? Color.accentColor.opacity(0.04) :
+                            isFocused ? Theme.accent.opacity(0.04) :
                             isEmpty   ? Color.orange.opacity(0.06) :
                             Color.primary.opacity(0.04)
                         )
                         .overlay {
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
                                 .strokeBorder(
-                                    isFocused ? Color.accentColor.opacity(0.5) :
+                                    isFocused ? Theme.accent.opacity(0.5) :
                                     isEmpty   ? Color.orange.opacity(0.28) :
                                     Color.primary.opacity(0.07),
                                     lineWidth: isFocused ? 1.5 : 1

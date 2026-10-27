@@ -32,7 +32,7 @@ struct HoldToConfirmButton: View {
                 // Label
                 HStack(spacing: 10) {
                     Text(title)
-                        .appFont(15, weight: .bold)
+                        .appFont(.body, weight: .bold)
                     Spacer()
                     ZStack {
                         Circle()

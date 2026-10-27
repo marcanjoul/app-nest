@@ -88,8 +88,8 @@ struct CSVImportPreviewSheet: View {
                                 }
                             }
                         }
-                        .appFont(14, weight: .bold)
-                        .foregroundStyle(Color.accentColor)
+                        .appFont(.body, weight: .bold)
+                        .foregroundStyle(Theme.accent)
                     }
                 }
                 
@@ -147,7 +147,7 @@ struct CSVImportPreviewSheet: View {
             ), onDismiss: checkFilterConsistency) {
                 if let id = editingRowID,
                    let index = localRows.firstIndex(where: { $0.id == id }) {
-                    JobDetailView(csvRow: $localRows[index])
+                    NavigationStack { JobDetailView(csvRow: $localRows[index]) }
                 }
             }
         }
@@ -158,7 +158,7 @@ struct CSVImportPreviewSheet: View {
             HStack {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        filterChip(for: .all, count: localRows.count, icon: "tray.2.fill", color: .accentColor)
+                        filterChip(for: .all, count: localRows.count, icon: "tray.2.fill", color: Theme.accent)
                         filterChip(for: .ready, count: readyRows.count, icon: "checkmark.circle.fill", color: Color(red: 0.30, green: 0.69, blue: 0.49))
                         filterChip(for: .attention, count: attentionRows.count, icon: "exclamationmark.triangle.fill", color: Color(red: 0.96, green: 0.65, blue: 0.14))
                     }
@@ -169,7 +169,7 @@ struct CSVImportPreviewSheet: View {
             if !selectedRows.isEmpty {
                 HStack {
                     Text("\(selectedRows.count) selected")
-                        .appFont(12, weight: .bold)
+                        .appFont(.footnote, weight: .bold)
                         .foregroundStyle(Theme.textSecondary)
                     Spacer()
                 }
@@ -191,11 +191,11 @@ struct CSVImportPreviewSheet: View {
                     .foregroundStyle(isSelected ? .white : color)
                 
                 Text("\(count)")
-                    .appFont(16, weight: .bold)
+                    .appFont(.body, weight: .bold)
                     .foregroundStyle(isSelected ? .white : Theme.textPrimary)
                 
                 Text(filter.rawValue)
-                    .appFont(11, weight: .semibold)
+                    .appFont(.caption, weight: .semibold)
                     .foregroundStyle(isSelected ? .white.opacity(0.9) : Theme.textSecondary)
             }
             .padding(.horizontal, 12)
@@ -217,10 +217,10 @@ struct CSVImportPreviewSheet: View {
                 .appFont(44)
                 .foregroundStyle(Theme.textSecondary.opacity(0.4))
             Text("No rows found")
-                .font(.title3.weight(.semibold))
+                .appFont(.title, weight: .semibold)
                 .foregroundStyle(Theme.textPrimary)
             Text("The file didn't contain any readable data rows.")
-                .font(.subheadline)
+                .appFont(.body)
                 .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 30)
@@ -234,12 +234,12 @@ struct CSVImportPreviewSheet: View {
                 .appFont(32)
                 .foregroundStyle(Theme.textSecondary.opacity(0.4))
             Text(activeFilter == .ready ? "Nothing to import" : "All rows are ready")
-                .appFont(15, weight: .medium)
+                .appFont(.body, weight: .medium)
                 .foregroundStyle(Theme.textSecondary)
             Button("Show All") {
                 withAnimation(.appSmooth) { activeFilter = .all }
             }
-            .appFont(14, weight: .semibold)
+            .appFont(.body, weight: .semibold)
             .foregroundStyle(Theme.buttonGreen)
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
@@ -254,13 +254,13 @@ struct CSVImportPreviewSheet: View {
             finalizeImport()
         } label: {
             Text("Import")
-                .appFont(17, weight: .bold)
+                .appFont(.headline, weight: .bold)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
                 .background {
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(readyRows.isEmpty ? Color.gray.opacity(0.3) : Color.accentColor)
+                        .fill(readyRows.isEmpty ? Color.gray.opacity(0.3) : Theme.accent)
                 }
         }
         .buttonStyle(PressScaleButtonStyle())
@@ -282,7 +282,7 @@ struct CSVImportPreviewSheet: View {
             } label: {
                 AppIcon(isSelected ? "checkmark.circle.fill" : "circle")
                     .appFont(22)
-                    .foregroundStyle(isSelected ? Color.accentColor : Theme.textTertiary)
+                    .foregroundStyle(isSelected ? Theme.accent : Theme.textTertiary)
             }
             .buttonStyle(.plain)
 
@@ -308,11 +308,11 @@ struct CSVImportPreviewSheet: View {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(r.position.isEmpty ? "Missing Position" : r.position)
-                            .appFont(15, weight: .semibold)
+                            .appFont(.body, weight: .semibold)
                             .foregroundStyle(r.position.isEmpty ? .orange : Theme.textPrimary)
                             .lineLimit(1)
                         Text(r.companyName.isEmpty ? "Missing Company" : r.companyName)
-                            .appFont(13, weight: .medium)
+                            .appFont(.footnote, weight: .medium)
                             .foregroundStyle(r.companyName.isEmpty ? .orange : Theme.textSecondary)
                             .lineLimit(1)
                         
@@ -324,7 +324,7 @@ struct CSVImportPreviewSheet: View {
                                 badge(type.rawValue, color: type.color)
                             }
                             if let cycleID = r.cycleID, let cycle = cycles.first(where: { $0.id == cycleID }) {
-                                badge(cycle.name, color: Color.accentColor)
+                                badge(cycle.name, color: Theme.accent)
                             }
                         }
                         .padding(.top, 1)
@@ -346,7 +346,7 @@ struct CSVImportPreviewSheet: View {
                 .fill(Theme.cardFill)
                 .overlay {
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .strokeBorder(isSelected ? Color.accentColor.opacity(0.4) : Color.primary.opacity(0.08), lineWidth: isSelected ? 1.5 : 1)
+                        .strokeBorder(isSelected ? Theme.accent.opacity(0.4) : Color.primary.opacity(0.08), lineWidth: isSelected ? 1.5 : 1)
                 }
         }
         .opacity(appearedRows.contains(r.id) ? 1 : 0)
@@ -371,7 +371,7 @@ struct CSVImportPreviewSheet: View {
 
     private func badge(_ label: String, color: Color) -> some View {
         Text(label)
-            .appFont(10, weight: .bold)
+            .appFont(.caption, weight: .bold)
             .foregroundStyle(color)
             .padding(.horizontal, 7)
             .padding(.vertical, 3)

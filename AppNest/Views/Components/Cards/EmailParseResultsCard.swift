@@ -50,7 +50,7 @@ struct EmailParseResultsCard: View {
     private var header: some View {
         HStack {
             AppLabel("Review & Edit", systemImage: "square.and.pencil")
-                .appFont(15, weight: .semibold)
+                .appFont(.body, weight: .semibold)
                 .foregroundStyle(Theme.textPrimary)
 
             Spacer()
@@ -59,7 +59,7 @@ struct EmailParseResultsCard: View {
                         + (vm.editPosition.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 1 : 0)
             if missing > 0 {
                 AppLabel("\(missing) field\(missing == 1 ? "" : "s") need attention", systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption.weight(.medium))
+                    .appFont(.footnote, weight: .medium)
                     .foregroundStyle(.orange)
             }
         }
@@ -229,7 +229,7 @@ struct EmailParseResultsCard: View {
             Button(action: onSave) {
                 HStack {
                     Text(vm.saveSuccess ? "Added!" : "Add to Applications")
-                        .appFont(14, weight: .bold)
+                        .appFont(.body, weight: .bold)
                     Spacer()
                     ZStack {
                         Circle()
@@ -251,7 +251,7 @@ struct EmailParseResultsCard: View {
 
             Button(action: onCancel) {
                 Text("Cancel")
-                    .appFont(14, weight: .semibold)
+                    .appFont(.body, weight: .semibold)
                     .foregroundStyle(Theme.destructive)
                     .frame(maxWidth: .infinity)
                     .frame(height: 44)

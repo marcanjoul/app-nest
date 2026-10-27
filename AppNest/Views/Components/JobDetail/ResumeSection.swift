@@ -95,7 +95,7 @@ struct ResumeSection: View {
                     if resumes.count > 1 {
                         Button(action: onViewAll) {
                             AppLabel("Select Another", systemImage: "tray.full")
-                                .appFont(13, weight: .semibold)
+                                .appFont(.footnote, weight: .semibold)
                                 .foregroundStyle(Theme.buttonGreen)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
@@ -109,9 +109,9 @@ struct ResumeSection: View {
                         Button(action: onPick) {
                             AppIcon("plus")
                                 .appFont(16, weight: .bold)
-                                .foregroundStyle(Color.accentColor)
+                                .foregroundStyle(Theme.accent)
                                 .frame(width: 34, height: 34)
-                                .background(Circle().fill(Color.accentColor.opacity(0.12)))
+                                .background(Circle().fill(Theme.accent.opacity(0.12)))
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Add resume")
@@ -167,14 +167,14 @@ struct ResumeLibrarySheet: View {
 
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(resume.fileName)
-                                            .font(.subheadline.weight(.semibold))
+                                            .appFont(.body, weight: .semibold)
                                             .foregroundStyle(Theme.textPrimary)
                                             .lineLimit(2)
                                             .multilineTextAlignment(.leading)
 
                                         if resume.isDefault {
                                             Text("Default")
-                                                .font(.caption.weight(.semibold))
+                                                .appFont(.footnote, weight: .semibold)
                                                 .foregroundStyle(Color(red: 0.96, green: 0.73, blue: 0.28))
                                         }
                                     }

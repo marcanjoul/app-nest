@@ -38,12 +38,12 @@ struct OnboardingView: View {
 
                             VStack(spacing: 10) {
                                 Text(page.title)
-                                    .font(.title2.weight(.bold))
+                                    .appFont(.title, weight: .bold)
                                     .multilineTextAlignment(.center)
                                     .foregroundStyle(Theme.textPrimary)
 
                                 Text(page.subtitle)
-                                    .font(.body)
+                                    .appFont(.body)
                                     .foregroundStyle(Theme.textSecondary)
                                     .multilineTextAlignment(.center)
                                     .padding(.horizontal, 36)
@@ -78,7 +78,7 @@ struct OnboardingView: View {
                     }
                 } label: {
                     Text(currentPage < pages.count - 1 ? "Continue" : "Get Started")
-                        .appFont(17, weight: .semibold)
+                        .appFont(.headline, weight: .semibold)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
@@ -95,7 +95,7 @@ struct OnboardingView: View {
                     Button("Skip") {
                         hasCompletedOnboarding = true
                     }
-                    .appFont(15, weight: .medium)
+                    .appFont(.body, weight: .medium)
                     .foregroundStyle(Theme.textSecondary)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 11)

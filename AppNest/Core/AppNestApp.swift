@@ -19,6 +19,14 @@ struct AppNestApp: App {
         // Move the unreadable store aside before anything else gets the chance to replace it.
         brokenStoreURL = opened.isFailure ? StoreBackup.preserveBroken() : nil
         container = opened
+
+        // Native nav bar titles follow the type scale: DM Sans for large (title) and inline (headline).
+        let metrics = { (style: UIFont.TextStyle, font: UIFont?) in font.map { UIFontMetrics(forTextStyle: style).scaledFont(for: $0) } }
+        if let large = metrics(.largeTitle, Theme.displayUIFont(size: AppTextStyle.largeTitle.size, weight: .bold)),
+           let inline = metrics(.headline, Theme.displayUIFont(size: AppTextStyle.headline.size, weight: .semibold)) {
+            UINavigationBar.appearance().largeTitleTextAttributes = [.font: large]
+            UINavigationBar.appearance().titleTextAttributes = [.font: inline]
+        }
     }
 
     var body: some Scene {

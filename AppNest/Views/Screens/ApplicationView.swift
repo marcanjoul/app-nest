@@ -209,7 +209,7 @@ struct ApplicationView: View {
                 // Attribution Footer
                 VStack(spacing: 4) {
                     Text("Logos provided by Logo.dev")
-                        .appFont(10, weight: .semibold)
+                        .appFont(.caption, weight: .semibold)
                         .foregroundStyle(Theme.textTertiary.opacity(0.6))
                 }
                 .frame(maxWidth: .infinity)
@@ -250,7 +250,7 @@ struct ApplicationView: View {
                                 Text("Move")
                             }
                         }
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Theme.accent)
                         .frame(maxWidth: .infinity)
                         .overlay {
                             Menu {
@@ -273,7 +273,7 @@ struct ApplicationView: View {
                             }
                         }
                     }
-                    .appFont(12, weight: .semibold)
+                    .appFont(.footnote, weight: .semibold)
                     .padding(.vertical, 10)
                     .glassEffect(in: .capsule)
                     .padding(.horizontal, 20)
@@ -288,13 +288,13 @@ struct ApplicationView: View {
                     Spacer()
                     HStack(spacing: 14) {
                         Text("Deleted \(pending.companyName)")
-                            .appFont(15, weight: .semibold)
+                            .appFont(.body, weight: .semibold)
                             .foregroundStyle(Theme.textPrimary)
                             .lineLimit(1)
                         Spacer()
                         Button("Undo", action: undoDelete)
-                            .appFont(15, weight: .bold)
-                            .foregroundStyle(Color.accentColor)
+                            .appFont(.body, weight: .bold)
+                            .foregroundStyle(Theme.accent)
                             .frame(minHeight: 44)
                     }
                     .padding(.leading, 20)
@@ -418,7 +418,7 @@ struct ApplicationView: View {
     private var selectionToolbar: some View {
         HStack(spacing: 8) {
             Text("\(selectedJobIDs.count) selected")
-                .appFont(14, weight: .bold)
+                .appFont(.body, weight: .bold)
                 .foregroundStyle(Theme.textPrimary)
             
             Spacer()
@@ -433,7 +433,7 @@ struct ApplicationView: View {
                 }
             }
             .buttonStyle(PressScaleButtonStyle())
-            .appFont(13, weight: .bold)
+            .appFont(.footnote, weight: .bold)
             .foregroundStyle(Theme.buttonGreen)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
@@ -569,12 +569,12 @@ struct ApplicationView: View {
             ZStack(alignment: .topTrailing) {
                 AppIcon("line.3.horizontal.decrease")
                     .appFont(13, weight: .semibold)
-                    .foregroundStyle(isMenuCustomized ? Color.accentColor : Theme.textSecondary)
+                    .foregroundStyle(isMenuCustomized ? Theme.accent : Theme.textSecondary)
                     .frame(width: 44, height: 44)
 
                 if isMenuCustomized {
                     Circle()
-                        .fill(Color.accentColor)
+                        .fill(Theme.accent)
                         .frame(width: 8, height: 8)
                         .offset(x: -8, y: 10)
                         .transition(.scale(scale: 0.8).combined(with: .opacity))
@@ -715,11 +715,11 @@ struct ApplicationView: View {
                     .appFont(13, weight: .semibold)
                 if isEditMode {
                     Text("Done")
-                        .appFont(12, weight: .semibold)
+                        .appFont(.footnote, weight: .semibold)
                         .transition(.opacity.combined(with: .scale(scale: 0.8)))
                 }
             }
-            .foregroundStyle(isEditMode ? Color.accentColor : Theme.textSecondary)
+            .foregroundStyle(isEditMode ? Theme.accent : Theme.textSecondary)
             .frame(minWidth: 44)
             .frame(height: 44)
             .padding(.horizontal, isEditMode ? 4 : 0)
@@ -747,16 +747,16 @@ struct ApplicationView: View {
                         Text("All Applications")
                     }
                 }
-                .appFont(14, weight: .bold)
+                .appFont(.body, weight: .bold)
                 
                 AppIcon("chevron.down")
                     .appFont(10, weight: .black)
                     .opacity(0.5)
             }
-            .foregroundStyle(appState.selectedCycleID != nil ? Color.accentColor : Theme.textSecondary)
+            .foregroundStyle(appState.selectedCycleID != nil ? Theme.accent : Theme.textSecondary)
             .padding(.horizontal, 14)
             .frame(height: 44)
-            .glassEffect(.regular.tint(appState.selectedCycleID != nil ? Color.accentColor.opacity(0.12) : nil).interactive(), in: .capsule)
+            .glassEffect(.regular.tint(appState.selectedCycleID != nil ? Theme.accent.opacity(0.12) : nil).interactive(), in: .capsule)
         }
         .buttonStyle(PressScaleButtonStyle())
     }
@@ -780,10 +780,10 @@ struct ApplicationView: View {
             
             VStack(spacing: 8) {
                 Text("No applications yet")
-                    .appFont(20, weight: .bold)
+                    .appFont(.title, weight: .bold)
                     .foregroundStyle(Theme.textPrimary)
                 Text("Track your first job manually, paste a link, or import from a CSV.")
-                    .appFont(14)
+                    .appFont(.body)
                     .foregroundStyle(Theme.textSecondary)
                     .multilineTextAlignment(.center)
             }
@@ -804,10 +804,10 @@ struct ApplicationView: View {
             
             VStack(spacing: 8) {
                 Text("No apps in this cycle")
-                    .appFont(20, weight: .bold)
+                    .appFont(.title, weight: .bold)
                     .foregroundStyle(Theme.textPrimary)
                 Text("You haven't added any jobs to this search cycle yet.")
-                    .appFont(14)
+                    .appFont(.body)
                     .foregroundStyle(Theme.textSecondary)
                     .multilineTextAlignment(.center)
             }
@@ -826,7 +826,7 @@ struct ApplicationView: View {
         } label: {
             HStack(spacing: 12) {
                 Text("Add a Job")
-                    .appFont(15, weight: .bold)
+                    .appFont(.body, weight: .bold)
                 ZStack {
                     Circle()
                         .fill(.white.opacity(0.16))
@@ -856,7 +856,7 @@ struct ApplicationView: View {
                     .appFont(48)
                     .foregroundStyle(Theme.textSecondary.opacity(0.5))
                 Text("No applications match these filters")
-                    .appFont(16, weight: .semibold)
+                    .appFont(.body, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                     .multilineTextAlignment(.center)
                 Button("Clear Filters") {
@@ -867,7 +867,7 @@ struct ApplicationView: View {
                         selectedWorkModes.removeAll()
                     }
                 }
-                .appFont(13, weight: .semibold)
+                .appFont(.footnote, weight: .semibold)
                 .foregroundStyle(Theme.buttonGreen)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -878,13 +878,13 @@ struct ApplicationView: View {
                     .appFont(48)
                     .foregroundStyle(Theme.textSecondary.opacity(0.5))
                 Text("No results for \"\(searchText)\"")
-                    .appFont(16, weight: .semibold)
+                    .appFont(.body, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                 HStack(spacing: 10) {
                     Button("Clear Search") {
                         searchText = ""
                     }
-                    .appFont(13, weight: .semibold)
+                    .appFont(.footnote, weight: .semibold)
                     .foregroundStyle(Theme.buttonGreen)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
@@ -899,7 +899,7 @@ struct ApplicationView: View {
                                 selectedSeasons.removeAll()
                             }
                         }
-                        .appFont(13, weight: .semibold)
+                        .appFont(.footnote, weight: .semibold)
                         .foregroundStyle(Theme.textSecondary)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)

@@ -115,24 +115,24 @@ struct SectionLabel: View {
     let icon: String
     let title: String
     var isRequired: Bool = false
-    var color: Color = Color.accentColor
+    var color: Color = Theme.accent
 
     var body: some View {
         HStack(spacing: 6) {
             AppIcon(icon)
-                .appFont(Theme.sectionLabelSize - 1, weight: .black)
+                .appFont(12, weight: .black)
                 .foregroundStyle(color.opacity(0.8))
             
             HStack(spacing: 2) {
                 Text(title)
-                    .appFont(Theme.sectionLabelSize, weight: .semibold)
+                    .appFont(.footnote, weight: .semibold)
                     .tracking(0)
                     .textCase(nil)
                     .foregroundStyle(Theme.textSecondary)
                 
                 if isRequired {
                     Text("*")
-                        .appFont(Theme.sectionLabelSize, weight: .bold)
+                        .appFont(.footnote, weight: .bold)
                         .foregroundStyle(Color.orange)
                         .accessibilityLabel("Required")
                 }

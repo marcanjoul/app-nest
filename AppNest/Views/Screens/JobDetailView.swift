@@ -235,16 +235,16 @@ struct JobDetailView: View {
             withAnimation(.appCrisp) { csvCycleID = id }
         } label: {
             Text(name)
-                .appFont(13, weight: .semibold)
-                .foregroundStyle(isSelected ? Color.accentColor : Theme.textSecondary)
+                .appFont(.footnote, weight: .semibold)
+                .foregroundStyle(isSelected ? Theme.accent : Theme.textSecondary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
                 .background {
                     Capsule()
-                        .fill(isSelected ? Color.accentColor.opacity(0.13) : Color.primary.opacity(0.06))
+                        .fill(isSelected ? Theme.accent.opacity(0.13) : Color.primary.opacity(0.06))
                         .overlay(
                             Capsule().strokeBorder(
-                                isSelected ? Color.accentColor.opacity(0.4) : Color.primary.opacity(0.09),
+                                isSelected ? Theme.accent.opacity(0.4) : Color.primary.opacity(0.09),
                                 lineWidth: isSelected ? 1.5 : 1
                             )
                         )
@@ -278,7 +278,7 @@ struct JobDetailView: View {
                             resetToOriginal()
                         } label: {
                             Text("Cancel")
-                                .appFont(14, weight: .semibold)
+                                .appFont(.body, weight: .semibold)
                                 .foregroundStyle(Theme.textPrimary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 13)
@@ -302,7 +302,7 @@ struct JobDetailView: View {
                     } label: {
                         HStack {
                             Text(saveButtonLabel)
-                                .appFont(14, weight: .bold)
+                                .appFont(.body, weight: .bold)
                             Spacer()
                             ZStack {
                                 Circle()
@@ -709,11 +709,8 @@ struct JobDetailView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             withAnimation(.appCrisp) { keyboardIsVisible = false }
         }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            floatingNavBar
-        }
         .interactiveDismissDisabled(isSheetPresentation && !isNewApplication && hasChanges)
-        .toolbar(.hidden, for: .navigationBar)
+        .toolbar { navToolbar }
         .dismissKeyboardToolbar()
         .confirmationDialog(
             "Delete this application?",
@@ -741,73 +738,48 @@ struct JobDetailView: View {
         }
     }
 
-    // MARK: - Floating Nav Bar
+    // MARK: - Toolbar
 
-    private var floatingNavBar: some View {
-        // Sheets: info + delete on the left, × on the right (where iOS sheets close).
-        // Pushed: ‹ on the left, info + delete on the right.
-        let closes = isSheetPresentation || isNewApplication
-        return HStack(spacing: 10) {
-            if closes {
-                secondaryNavButtons
-                Spacer()
-                navCircleButton(icon: "xmark", label: "Close")
-            } else {
-                navCircleButton(icon: "chevron.left", label: "Back")
-                Spacer()
-                secondaryNavButtons
+    /// Sheets: info + delete on the left, native close on the right. Pushed: the system back
+    /// button on the left, info + delete on the right.
+    @ToolbarContentBuilder
+    private var navToolbar: some ToolbarContent {
+        if isSheetPresentation || isNewApplication {
+            ToolbarItemGroup(placement: .topBarLeading) { secondaryNavButtons }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(role: .close) { dismiss() }
             }
+        } else {
+            ToolbarItemGroup(placement: .topBarTrailing) { secondaryNavButtons }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 20)
-        .padding(.bottom, 8)
     }
 
-    private func navCircleButton(icon: String, label: String) -> some View {
-        Button { dismiss() } label: {
-            AppIcon(icon)
-                .appFont(14, weight: .semibold)
-                .foregroundStyle(Theme.textPrimary)
-                .frame(width: 44, height: 44)
-                .glassEffect(.regular.interactive(), in: .circle)
-        }
-        .buttonStyle(PressScaleButtonStyle())
-        .accessibilityLabel(label)
-    }
-
+    @ViewBuilder
     private var secondaryNavButtons: some View {
-        HStack(spacing: 10) {
-            Button { isShowingLogoAttribution.toggle() } label: {
-                AppIcon("info.circle")
-                    .appFont(15, weight: .medium)
-                    .foregroundStyle(Theme.textSecondary)
-                    .frame(width: 44, height: 44)
-                    .glassEffect(.regular.interactive(), in: .circle)
+        Button { isShowingLogoAttribution.toggle() } label: {
+            AppIcon("info.circle")
+                .appFont(15, weight: .medium)
+                .foregroundStyle(Theme.textSecondary)
+        }
+        .popover(isPresented: $isShowingLogoAttribution, arrowEdge: .top) {
+            HStack(spacing: 4) {
+                Text("Company logos from").foregroundStyle(.secondary)
+                Link("Logo.dev", destination: URL(string: "https://logo.dev")!)
             }
-            .buttonStyle(PressScaleButtonStyle())
-            .popover(isPresented: $isShowingLogoAttribution, arrowEdge: .top) {
-                HStack(spacing: 4) {
-                    Text("Company logos from").foregroundStyle(.secondary)
-                    Link("Logo.dev", destination: URL(string: "https://logo.dev")!)
-                }
-                .font(.footnote)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .presentationCompactAdaptation(.popover)
-            }
-            .accessibilityLabel("Logo attribution")
+            .appFont(.footnote)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .presentationCompactAdaptation(.popover)
+        }
+        .accessibilityLabel("Logo attribution")
 
-            if !isNewApplication {
-                Button { isShowingDeleteConfirmation = true } label: {
-                    AppIcon("trash")
-                        .appFont(14, weight: .bold)
-                        .foregroundStyle(Theme.destructive)
-                        .frame(width: 44, height: 44)
-                        .glassEffect(.regular.tint(Theme.destructive.opacity(0.12)).interactive(), in: .circle)
-                }
-                .buttonStyle(PressScaleButtonStyle())
-                .accessibilityLabel("Delete application")
+        if !isNewApplication {
+            Button { isShowingDeleteConfirmation = true } label: {
+                AppIcon("trash")
+                    .appFont(14, weight: .bold)
+                    .foregroundStyle(Theme.destructive)
             }
+            .accessibilityLabel("Delete application")
         }
     }
 

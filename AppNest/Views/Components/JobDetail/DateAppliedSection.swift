@@ -12,7 +12,7 @@ struct DateAppliedSection: View {
     @State private var permissionDenied: Bool = false
 
     private var isToApply: Bool { status == .toApply }
-    private var accent: Color { Color.accentColor }
+    private var accent: Color { Theme.accent }
 
     private var sectionTitle: String {
         isToApply ? "Date to Apply" : "Date Applied"
@@ -67,7 +67,7 @@ struct DateAppliedSection: View {
                             AppIcon("calendar.badge.plus")
                                 .appFont(14, weight: .semibold)
                             Text("Select a date")
-                                .appFont(17, weight: .semibold)
+                                .appFont(.headline, weight: .semibold)
                         }
                         .foregroundStyle(accent)
                         .padding(.horizontal, 14)
@@ -118,10 +118,10 @@ struct DateAppliedSection: View {
                                 .foregroundStyle(accent)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Remind me to apply")
-                                    .appFont(14, weight: .semibold)
+                                    .appFont(.body, weight: .semibold)
                                     .foregroundStyle(Theme.textPrimary)
                                 Text("We'll send a notification on this date so you don't forget.")
-                                    .appFont(11, weight: .medium)
+                                    .appFont(.caption, weight: .medium)
                                     .foregroundStyle(Theme.textSecondary)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
@@ -136,7 +136,7 @@ struct DateAppliedSection: View {
                                 .foregroundStyle(accent)
                                 .frame(width: 16)
                             Text("Remind me at")
-                                .appFont(14, weight: .medium)
+                                .appFont(.body, weight: .medium)
                                 .foregroundStyle(Theme.textPrimary)
                             Spacer()
                             DatePicker("", selection: $reminderTime, displayedComponents: .hourAndMinute)
@@ -152,7 +152,7 @@ struct DateAppliedSection: View {
                                 .appFont(11, weight: .semibold)
                                 .foregroundStyle(Color.orange)
                             Text("Enable notifications in Settings to receive reminders.")
-                                .appFont(11, weight: .medium)
+                                .appFont(.caption, weight: .medium)
                                 .foregroundStyle(Theme.textSecondary)
                         }
                     }

@@ -56,18 +56,18 @@ struct CompensationSection: View {
 
                     HStack(spacing: 4) {
                         Text(currency.symbol)
-                            .appFont(16, weight: .semibold)
+                            .appFont(.body, weight: .semibold)
                             .foregroundStyle(Theme.textSecondary)
                         TextField("0", text: $amount)
                             .keyboardType(.decimalPad)
-                            .appFont(17, weight: .semibold)
+                            .appFont(.headline, weight: .semibold)
                             .foregroundStyle(Theme.textPrimary)
                             .focused($isAmountFocused)
                             .onChange(of: amount) { _, newValue in
                                 amount = Self.sanitize(newValue)
                             }
                         Text("/ \(periodLabel)")
-                            .appFont(13, weight: .medium)
+                            .appFont(.footnote, weight: .medium)
                             .foregroundStyle(Theme.textSecondary)
                             .lineLimit(1)
                     }
@@ -134,7 +134,7 @@ struct CompensationSection: View {
         } label: {
             HStack(spacing: 4) {
                 Text(currency.rawValue)
-                    .appFont(13, weight: .bold)
+                    .appFont(.footnote, weight: .bold)
                 AppIcon("chevron.down")
                     .appFont(10, weight: .bold)
             }

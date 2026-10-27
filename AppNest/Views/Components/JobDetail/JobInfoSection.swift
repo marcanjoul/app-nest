@@ -137,12 +137,12 @@ struct JobInfoSection: View {
 
             VStack(spacing: 12) {
                 boxedField(.company, label: "Company", icon: "building.2", placeholder: "Company name",
-                           text: $companyName, fontSize: 17, capitalization: .words, submit: .next) {
+                           text: $companyName, style: .headline, capitalization: .words, submit: .next) {
                     focused = .position
                 }
                 boxedField(.position, label: "Position", icon: "briefcase",
                            placeholder: promptsForPosition ? "Couldn't find the title, add it here" : "Job title",
-                           text: $position, fontSize: 17, capitalization: .words, submit: .done) {
+                           text: $position, style: .headline, capitalization: .words, submit: .done) {
                     focused = nil
                 }
             }
@@ -168,7 +168,7 @@ struct JobInfoSection: View {
     // can't tail-truncate on its own. Hit-testing passes through, so tapping still edits.
     @ViewBuilder
     private func boxedField(_ field: Field, label: String, icon: String, placeholder: String,
-                            text: Binding<String>, fontSize: CGFloat,
+                            text: Binding<String>, style: AppTextStyle,
                             capitalization: TextInputAutocapitalization, submit: SubmitLabel,
                             onSubmit: @escaping () -> Void) -> some View {
         let isFocused = focused == field
@@ -180,16 +180,16 @@ struct JobInfoSection: View {
                     .appFont(11, weight: .semibold)
                     .frame(width: 14)
                 Text(label)
-                    .appFont(12, weight: .medium)
+                    .appFont(.footnote, weight: .medium)
                 Text("*")
-                    .appFont(12, weight: .bold)
+                    .appFont(.footnote, weight: .bold)
                     .foregroundStyle(.orange)
             }
             .foregroundStyle(Theme.textSecondary)
             .padding(.leading, 4)
 
             TextField(placeholder, text: text)
-                .appFont(fontSize, weight: .semibold)
+                .appFont(style, weight: .semibold)
                 .foregroundStyle(isFocused || isEmpty ? Theme.textPrimary : .clear)
                 .textInputAutocapitalization(capitalization)
                 .lineLimit(1)
@@ -199,7 +199,7 @@ struct JobInfoSection: View {
                 .overlay(alignment: .leading) {
                     if !isFocused && !isEmpty {
                         Text(text.wrappedValue)
-                            .appFont(fontSize, weight: .semibold)
+                            .appFont(style, weight: .semibold)
                             .foregroundStyle(Theme.textPrimary)
                             .lineLimit(1)
                             .truncationMode(.tail)
@@ -211,10 +211,10 @@ struct JobInfoSection: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(isFocused ? Color.accentColor.opacity(0.04) : Color.primary.opacity(0.04))
+                        .fill(isFocused ? Theme.accent.opacity(0.04) : Color.primary.opacity(0.04))
                         .overlay {
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .strokeBorder(isFocused ? Color.accentColor.opacity(0.5) : Color.primary.opacity(0.07),
+                                .strokeBorder(isFocused ? Theme.accent.opacity(0.5) : Color.primary.opacity(0.07),
                                               lineWidth: isFocused ? 1.5 : 1)
                         }
                 }

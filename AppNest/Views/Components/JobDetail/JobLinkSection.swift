@@ -41,7 +41,7 @@ struct JobLinkSection: View {
 
             HStack(spacing: 10) {
                 TextField("Paste job posting URL…", text: $jobURL)
-                    .font(.subheadline)
+                    .appFont(.body)
                     .keyboardType(.URL)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
@@ -53,7 +53,7 @@ struct JobLinkSection: View {
                     } label: {
                         AppIcon("arrow.up.right.circle.fill")
                             .appFont(22)
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(Theme.accent)
                     }
                     .buttonStyle(.plain)
                     .transition(.scale(scale: 0.7).combined(with: .opacity))

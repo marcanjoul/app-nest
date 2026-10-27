@@ -34,7 +34,7 @@ struct StoreRecoveryView: View {
                     )
                 } else {
                     Text("Restore a backup")
-                        .appFont(15, weight: .semibold)
+                        .appFont(.body, weight: .semibold)
                         .foregroundStyle(Theme.textPrimary)
 
                     ForEach(snapshots) { snapshot in
@@ -45,7 +45,7 @@ struct StoreRecoveryView: View {
 
                 if let restoreError {
                     Text(restoreError)
-                        .appFont(13, weight: .medium)
+                        .appFont(.footnote, weight: .medium)
                         .foregroundStyle(Theme.destructive)
                 }
 
@@ -62,11 +62,11 @@ struct StoreRecoveryView: View {
                 .foregroundStyle(.orange)
 
             Text("Couldn't open your data")
-                .appFont(24, weight: .bold)
+                .appFont(.title, weight: .bold)
                 .foregroundStyle(Theme.textPrimary)
 
             Text("Your applications are safe on this device. Don't delete the app — that would erase them for good.")
-                .appFont(14, weight: .medium)
+                .appFont(.body, weight: .medium)
                 .foregroundStyle(Theme.textSecondary)
         }
     }
@@ -75,16 +75,16 @@ struct StoreRecoveryView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(snapshot.displayName)
-                    .appFont(15, weight: .semibold)
+                    .appFont(.body, weight: .semibold)
                     .foregroundStyle(Theme.textPrimary)
                 Text(snapshot.displaySize)
-                    .appFont(12, weight: .medium)
+                    .appFont(.footnote, weight: .medium)
                     .foregroundStyle(Theme.textTertiary)
             }
             Spacer()
             Text("Restore")
-                .appFont(14, weight: .bold)
-                .foregroundStyle(Color.accentColor)
+                .appFont(.body, weight: .bold)
+                .foregroundStyle(Theme.accent)
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -94,10 +94,10 @@ struct StoreRecoveryView: View {
     private func banner(icon: String, tint: Color, title: String, message: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             AppLabel(title, systemImage: icon)
-                .appFont(15, weight: .semibold)
+                .appFont(.body, weight: .semibold)
                 .foregroundStyle(tint)
             Text(message)
-                .appFont(13, weight: .medium)
+                .appFont(.footnote, weight: .medium)
                 .foregroundStyle(Theme.textSecondary)
         }
         .padding(14)
@@ -108,14 +108,14 @@ struct StoreRecoveryView: View {
     private var details: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Technical details")
-                .appFont(12, weight: .semibold)
+                .appFont(.footnote, weight: .semibold)
                 .foregroundStyle(Theme.textTertiary)
             Text(error.localizedDescription)
-                .appFont(11, weight: .regular)
+                .appFont(.caption, weight: .regular)
                 .foregroundStyle(Theme.textTertiary)
             if let brokenStoreURL {
                 Text("Unreadable store kept at: \(brokenStoreURL.lastPathComponent)")
-                    .appFont(11, weight: .regular)
+                    .appFont(.caption, weight: .regular)
                     .foregroundStyle(Theme.textTertiary)
             }
         }

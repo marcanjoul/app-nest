@@ -6,12 +6,14 @@
 //
 
 import SwiftUI
+import CoreText
 
 enum Theme {
 
     // MARK: - Accent
 
-    static let accent      = Color.accentColor
+    // Named asset, not `Color.accentColor`: that resolved to system blue inside sheets.
+    static let accent      = Color("AccentColor")
 
     // MARK: - Destructive
 
@@ -109,8 +111,56 @@ enum Theme {
 
 
 
-    // MARK: - Section Labels
-
-    static let sectionLabelSize:    CGFloat = 13
     static let sectionLabelSpacing: CGFloat = 0
+
+    // MARK: - Typography
+
+    /// Display face for titles and headlines: DM Sans, a variable font (OFL 1.1, no Reserved Font
+    /// Name; the file ships unmodified beside `DMSans-OFL.txt` in `Design System/Fonts`).
+    /// Weight goes on its `wght` axis and optical size on `opsz` (tracks the point size, 9–40),
+    /// so every SwiftUI weight works from the one file. nil (failed to load) falls back to SF Pro.
+    static func displayFont(size: CGFloat, weight: Font.Weight) -> Font? {
+        displayUIFont(size: size, weight: weight).map { Font($0) }
+    }
+
+    static func displayUIFont(size: CGFloat, weight: Font.Weight) -> UIFont? {
+        guard let displayDescriptor else { return nil }
+        let wghtAxis = 0x77676874   // 'wght'
+        let opszAxis = 0x6F70737A   // 'opsz'
+        let descriptor = displayDescriptor.addingAttributes([
+            UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String): [
+                wghtAxis: weight.cssValue,
+                opszAxis: min(max(size, 9), 40),
+            ],
+        ])
+        return UIFont(descriptor: descriptor, size: size)
+    }
+
+    private static let displayDescriptor: UIFontDescriptor? = {
+        guard let url = Bundle.main.url(forResource: "DMSans-VariableFont_opsz,wght", withExtension: "ttf") else {
+            assertionFailure("Missing bundled font DMSans-VariableFont_opsz,wght.ttf")
+            return nil
+        }
+        CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+        guard let ct = (CTFontManagerCreateFontDescriptorsFromURL(url as CFURL) as? [CTFontDescriptor])?.first
+        else { return nil }
+        return UIFontDescriptor(name: CTFontCopyPostScriptName(CTFontCreateWithFontDescriptor(ct, 20, nil)) as String, size: 0)
+    }()
+}
+
+extension Font.Weight {
+    /// The CSS / OpenType `wght` value for this weight.
+    var cssValue: CGFloat {
+        switch self {
+        case .ultraLight: 100
+        case .thin:       200
+        case .light:      300
+        case .medium:     500
+        case .semibold:   600
+        case .bold:       700
+        case .heavy:      800
+        case .black:      900
+        default:          400
+        }
+    }
 }

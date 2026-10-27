@@ -57,7 +57,7 @@ struct RootView: View {
             .presentationDragIndicator(.hidden)
         }
         .sheet(item: $bindableAppState.selectedJob) { job in
-            JobDetailView(job: job, isSheetPresentation: true)
+            NavigationStack { JobDetailView(job: job, isSheetPresentation: true) }
                 .presentationDetents([.fraction(0.90)])
                 .presentationCornerRadius(28)
                 .presentationDragIndicator(.hidden)
