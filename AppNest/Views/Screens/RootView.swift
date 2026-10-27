@@ -34,7 +34,6 @@ struct RootView: View {
             // tuned to the tab bar's centre line on iPhone; re-check it if Apple moves the bar.
             .overlay(alignment: .bottomTrailing) {
                 Button {
-                    AppHaptics.shared.light()
                     appState.isShowingAdd = true
                 } label: {
                     AppIcon("plus")

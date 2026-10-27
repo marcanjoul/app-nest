@@ -53,6 +53,8 @@ struct JobDetailView: View {
     @State private var scrollTargetSection: FormSection?
     @State private var isLogoAutoFetched = false
     var isSheetPresentation: Bool = false
+    /// A parsed link found the company but no job title: point the user at the Position field.
+    private var promptsForPosition = false
 
     private enum FormSection: Hashable {
         case info, type, status
@@ -126,6 +128,7 @@ struct JobDetailView: View {
         self.csvRow = nil
         self.job = job
         self.isSheetPresentation = isSheetPresentation
+        self.promptsForPosition = job == nil && !prefillURL.isEmpty && prefillPosition.isEmpty
         _companyName            = State(initialValue: job?.companyName ?? prefillCompany)
         _companyLogoImageData   = State(initialValue: job?.companyLogoImageData)
         _logoRemoved            = State(initialValue: job?.logoRemoved ?? false)
@@ -230,7 +233,6 @@ struct JobDetailView: View {
         let isSelected = csvCycleID == id
         Button {
             withAnimation(.appCrisp) { csvCycleID = id }
-            AppHaptics.shared.light()
         } label: {
             Text(name)
                 .appFont(13, weight: .semibold)
@@ -355,7 +357,6 @@ struct JobDetailView: View {
         reminderTime         = job.reminderTime ?? Self.defaultReminderTime
         companyResearch      = job.companyResearch ?? ""
         interviewNotes       = job.interviewNotes ?? ""
-        AppHaptics.shared.light()
     }
 
     private var firstMissingSection: FormSection? {
@@ -463,6 +464,7 @@ struct JobDetailView: View {
             logoRemoved: $logoRemoved,
             position: $position,
             pickerItem: $pickerItem,
+            promptsForPosition: promptsForPosition,
             onAutoFetchStateChanged: { isLogoAutoFetched = $0 }
         )
         .id(FormSection.info)

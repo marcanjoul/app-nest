@@ -153,7 +153,6 @@ struct EditImportRowView: View {
         let isSelected = row.cycleID == id
         Button {
             withAnimation(.appCrisp) { row.cycleID = id }
-            AppHaptics.shared.light()
         } label: {
             Text(name)
                 .appFont(13, weight: .semibold)

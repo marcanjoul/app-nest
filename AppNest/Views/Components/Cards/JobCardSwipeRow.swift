@@ -35,7 +35,6 @@ struct JobCardSwipeRow: View {
                 if isEditMode {
                     onToggleSelection()
                 } else {
-                    AppHaptics.shared.light()
                     appState.selectedJob = job
                 }
             } label: {

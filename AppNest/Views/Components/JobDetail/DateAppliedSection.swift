@@ -160,7 +160,6 @@ struct DateAppliedSection: View {
                 .padding(.top, 4)
                 .transition(.opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95)))
                 .onChange(of: reminderEnabled) { old, newValue in
-                    AppHaptics.shared.light()
                     guard newValue else { return }
                     Task {
                         let granted = await NotificationManager.requestAuthorization()

@@ -67,7 +67,6 @@ struct AddMenuView: View {
                         icon: "square.and.arrow.down.fill",
                         color: importAccent
                     ) {
-                        AppHaptics.shared.light()
                         isSelectingCSVFile = true
                     }
 
@@ -77,7 +76,6 @@ struct AddMenuView: View {
                         icon: "square.and.pencil",
                         color: Color.accentColor
                     ) {
-                        AppHaptics.shared.light()
                         isPresentingManualAdd = true
                     }
                 }
@@ -176,7 +174,6 @@ struct AddMenuView: View {
         let bvm = Bindable(vm)
         VStack(spacing: 0) {
             Button {
-                AppHaptics.shared.light()
                 withAnimation(.appSmooth) {
                     isShowingEmailParse.toggle()
                     lastSavedCompany = nil
@@ -379,7 +376,6 @@ struct AddMenuView: View {
     private var pasteLinkCard: some View {
         VStack(spacing: 0) {
             Button {
-                AppHaptics.shared.light()
                 withAnimation(.appSmooth) {
                     isShowingPasteLink.toggle()
                     if isShowingPasteLink {
@@ -545,7 +541,6 @@ struct AddMenuView: View {
         #if canImport(UIKit)
         UIApplication.shared.dismissKeyboard()
         #endif
-        AppHaptics.shared.medium()
         withAnimation(.appFastOut) { isParsing = true }
         let url = pasteLinkURL
         Task {

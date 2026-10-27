@@ -10,6 +10,8 @@ struct JobInfoSection: View {
     @Binding var logoRemoved: Bool
     @Binding var position: String
     @Binding var pickerItem: PhotosPickerItem?
+    /// The link didn't give a job title: say so in the field and focus it.
+    var promptsForPosition = false
     var onAutoFetchStateChanged: ((Bool) -> Void)? = nil
 
     private enum Field: Hashable { case company, position }
@@ -103,7 +105,6 @@ struct JobInfoSection: View {
                             logoRemoved = true
                         }
                         onAutoFetchStateChanged?(false)
-                        AppHaptics.shared.light()
                     } label: {
                         AppLabel("Remove Logo", systemImage: "trash")
                     }
@@ -130,7 +131,6 @@ struct JobInfoSection: View {
                         isLogoAutoFetched = true
                     }
                     onAutoFetchStateChanged?(true)
-                    AppHaptics.shared.light()
                 }
                 withAnimation(.appFastOut) { isFetchingLogo = false }
             }
@@ -140,7 +140,8 @@ struct JobInfoSection: View {
                            text: $companyName, fontSize: 17, capitalization: .words, submit: .next) {
                     focused = .position
                 }
-                boxedField(.position, label: "Position", icon: "briefcase", placeholder: "Job title",
+                boxedField(.position, label: "Position", icon: "briefcase",
+                           placeholder: promptsForPosition ? "Couldn't find the title, add it here" : "Job title",
                            text: $position, fontSize: 17, capitalization: .words, submit: .done) {
                     focused = nil
                 }
@@ -150,6 +151,12 @@ struct JobInfoSection: View {
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
         .padding(.bottom, 4)
+        .task {
+            guard promptsForPosition, position.isEmpty else { return }
+            // Wait out the sheet's presentation; focusing mid-animation drops the keyboard.
+            try? await Task.sleep(for: .milliseconds(500))
+            focused = .position
+        }
     }
 
     // MARK: - Boxed field

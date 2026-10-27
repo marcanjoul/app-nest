@@ -85,6 +85,12 @@ struct LinkParser {
             let pathComponents = url.pathComponents.filter { !$0.isEmpty && $0 != "/" }
             if pathComponents.count >= 1 {
                 result.companyName = formatName(pathComponents[0])
+                if pathComponents.count >= 2,
+                   let posting = await fetchLeverPosting(company: pathComponents[0], postingID: pathComponents[1]) {
+                    result.position = posting.text
+                    // The commitment ("Full-time", "Intern") is a better type signal than the title alone.
+                    result.jobType = inferType(from: "\(posting.text) \(posting.categories?.commitment ?? "")")
+                }
             }
             return result
         }
@@ -94,6 +100,11 @@ struct LinkParser {
             let pathComponents = url.pathComponents.filter { !$0.isEmpty && $0 != "/" }
             if pathComponents.count >= 1 {
                 result.companyName = formatName(pathComponents[0])
+                if pathComponents.count >= 2,
+                   let title = await fetchAshbyJobTitle(board: pathComponents[0], jobID: pathComponents[1]) {
+                    result.position = title
+                    result.jobType = inferType(from: title)
+                }
             }
             return result
         }
@@ -185,13 +196,48 @@ struct LinkParser {
         return try? JSONDecoder().decode(GreenhouseJobResponse.self, from: data)
     }
 
+    private struct LeverPosting: Decodable {
+        struct Categories: Decodable { let commitment: String? }
+        let text: String
+        let categories: Categories?
+    }
+
+    private func fetchLeverPosting(company: String, postingID: String) async -> LeverPosting? {
+        guard let url = URL(string: "https://api.lever.co/v0/postings/\(company)/\(postingID)") else { return nil }
+        guard let (data, _) = try? await URLSession.shared.data(from: url) else { return nil }
+        return try? JSONDecoder().decode(LeverPosting.self, from: data)
+    }
+
+    private struct AshbyBoardResponse: Decodable {
+        struct Job: Decodable { let id: String; let title: String }
+        let jobs: [Job]
+    }
+
+    // ponytail: Ashby has no single-job endpoint, so this pulls the whole board (~100 jobs, includes
+    // descriptions). Fine for one paste; cache per board if this ever runs in a loop.
+    private func fetchAshbyJobTitle(board: String, jobID: String) async -> String? {
+        guard let url = URL(string: "https://api.ashbyhq.com/posting-api/job-board/\(board)") else { return nil }
+        guard let (data, _) = try? await URLSession.shared.data(from: url),
+              let response = try? JSONDecoder().decode(AshbyBoardResponse.self, from: data)
+        else { return nil }
+        return response.jobs.first { $0.id.lowercased() == jobID.lowercased() }?.title
+    }
+
     // MARK: - Formatters
 
     private func formatName(_ slug: String) -> String {
-        return slug
+        Self.stripLegalSuffix(slug
             .replacingOccurrences(of: "-", with: " ")
             .replacingOccurrences(of: "_", with: " ")
-            .capitalized
+            .capitalized)
+    }
+
+    /// "Aurora Operations Inc" → "Aurora Operations". Only a trailing whole word, and never the
+    /// whole name (a company literally called "Corp" stays "Corp").
+    static func stripLegalSuffix(_ name: String) -> String {
+        let stripped = name.replacingOccurrences(
+            of: #"[\s,]+(inc|llc|ltd|corp)\.?$"#, with: "", options: [.regularExpression, .caseInsensitive])
+        return stripped.isEmpty ? name : stripped
     }
 
     private func formatPosition(_ slug: String) -> String {

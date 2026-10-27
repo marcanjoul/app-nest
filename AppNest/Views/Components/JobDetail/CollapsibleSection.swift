@@ -5,9 +5,9 @@ import SwiftUI
 /// header row and its full size, so opening and closing grow/shrink the same card instead of
 /// swapping one view for another. Sections that already hold something start open, so
 /// editing a job never hides data.
-// ponytail: folds by clipping the section's own card to its header row. Every wrapped section
-// starts with a bare SectionLabel under 16pt card padding, so `headerHeight` is that row; a
-// section that grows a trailing header control needs the chevron revisited.
+// ponytail: folds by clipping the section's own card to its header row. The row's height is
+// measured from the section's first SectionLabel (its bottom plus the same padding as above it);
+// a section that grows a trailing header control needs the chevron revisited.
 struct CollapsibleSection<Content: View>: View {
     let icon: String
     let title: String
@@ -15,7 +15,8 @@ struct CollapsibleSection<Content: View>: View {
 
     @State private var isExpanded: Bool
     @State private var contentHeight: CGFloat = 0
-    @ScaledMetric private var headerHeight: CGFloat = 48   // 16 padding + label + 16 padding
+    /// Measured from the first SectionLabel; 48 only until the first layout pass.
+    @State private var headerHeight: CGFloat = 48
 
     private let cardShape = RoundedRectangle(cornerRadius: 20, style: .continuous)   // Surface's radius
 
@@ -35,6 +36,15 @@ struct CollapsibleSection<Content: View>: View {
         content()
             .fixedSize(horizontal: false, vertical: true)
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
+            .backgroundPreferenceValue(SectionLabelBoundsKey.self) { anchor in
+                GeometryReader { proxy in
+                    // Label's bottom edge + the padding above it, so the fold is symmetric.
+                    let height = anchor.map { proxy[$0].maxY + proxy[$0].minY } ?? 0
+                    Color.clear.onChange(of: height, initial: true) { _, new in
+                        if new > 0 { headerHeight = new }
+                    }
+                }
+            }
             // Folded fields are out of sight; keep VoiceOver out of them too.
             .accessibilityHidden(!isExpanded)
             .frame(height: visibleHeight, alignment: .top)
@@ -46,7 +56,6 @@ struct CollapsibleSection<Content: View>: View {
             .overlay(alignment: .top) {
                 Button {
                     withAnimation(.appSmooth) { isExpanded.toggle() }
-                    AppHaptics.shared.light()
                 } label: {
                     HStack {
                         Spacer()

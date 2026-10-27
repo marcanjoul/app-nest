@@ -87,7 +87,6 @@ struct CSVImportPreviewSheet: View {
                                     selectedRows = Set(displayedRows.map(\.id))
                                 }
                             }
-                            AppHaptics.shared.light()
                         }
                         .appFont(14, weight: .bold)
                         .foregroundStyle(Color.accentColor)
@@ -185,7 +184,6 @@ struct CSVImportPreviewSheet: View {
         let isSelected = activeFilter == filter
         Button {
             withAnimation(.appCrisp) { activeFilter = filter }
-            AppHaptics.shared.light()
         } label: {
             HStack(spacing: 6) {
                 AppIcon(icon)
@@ -281,7 +279,6 @@ struct CSVImportPreviewSheet: View {
                     if isSelected { selectedRows.remove(r.id) }
                     else { selectedRows.insert(r.id) }
                 }
-                AppHaptics.shared.light()
             } label: {
                 AppIcon(isSelected ? "checkmark.circle.fill" : "circle")
                     .appFont(22)

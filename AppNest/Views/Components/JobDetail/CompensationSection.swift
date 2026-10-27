@@ -43,7 +43,6 @@ struct CompensationSection: View {
                             withAnimation(.appCrisp) {
                                 kind = (kind == option ? nil : option)
                             }
-                            AppHaptics.shared.light()
                         }
                     )
                 }
@@ -101,7 +100,6 @@ struct CompensationSection: View {
                                     withAnimation(.appCrisp) {
                                         salaryPeriod = period
                                     }
-                                    AppHaptics.shared.light()
                                 }
                             )
                         }

@@ -31,3 +31,29 @@ struct LinkParserTests {
         #expect(LinkParser.stripCareersAffix("careers") == "careers")
     }
 }
+
+/// Hits Ashby's public job-board API — needs the network, and the posting may eventually close.
+@Test("Ashby links pull the job title from the board API")
+func parsesAshbyTitle() async {
+    let r = await LinkParser().parse("https://jobs.ashbyhq.com/aurora-operations-inc/475a24d7-a058-4f86-be8f-fd6be679af9c/application?jr_id=6adfd6ee065c4e77efafc1ef")
+    #expect(r.companyName == "Aurora Operations")
+    #expect(r.position == "AI Engineer Intern")
+    #expect(r.jobType == .internship)
+}
+
+/// Hits Lever's public postings API — needs the network, and the posting may eventually close.
+@Test("Lever links pull the job title and commitment from the postings API")
+func parsesLeverTitle() async {
+    let r = await LinkParser().parse("https://jobs.lever.co/palantir/6ed76ce8-4156-4b60-b120-403538bd66cd")
+    #expect(r.companyName == "Palantir")
+    #expect(r.position == "Administrative Business Partner")
+    #expect(r.jobType == .fullTime)
+}
+
+@Test("legal suffixes are dropped from company names", arguments: [
+    ("Aurora Operations Inc", "Aurora Operations"), ("Acme, LLC", "Acme"), ("Foo Ltd.", "Foo"),
+    ("Big Corp", "Big"), ("Corp", "Corp"), ("Incubator", "Incubator"),
+])
+func stripsLegalSuffix(input: String, expected: String) {
+    #expect(LinkParser.stripLegalSuffix(input) == expected)
+}

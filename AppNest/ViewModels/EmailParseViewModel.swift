@@ -59,7 +59,6 @@ final class EmailParseViewModel {
 
     /// Resets all state with haptic. Call for user-initiated cancel/collapse.
     func reset() {
-        AppHaptics.shared.light()
         withAnimation(.appSmooth) { resetState() }
     }
 
@@ -94,7 +93,6 @@ final class EmailParseViewModel {
 
     /// Returns to the pre-parse state: shows the text editor with email text intact, hides results.
     func backToEdit() {
-        AppHaptics.shared.light()
         withAnimation(.appSmooth) {
             hasResult = false
             isEmailExpanded = true
@@ -109,7 +107,6 @@ final class EmailParseViewModel {
         #if canImport(UIKit)
         UIApplication.shared.dismissKeyboard()
         #endif
-        AppHaptics.shared.medium()
 
         // ponytail: parsing is synchronous regex work — microseconds. It used to be wrapped in a
         // 0.4s asyncAfter with a loading skeleton, which was pure invented latency.
@@ -171,7 +168,7 @@ final class EmailParseViewModel {
         modelContext.insert(newJob)
         AppHaptics.shared.success()
         withAnimation(.appSmooth) { saveSuccess = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
             guard let self else { return }
             withAnimation(.appSmooth) {
                 self.resetState()

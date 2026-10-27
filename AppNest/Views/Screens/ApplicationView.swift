@@ -40,7 +40,6 @@ struct ApplicationView: View {
     @State private var isShowingImportPreview = false
     @State private var isImportingCSV = false
     @State private var isShowingImportConfirmation = false
-    @State private var isShowingExportConfirmation = false
     @State private var csvFileURL: URL? = nil
     @State private var isShowingShareSheet = false
     @State private var importErrorMessage: String?
@@ -107,23 +106,14 @@ struct ApplicationView: View {
             AmbientBackground()
 
             List {
-                // Header
-                VStack(alignment: .leading, spacing: 0) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if !searchText.isEmpty {
-                            Text("\(rows.count) results")
-                                .appFont(13, weight: .bold)
-                                .foregroundStyle(Color.accentColor)
-                                .transition(.opacity.combined(with: .move(edge: .leading)))
-                        }
-                    }
-                }
-                .animation(.appSmooth, value: searchText.isEmpty)
-                .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .selectionDisabled()
-                .id("appListTop")
+                // Zero-height scroll-to-top target.
+                Color.clear
+                    .frame(height: 0)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .selectionDisabled()
+                    .id("appListTop")
 
                 // Stats — status chips
                 statsSection
@@ -195,7 +185,6 @@ struct ApplicationView: View {
                                             selectedJobIDs.insert(job.id)
                                         }
                                     }
-                                    AppHaptics.shared.light()
                                 }
                             )
                             .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
@@ -414,12 +403,6 @@ struct ApplicationView: View {
         } message: {
             Text("Select a CSV file to import your applications.")
         }
-        .alert("Export CSV", isPresented: $isShowingExportConfirmation) {
-            Button("Export") { exportCSV() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Create a CSV file of your applications to share or backup.")
-        }
         .alert("Import Failed", isPresented: Binding(
             get: { importErrorMessage != nil },
             set: { if !$0 { importErrorMessage = nil } }
@@ -448,7 +431,6 @@ struct ApplicationView: View {
                         selectedJobIDs = Set(filteredAndSorted.map(\.id))
                     }
                 }
-                AppHaptics.shared.light()
             }
             .buttonStyle(PressScaleButtonStyle())
             .appFont(13, weight: .bold)
@@ -623,7 +605,9 @@ struct ApplicationView: View {
     }
 
     private var statsSection: some View {
-        let filterStatuses: [ApplicationStatus] = [.toApply, .applied, .interview, .offer, .rejected, .ghosted, .jobRemoved]
+        // Empty chips would only lead to an empty list; a selected one stays so it can be cleared.
+        let filterStatuses = ([.toApply, .applied, .interview, .offer, .rejected, .ghosted, .jobRemoved] as [ApplicationStatus])
+            .filter { chipCount(for: $0) > 0 || selectedStatuses.contains($0) }
         
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
@@ -658,14 +642,20 @@ struct ApplicationView: View {
         .scrollClipDisabled()
     }
 
-    /// Rejected jobs were still applied to, so the Applied chip counts and shows them too.
+    /// The Applied chip means "submitted": everything that got past To Apply, except a posting
+    /// that was taken down. Other chips match their own status only.
     private static func status(_ chip: ApplicationStatus, matches jobStatus: ApplicationStatus?) -> Bool {
-        jobStatus == chip || (chip == .applied && jobStatus == .rejected)
+        guard chip == .applied else { return jobStatus == chip }
+        return [.applied, .interview, .offer, .rejected, .ghosted].contains(jobStatus)
+    }
+
+    private func chipCount(for status: ApplicationStatus) -> Int {
+        searchFiltered.filter { Self.status(status, matches: $0.status) }.count
     }
 
     @ViewBuilder
     private func chipView(for status: ApplicationStatus) -> some View {
-        let count = searchFiltered.filter { Self.status(status, matches: $0.status) }.count
+        let count = chipCount(for: status)
         StatChip(
             status: status,
             number: count,
@@ -678,7 +668,6 @@ struct ApplicationView: View {
                 }
             }
         )
-        .opacity(count == 0 && !selectedStatuses.contains(status) ? 0.4 : 1.0)
     }
 
     // MARK: - Header Action Buttons
@@ -697,8 +686,7 @@ struct ApplicationView: View {
 
     private var exportButton: some View {
         Button {
-            isShowingExportConfirmation = true
-            AppHaptics.shared.light()
+            exportCSV()
         } label: {
             AppIcon("square.and.arrow.up")
                 .appFont(13, weight: .semibold)
@@ -721,7 +709,6 @@ struct ApplicationView: View {
                 isEditMode.toggle()
                 if !isEditMode { selectedJobIDs.removeAll() }
             }
-            AppHaptics.shared.light()
         } label: {
             HStack(spacing: 4) {
                 AppIcon(isEditMode ? "checkmark" : "pencil")
@@ -747,7 +734,6 @@ struct ApplicationView: View {
     private var cycleSelectorChip: some View {
         Button { 
             isShowingCyclePicker = true 
-            AppHaptics.shared.light()
         } label: {
             HStack(spacing: 6) {
                 AppIcon(appState.selectedCycleID != nil ? "tray.fill" : "tray.2.fill")
@@ -836,7 +822,6 @@ struct ApplicationView: View {
     
     private var emptyStateActions: some View {
         Button {
-            AppHaptics.shared.light()
             appState.isShowingAdd = true
         } label: {
             HStack(spacing: 12) {
@@ -881,7 +866,6 @@ struct ApplicationView: View {
                         selectedSeasons.removeAll()
                         selectedWorkModes.removeAll()
                     }
-                    AppHaptics.shared.light()
                 }
                 .appFont(13, weight: .semibold)
                 .foregroundStyle(Theme.buttonGreen)
@@ -899,7 +883,6 @@ struct ApplicationView: View {
                 HStack(spacing: 10) {
                     Button("Clear Search") {
                         searchText = ""
-                        AppHaptics.shared.light()
                     }
                     .appFont(13, weight: .semibold)
                     .foregroundStyle(Theme.buttonGreen)
@@ -915,7 +898,6 @@ struct ApplicationView: View {
                                 selectedTypes.removeAll()
                                 selectedSeasons.removeAll()
                             }
-                            AppHaptics.shared.light()
                         }
                         .appFont(13, weight: .semibold)
                         .foregroundStyle(Theme.textSecondary)
@@ -963,7 +945,6 @@ struct ApplicationView: View {
             pendingDeleteJob = nil
             toastDragY = 0
         }
-        AppHaptics.shared.light()
     }
 }
 

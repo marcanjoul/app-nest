@@ -87,7 +87,6 @@ private struct ChoiceSection<Option: Hashable & RawRepresentable>: View where Op
                                 withAnimation(reduceMotion ? nil : .appCrisp) {
                                     selection.toggle(option)
                                 }
-                                AppHaptics.shared.light()
                             }
                             .id(option)
                         }
@@ -139,5 +138,15 @@ struct SectionLabel: View {
                 }
             }
         }
+        // CollapsibleSection folds to this row; report where it actually sits.
+        .anchorPreference(key: SectionLabelBoundsKey.self, value: .bounds) { $0 }
+    }
+}
+
+/// Bounds of the first SectionLabel in a subtree.
+struct SectionLabelBoundsKey: PreferenceKey {
+    static var defaultValue: Anchor<CGRect>? { nil }
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
+        value = value ?? nextValue()
     }
 }

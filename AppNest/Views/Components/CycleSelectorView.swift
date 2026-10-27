@@ -107,7 +107,6 @@ struct CyclePickerSheet: View {
         let isActive = appState.selectedCycleID == nil
         return Button {
             appState.selectedCycleID = nil
-            AppHaptics.shared.light()
             isPresented = false
         } label: {
             pickerRowContent(
@@ -127,7 +126,6 @@ struct CyclePickerSheet: View {
         let isActive = appState.selectedCycleID == cycle.id
         return Button {
             appState.selectedCycleID = cycle.id
-            AppHaptics.shared.light()
             isPresented = false
         } label: {
             pickerRowContent(

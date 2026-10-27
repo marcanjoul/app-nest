@@ -156,7 +156,6 @@ struct CycleListView: View {
 
     private func selectCycle(_ cycle: JobCycle) {
         appState.selectedCycleID = cycle.id
-        AppHaptics.shared.light()
         dismissSheet?()
     }
 
@@ -207,7 +206,6 @@ struct CycleSwipeRow: View {
 
     var body: some View {
         Button {
-            AppHaptics.shared.light()
             onSelect()
         } label: {
             CycleRow(cycle: cycle, isActive: isActive)

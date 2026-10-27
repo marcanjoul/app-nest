@@ -70,7 +70,6 @@ struct DarkJobCardView: View {
                                 ForEach(ApplicationStatus.allCases, id: \.self) { option in
                                     Button {
                                         withAnimation(.appSmooth) { job.status = option }
-                                        AppHaptics.shared.light()
                                     } label: {
                                         AppLabel(option.rawValue, systemImage: option.iconName)
                                     }
@@ -83,7 +82,6 @@ struct DarkJobCardView: View {
                                 ForEach(ApplicationType.allCases, id: \.self) { option in
                                     Button {
                                         withAnimation(.appSmooth) { job.jobType = option }
-                                        AppHaptics.shared.light()
                                     } label: {
                                         AppLabel(option.rawValue, systemImage: option.iconName)
                                     }

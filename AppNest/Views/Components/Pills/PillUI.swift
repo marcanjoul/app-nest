@@ -15,7 +15,6 @@ struct SelectablePill<T: Hashable & RawRepresentable>: View where T.RawValue == 
 
     var body: some View {
         Button {
-            AppHaptics.shared.light()
             onTap()
         } label: {
             HStack(spacing: isSelected ? 6 : 5) {
@@ -127,7 +126,6 @@ struct ResumePill: View {
     var body: some View {
         Button {
             guard let action else { return }
-            AppHaptics.shared.light()
             action()
         } label: {
             HStack(spacing: 6) {

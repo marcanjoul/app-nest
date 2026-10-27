@@ -28,7 +28,6 @@ struct LocationSection: View {
                                         location = ""
                                     }
                                 }
-                                AppHaptics.shared.light()
                             }
                         )
                     }

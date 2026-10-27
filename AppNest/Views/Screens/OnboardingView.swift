@@ -70,12 +70,10 @@ struct OnboardingView: View {
                 // CTA button
                 Button {
                     if currentPage < pages.count - 1 {
-                        AppHaptics.shared.light()
                         withAnimation(.appSmooth) {
                             currentPage += 1
                         }
                     } else {
-                        AppHaptics.shared.success()
                         hasCompletedOnboarding = true
                     }
                 } label: {
@@ -95,7 +93,6 @@ struct OnboardingView: View {
 
                 if currentPage < pages.count - 1 {
                     Button("Skip") {
-                        AppHaptics.shared.light()
                         hasCompletedOnboarding = true
                     }
                     .appFont(15, weight: .medium)
