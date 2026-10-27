@@ -33,6 +33,8 @@ struct AddMenuView: View {
     /// Company of the application just added from an email. Non-nil swaps the card body for a
     /// compact confirmation with "Parse New Email" / "Done", instead of collapsing the card.
     @State private var lastSavedCompany: String?
+    @State private var lastSavedPosition = ""
+    @State private var lastSavedLogo: Data?
     @FocusState private var isEmailEditorFocused: Bool
 
     private let linkParser = LinkParser()
@@ -89,6 +91,12 @@ struct AddMenuView: View {
             .onChange(of: isShowingEmailParse) { _, isOpen in
                 guard isOpen else { return }
                 withAnimation(.appSmooth) { proxy.scrollTo("emailParseCard", anchor: .top) }
+            }
+            // The scroll above fires before the keyboard is up, while the content may be too short
+            // to scroll. Once the keyboard lands, pin the Parse button just above it.
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidShowNotification)) { _ in
+                guard isShowingEmailParse, isEmailEditorFocused else { return }
+                withAnimation(.appSmooth) { proxy.scrollTo("emailParseCTA", anchor: .bottom) }
             }
             }
         }
@@ -299,6 +307,7 @@ struct AddMenuView: View {
                                 vm.parseEmail(defaultResume: defaultResume)
                             }
                             .padding(.bottom, 20)
+                            .id("emailParseCTA")
                         }
                     }
                     .padding(.horizontal, 20)
@@ -309,6 +318,9 @@ struct AddMenuView: View {
                             resumes: resumes,
                             onSave: {
                                 let company = vm.editCompany.isEmpty ? "Application" : vm.editCompany
+                                // Captured before save — saveApplication resets the view model.
+                                lastSavedPosition = vm.editPosition
+                                lastSavedLogo = vm.fetchedLogoData
                                 vm.saveApplication(
                                     modelContext: modelContext,
                                     cycles: cycles,
@@ -325,7 +337,24 @@ struct AddMenuView: View {
                     }
 
                     if let saved = lastSavedCompany {
-                        savedConfirmation(company: saved)
+                        SavedEmailConfirmation(
+                            company: saved,
+                            position: lastSavedPosition,
+                            logoData: lastSavedLogo,
+                            onParseNew: {
+                                withAnimation(.appSmooth) { lastSavedCompany = nil }
+                                isEmailEditorFocused = true
+                            },
+                            onDone: {
+                                withAnimation(.appSmooth) {
+                                    isShowingEmailParse = false
+                                    lastSavedCompany = nil
+                                }
+                            }
+                        )
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
                     }
                 }
                 .transition(.asymmetric(
@@ -479,50 +508,6 @@ struct AddMenuView: View {
         .buttonStyle(PressScaleButtonStyle())
     }
 
-    // MARK: - Saved Confirmation
-
-    private func savedConfirmation(company: String) -> some View {
-        VStack(spacing: 16) {
-            AppLabel("Added \(company)", systemImage: "checkmark.circle.fill")
-                .appFont(15, weight: .semibold)
-                .foregroundStyle(Color.accentColor)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            HStack(spacing: 12) {
-                Button {
-                    withAnimation(.appSmooth) { lastSavedCompany = nil }
-                    isEmailEditorFocused = true
-                } label: {
-                    Text("Parse New Email")
-                        .appFont(14, weight: .semibold)
-                        .foregroundStyle(Theme.textPrimary)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                        .glassEffect(.regular.interactive(), in: .capsule)
-                }
-                .buttonStyle(.plain)
-
-                Button {
-                    withAnimation(.appSmooth) {
-                        isShowingEmailParse = false
-                        lastSavedCompany = nil
-                    }
-                } label: {
-                    Text("Done")
-                        .appFont(14, weight: .bold)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                        .glassEffect(.regular.tint(Theme.buttonGreen).interactive(), in: .capsule)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 20)
-        .transition(.opacity.combined(with: .move(edge: .bottom)))
-    }
-
     // MARK: - Primary CTA
 
     /// Same spec as `JobDetailView.saveBar`: 44pt green glass capsule, 14pt bold label, icon in a 28pt circle.
@@ -637,5 +622,91 @@ struct CardRowHeader<Trailing: View>: View {
         .padding(20)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
+    }
+}
+
+// MARK: - Saved Confirmation
+
+/// Shown in place of the email card's body after a save: the company's logo pops in with a
+/// green check, then "Parse New Email" / "Done".
+private struct SavedEmailConfirmation: View {
+    let company: String
+    let position: String
+    let logoData: Data?
+    let onParseNew: () -> Void
+    let onDone: () -> Void
+
+    @State private var appeared = false
+
+    var body: some View {
+        VStack(spacing: 18) {
+            VStack(spacing: 12) {
+                ZStack {
+                    if let logoData, let ui = UIImage(data: logoData) {
+                        Image(uiImage: ui).resizable().scaledToFill()
+                    } else {
+                        InitialAvatar(name: company, fontSize: 28)
+                    }
+                }
+                .frame(width: 72, height: 72)
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
+                .overlay(alignment: .bottomTrailing) {
+                    AppIcon("checkmark")
+                        .appFont(12, weight: .bold)
+                        .foregroundStyle(.white)
+                        .frame(width: 26, height: 26)
+                        .background(Circle().fill(Theme.buttonGreen))
+                        .overlay(Circle().strokeBorder(Theme.background, lineWidth: 2.5))
+                        .offset(x: 6, y: 6)
+                        .scaleEffect(appeared ? 1 : 0.2)
+                        .opacity(appeared ? 1 : 0)
+                        .animation(.spring(response: 0.35, dampingFraction: 0.55).delay(0.18), value: appeared)
+                }
+                .scaleEffect(appeared ? 1 : 0.6)
+                .animation(.spring(response: 0.45, dampingFraction: 0.65), value: appeared)
+
+                VStack(spacing: 4) {
+                    Text("Added to Applications")
+                        .appFont(16, weight: .bold)
+                        .foregroundStyle(Theme.textPrimary)
+                    Text(position.isEmpty ? company : "\(position) · \(company)")
+                        .appFont(13, weight: .medium)
+                        .foregroundStyle(Theme.textSecondary)
+                        .lineLimit(1)
+                }
+                .opacity(appeared ? 1 : 0)
+                .offset(y: appeared ? 0 : 6)
+                .animation(.appSmooth.delay(0.1), value: appeared)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 4)
+            .accessibilityElement(children: .combine)
+
+            HStack(spacing: 12) {
+                Button(action: onParseNew) {
+                    Text("Parse New Email")
+                        .appFont(14, weight: .semibold)
+                        .foregroundStyle(Theme.textPrimary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .glassEffect(.regular.interactive(), in: .capsule)
+                }
+                .buttonStyle(.plain)
+
+                Button(action: onDone) {
+                    Text("Done")
+                        .appFont(14, weight: .bold)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .glassEffect(.regular.tint(Theme.buttonGreen).interactive(), in: .capsule)
+                }
+                .buttonStyle(.plain)
+            }
+            .opacity(appeared ? 1 : 0)
+            .animation(.appSmooth.delay(0.2), value: appeared)
+        }
+        .onAppear { appeared = true }
     }
 }

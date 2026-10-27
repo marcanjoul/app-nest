@@ -17,7 +17,6 @@ struct ApplicationView: View {
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
 
     @Namespace private var filterNS
-    @FocusState private var isSearchFocused: Bool
     @State private var searchText: String = ""
     @State private var isPresentingNewApplication = false
     @State private var selectedStatuses: Set<ApplicationStatus> = []
@@ -70,7 +69,7 @@ struct ApplicationView: View {
 
         if !selectedStatuses.isEmpty {
             result = result.filter { job in
-                job.status.map { selectedStatuses.contains($0) } ?? false
+                selectedStatuses.contains { Self.status($0, matches: job.status) }
             }
         }
         if !selectedTypes.isEmpty {
@@ -118,26 +117,17 @@ struct ApplicationView: View {
                                 .transition(.opacity.combined(with: .move(edge: .leading)))
                         }
                     }
-                    .padding(.top, 16)
-
                 }
                 .animation(.appSmooth, value: searchText.isEmpty)
-                .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
+                .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 .selectionDisabled()
                 .id("appListTop")
 
-                // Search + Filter
-                searchFilterRow
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .selectionDisabled()
-
                 // Stats — status chips
                 statsSection
-                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 0))
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .selectionDisabled()
@@ -217,6 +207,7 @@ struct ApplicationView: View {
                                 } label: {
                                     AppLabel("Delete", systemImage: "trash.fill")
                                 }
+                                .tint(.red)
                             }
                             .transition(.asymmetric(
                                 insertion: .opacity.combined(with: .scale(scale: 0.95)).combined(with: .offset(y: 10)),
@@ -241,6 +232,8 @@ struct ApplicationView: View {
                 .selectionDisabled()
             }
             .listStyle(.plain)
+            // ponytail: lets the header row collapse to 0 when empty, so chips sit 8pt under search
+            .environment(\.defaultMinListRowHeight, 0)
             .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.interactively)
 
@@ -352,7 +345,7 @@ struct ApplicationView: View {
             }
         }
         .animation(.appSmooth, value: pendingDeleteJob != nil)
-        .toolbar(.hidden, for: .navigationBar)
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search company, position...")
         .dismissKeyboardToolbar()
         .sheet(isPresented: Binding(
             get: { isShowingCyclePicker },
@@ -414,11 +407,6 @@ struct ApplicationView: View {
         }
         .sheet(isPresented: $isShowingShareSheet) {
             if let url = csvFileURL { ShareSheet(activityItems: [url]) }
-        }
-        .onChange(of: searchText) { _, newValue in
-            if !newValue.isEmpty {
-                AppHaptics.shared.light()
-            }
         }
         .alert("Import CSV", isPresented: $isShowingImportConfirmation) {
             Button("Select File") { isImportingCSV = true }
@@ -576,88 +564,42 @@ struct ApplicationView: View {
         newCycleName = ""
     }
 
-    // MARK: - Search + Filter Row
+    // MARK: - Filter Menu
 
-    private var searchFilterRow: some View {
-        HStack(spacing: 8) {
-            // Glass search bar
-            HStack(spacing: 10) {
-                AppIcon("magnifyingglass")
-                    .foregroundStyle(isSearchFocused ? Color.accentColor : Theme.textSecondary)
-                    .appFont(15, weight: .medium)
-
-                TextField("Search company, position...", text: $searchText)
-                    .foregroundStyle(Theme.textPrimary)
-                    .tint(.accentColor)
-                    .focused($isSearchFocused)
-
-                if !searchText.isEmpty || isSearchFocused {
-                    Button { 
-                        if isSearchFocused && searchText.isEmpty {
-                            isSearchFocused = false
-                        } else {
-                            searchText = ""
-                        }
-                        AppHaptics.shared.light()
-                    } label: {
-                        AppIcon(isSearchFocused && searchText.isEmpty ? "xmark" : "xmark.circle.fill")
-                            .foregroundStyle(Theme.textSecondary)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(isSearchFocused && searchText.isEmpty ? "Dismiss search" : "Clear search")
+    private var filterMenu: some View {
+        Menu {
+            Section("Sort") {
+                Picker("Sort", selection: $sortOption) {
+                    ForEach(SortOption.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                 }
             }
-            .padding(.horizontal, 12)
-            .frame(height: 44)
-            .glassEffect(.regular.tint(isSearchFocused ? Color.accentColor.opacity(0.12) : nil), in: .capsule)
-            .frame(maxWidth: .infinity)
-            .animation(.appBubbly, value: isSearchFocused)
-
-            if !applications.isEmpty && !isSearchFocused {
-                Menu {
-                    Section("Sort") {
-                        Picker("Sort", selection: $sortOption) {
-                            ForEach(SortOption.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                        }
-                    }
-                    filterSection("Type", selection: $selectedTypes)
-                    filterSection("Season", selection: $selectedSeasons)
-                    filterSection("Location", selection: $selectedWorkModes)
-                    if hasMenuFilters {
-                        Button("Clear Filters", role: .destructive) {
-                            selectedTypes.removeAll()
-                            selectedSeasons.removeAll()
-                            selectedWorkModes.removeAll()
-                        }
-                    }
-                } label: {
-                    ZStack(alignment: .topTrailing) {
-                        AppIcon("line.3.horizontal.decrease.circle")
-                            .appFont(18, weight: .semibold)
-                            .foregroundStyle(isMenuCustomized ? Color.accentColor : Theme.textPrimary)
-                            .frame(width: 44, height: 44)
-                            .glassEffect(.regular.interactive(), in: .circle)
-
-                        if isMenuCustomized {
-                            Circle()
-                                .fill(Color.accentColor)
-                                .frame(width: 8, height: 8)
-                                .offset(x: -4, y: 4)
-                                .transition(.scale(scale: 0.8).combined(with: .opacity))
-                        }
-                    }
+            filterSection("Type", selection: $selectedTypes)
+            filterSection("Season", selection: $selectedSeasons)
+            filterSection("Location", selection: $selectedWorkModes)
+            if hasMenuFilters {
+                Button("Clear Filters", role: .destructive) {
+                    selectedTypes.removeAll()
+                    selectedSeasons.removeAll()
+                    selectedWorkModes.removeAll()
                 }
-                .menuActionDismissBehavior(.disabled)
-                .buttonStyle(PressScaleButtonStyle())
-                .transition(.asymmetric(
-                    insertion: .move(edge: .trailing).combined(with: .scale(scale: 0.8)).combined(with: .opacity).animation(.appBubbly.delay(0.15)),
-                    removal: .move(edge: .trailing).combined(with: .scale(scale: 0.9)).combined(with: .opacity).animation(.appCrisp)
-                ))
+            }
+        } label: {
+            ZStack(alignment: .topTrailing) {
+                AppIcon("line.3.horizontal.decrease")
+                    .appFont(13, weight: .semibold)
+                    .foregroundStyle(isMenuCustomized ? Color.accentColor : Theme.textSecondary)
+                    .frame(width: 44, height: 44)
+
+                if isMenuCustomized {
+                    Circle()
+                        .fill(Color.accentColor)
+                        .frame(width: 8, height: 8)
+                        .offset(x: -8, y: 10)
+                        .transition(.scale(scale: 0.8).combined(with: .opacity))
+                }
             }
         }
-        .animation(.appSmooth, value: isSearchFocused)
+        .menuActionDismissBehavior(.disabled)
     }
 
     private var hasMenuFilters: Bool {
@@ -716,9 +658,14 @@ struct ApplicationView: View {
         .scrollClipDisabled()
     }
 
+    /// Rejected jobs were still applied to, so the Applied chip counts and shows them too.
+    private static func status(_ chip: ApplicationStatus, matches jobStatus: ApplicationStatus?) -> Bool {
+        jobStatus == chip || (chip == .applied && jobStatus == .rejected)
+    }
+
     @ViewBuilder
     private func chipView(for status: ApplicationStatus) -> some View {
-        let count = searchFiltered.filter { $0.status == status }.count
+        let count = searchFiltered.filter { Self.status(status, matches: $0.status) }.count
         StatChip(
             status: status,
             number: count,
@@ -738,6 +685,8 @@ struct ApplicationView: View {
 
     private var headerActionButtons: some View {
         HStack(spacing: 0) {
+            filterMenu
+            divider
             exportButton
             divider
             editButton
