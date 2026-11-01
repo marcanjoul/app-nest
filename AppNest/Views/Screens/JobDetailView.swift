@@ -124,7 +124,7 @@ struct JobDetailView: View {
         status == .interview || status == .offer
     }
 
-    init(job: JobApplication?, prefillCompany: String = "", prefillPosition: String = "", prefillURL: String = "", prefillType: ApplicationType? = nil, prefillStatus: ApplicationStatus? = nil, isSheetPresentation: Bool = false) {
+    init(job: JobApplication?, prefillCompany: String = "", prefillPosition: String = "", prefillURL: String = "", prefillType: ApplicationType? = nil, prefillStatus: ApplicationStatus? = nil, prefillWorkMode: WorkMode? = nil, prefillLocation: String = "", isSheetPresentation: Bool = false) {
         self.csvRow = nil
         self.job = job
         self.isSheetPresentation = isSheetPresentation
@@ -136,8 +136,8 @@ struct JobDetailView: View {
         _type                   = State(initialValue: job?.jobType ?? prefillType)
         _status                 = State(initialValue: job?.status ?? prefillStatus ?? .applied)
         _seasons                = State(initialValue: job?.seasons ?? [])
-        _workMode               = State(initialValue: job?.workMode)
-        _location               = State(initialValue: job?.location ?? "")
+        _workMode               = State(initialValue: job?.workMode ?? prefillWorkMode)
+        _location               = State(initialValue: job?.location ?? prefillLocation)
         _dateApplied            = State(initialValue: job?.dateApplied ?? Date())
         _jobURL                 = State(initialValue: job?.jobURL ?? prefillURL)
         _jobNotes               = State(initialValue: job?.jobNotes ?? "")
@@ -277,10 +277,13 @@ struct JobDetailView: View {
                         Button {
                             resetToOriginal()
                         } label: {
+                            // Hugs its label so Save gets the rest of the row.
                             Text("Cancel")
                                 .appFont(.body, weight: .semibold)
                                 .foregroundStyle(Theme.textPrimary)
-                                .frame(maxWidth: .infinity)
+                                .lineLimit(1)
+                                .fixedSize()
+                                .padding(.horizontal, 24)
                                 .padding(.vertical, 13)
                                 .background {
                                     Capsule()
@@ -303,6 +306,8 @@ struct JobDetailView: View {
                         HStack {
                             Text(saveButtonLabel)
                                 .appFont(.body, weight: .bold)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.85)
                             Spacer()
                             ZStack {
                                 Circle()

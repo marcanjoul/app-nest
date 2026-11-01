@@ -24,6 +24,8 @@ struct EmailParser {
         var status: ApplicationStatus?
         var season: ApplicationSeason?
         var dateApplied: Date?
+        var workMode: WorkMode?
+        var location: String?
         var highlights: [HighlightSpan] = []
     }
 
@@ -33,6 +35,7 @@ struct EmailParser {
         result.position    = extractPosition(from: emailText)
         result.jobType     = extractJobType(from: emailText)
         result.season      = extractSeason(from: emailText)
+        (result.location, result.workMode) = extractLocation(from: emailText)
 
         let (status, statusPhrase) = extractStatusAndPhrase(from: emailText)
         result.status = status
@@ -101,10 +104,16 @@ struct EmailParser {
             // only clean mention in emails where NER mis-tags something else (e.g. "BS/MS").
             // Requires the leading "The" — "JPMorganChase Talent Team" would capture the filler word.
             #"(?:^|\n)\s*The\s+([A-Z][A-Za-z0-9&\.]+(?:\s+[A-Z][A-Za-z0-9&\.]+){0,2})\s+Team\b"#,
+            // Sign-off line naming the recruiting department: "RTX Global Talent Acquisition".
+            // Whole line only, so a sentence mentioning recruiting doesn't match.
+            #"(?:^|\n)[ \t]*([A-Z][A-Za-z0-9&\.]+(?:[ \t]+[A-Z][A-Za-z0-9&\.]+){0,2}?)[ \t]+(?:Global[ \t]+)?(?:(?:University|Campus)[ \t]+)?(?:Talent[ \t]+Acquisition|Recruiting|Recruitment|Human[ \t]+Resources|HR)(?:[ \t]+Team)?[ \t]*(?:\n|$)"#,
             // "interest in Company" — but NOT "interest in joining" (handled by pattern above)
             // Terminators include \s+and\b and \s+for\b to prevent over-capture into surrounding sentence
             // (e.g. "your interest in Pindrop and for the time..." → stops at "and")
             #"(?:interest in|interested in)\s+(?!joining\b|applying\b|working\b)([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
+            // "within the Pfizer Futures Program" — the company leads a named early-careers program.
+            // The lookahead rejects generic leads ("the Summer Internship Program").
+            #"\bthe\s+(?!(?:summer|fall|winter|spring|internship|intern|graduate|early|student|university|campus|leadership|rotational|development|analyst|associate|apprenticeship)\b)([A-Z][A-Za-z0-9&]+)\s+(?:[A-Z][A-Za-z&]+\s+){0,2}Program\b"#,
         ]
 
         for pattern in companyPatterns {
@@ -220,6 +229,9 @@ struct EmailParser {
         if let listed = positionFromLineBelow(text) { return listed }
 
         let patterns = [
+            // Title in brackets after the noun: "our open position ( 01884409 Systems Engineer Intern )"
+            #"(?:position|role|opening|job)\s*\(\s*([^()\n]+?)\s*\)"#,
+
             // Ashby template: "application for Software Engineer, Front-End (New Grad) and considering…"
             #"application\s+for\s+(?:the\s+)?(.+?)\s+and\s+considering\b"#,
 
@@ -270,7 +282,8 @@ struct EmailParser {
                 if let raw = extractCaptureGroup(from: matched, pattern: pattern) {
                     let cleaned = cleanupPosition(cleaned: raw)
                     // A lone article means the pattern swallowed the noun it was meant to stop at.
-                    if ["the", "a", "an", "our"].contains(cleaned.lowercased()) { continue }
+                    // Same for a lone adjective: "our open position" → "open".
+                    if ["the", "a", "an", "our", "open", "current", "new", "available"].contains(cleaned.lowercased()) { continue }
                     // Pronouns mean a sentence, not a title: "positions and we will review your application".
                     if cleaned.range(of: #"\b(?:we|you|your|us)\b"#, options: [.regularExpression, .caseInsensitive]) != nil { continue }
                     if !cleaned.isEmpty && cleaned.count < 100 {
@@ -353,6 +366,12 @@ struct EmailParser {
             #"^\d{4,}\s+"#                    // 2026 or similar years/IDs at start
         ]
         
+        // Leading season + year: "Summer 2027 Digital & Technology Internship". Requires the year —
+        // "Summer Analyst" is a real title.
+        if let lead = s.range(of: #"^\#(seasonAlternation)\s+20\d{2}\s+"#, options: [.regularExpression, .caseInsensitive]) {
+            s = String(s[lead.upperBound...])
+        }
+
         // Leading division name: "Walt Disney Animation Studios Product Design Intern"
         // ponytail: keyed on a short org-suffix list; a division ending in anything else
         // ("Disney Imagineering X") slips through. Match against the parsed company if that bites.
@@ -445,6 +464,35 @@ struct EmailParser {
 
     private var seasonAlternation: String {
         "(" + ApplicationSeason.allCases.map { $0.rawValue.lowercased() }.joined(separator: "|") + ")"
+    }
+
+    // MARK: - Location
+
+    private static let usStates: Set<String> = [
+        "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
+        "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
+        "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY","DC",
+    ]
+
+    /// "Phoenix, AZ" and phrases like "this remote role". Most emails carry neither — nil is normal.
+    // ponytail: US "City, ST" only; add a country form when non-US emails show up.
+    private func extractLocation(from text: String) -> (String?, WorkMode?) {
+        var mode: WorkMode?
+        if let r = text.range(of: #"\b(?:fully\s+remote|(?:remote|hybrid|on-?site|in-office)\s+(?:role|position|job|opportunity|schedule))\b"#,
+                              options: [.regularExpression, .caseInsensitive]) {
+            mode = WorkMode(matching: String(text[r]))
+        }
+        guard mode != .remote else { return (nil, .remote) }
+
+        // Case-sensitive on purpose: a city is capitalised and the state is two capitals.
+        let pattern = #"\b([A-Z][a-z]+(?:[ .'-][A-Z][a-z]+)*),\s*([A-Z]{2})\b"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return (nil, mode) }
+        for m in regex.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+            guard let city = Range(m.range(at: 1), in: text), let state = Range(m.range(at: 2), in: text),
+                  Self.usStates.contains(String(text[state])) else { continue }
+            return ("\(text[city]), \(text[state])", mode)
+        }
+        return (nil, mode)
     }
 
     // MARK: - Status

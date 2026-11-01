@@ -23,6 +23,8 @@ struct ApplicationView: View {
     @State private var selectedTypes: Set<ApplicationType> = []
     @State private var selectedSeasons: Set<ApplicationSeason> = []
     @State private var selectedWorkModes: Set<WorkMode> = []
+    /// Lowercased — "San Francisco, CA" and "san francisco, ca" are one place.
+    @State private var selectedLocations: Set<String> = []
     @State private var sortOption: SortOption = .dateNewest
     @State private var pendingDeleteJob: JobApplication? = nil
     @State private var undoTask: Task<Void, Never>? = nil
@@ -59,7 +61,8 @@ struct ApplicationView: View {
         return base.filter {
             $0.position.lowercased().contains(query) ||
             $0.companyName.lowercased().contains(query) ||
-            ($0.jobType?.rawValue.lowercased().contains(query) ?? false)
+            ($0.jobType?.rawValue.lowercased().contains(query) ?? false) ||
+            ($0.location?.lowercased().contains(query) ?? false)
         }
     }
 
@@ -84,6 +87,11 @@ struct ApplicationView: View {
         if !selectedWorkModes.isEmpty {
             result = result.filter { job in
                 job.workMode.map { selectedWorkModes.contains($0) } ?? false
+            }
+        }
+        if !selectedLocations.isEmpty {
+            result = result.filter { job in
+                job.location.map { selectedLocations.contains($0.trimmingCharacters(in: .whitespaces).lowercased()) } ?? false
             }
         }
 
@@ -334,7 +342,7 @@ struct ApplicationView: View {
             }
         }
         .animation(.appSmooth, value: pendingDeleteJob != nil)
-        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search company, position...")
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search company, position...")
         .dismissKeyboardToolbar()
         .sheet(isPresented: Binding(
             get: { isShowingCyclePicker },
@@ -557,12 +565,28 @@ struct ApplicationView: View {
             }
             filterSection("Type", selection: $selectedTypes)
             filterSection("Season", selection: $selectedSeasons)
-            filterSection("Location", selection: $selectedWorkModes)
+            filterSection("Work Mode", selection: $selectedWorkModes)
+            if !locationOptions.isEmpty {
+                Section("City") {
+                    Menu(selectedLocations.isEmpty ? "Any City" : "\(selectedLocations.count) Selected") {
+                        ForEach(locationOptions, id: \.self) { place in
+                            Toggle(place, isOn: Binding(
+                                get: { selectedLocations.contains(place.lowercased()) },
+                                set: { isOn in
+                                    if isOn { selectedLocations.insert(place.lowercased()) } else { selectedLocations.remove(place.lowercased()) }
+                                    AppHaptics.shared.light()
+                                }
+                            ))
+                        }
+                    }
+                }
+            }
             if hasMenuFilters {
                 Button("Clear Filters", role: .destructive) {
                     selectedTypes.removeAll()
                     selectedSeasons.removeAll()
                     selectedWorkModes.removeAll()
+                    selectedLocations.removeAll()
                 }
             }
         } label: {
@@ -585,7 +609,18 @@ struct ApplicationView: View {
     }
 
     private var hasMenuFilters: Bool {
-        !selectedTypes.isEmpty || !selectedSeasons.isEmpty || !selectedWorkModes.isEmpty
+        !selectedTypes.isEmpty || !selectedSeasons.isEmpty || !selectedWorkModes.isEmpty || !selectedLocations.isEmpty
+    }
+
+    /// Distinct places in the current cycle, most-used first. First spelling seen wins.
+    private var locationOptions: [String] {
+        var counts: [String: (name: String, count: Int)] = [:]
+        for place in cycleFiltered.compactMap({ $0.location?.trimmingCharacters(in: .whitespaces) }) where !place.isEmpty {
+            counts[place.lowercased(), default: (place, 0)].count += 1
+        }
+        return counts.values
+            .sorted { $0.count != $1.count ? $0.count > $1.count : $0.name < $1.name }
+            .map(\.name)
     }
 
     private var isMenuCustomized: Bool { hasMenuFilters || sortOption != .dateNewest }
@@ -846,7 +881,7 @@ struct ApplicationView: View {
     }
 
     private var hasActiveFilters: Bool {
-        !selectedStatuses.isEmpty || !selectedTypes.isEmpty || !selectedSeasons.isEmpty || !selectedWorkModes.isEmpty
+        !selectedStatuses.isEmpty || !selectedTypes.isEmpty || !selectedSeasons.isEmpty || !selectedWorkModes.isEmpty || !selectedLocations.isEmpty
     }
 
     private var noResultsState: some View {
@@ -865,6 +900,7 @@ struct ApplicationView: View {
                         selectedTypes.removeAll()
                         selectedSeasons.removeAll()
                         selectedWorkModes.removeAll()
+                        selectedLocations.removeAll()
                     }
                 }
                 .appFont(.footnote, weight: .semibold)
@@ -897,6 +933,8 @@ struct ApplicationView: View {
                                 selectedStatuses.removeAll()
                                 selectedTypes.removeAll()
                                 selectedSeasons.removeAll()
+                                selectedWorkModes.removeAll()
+                                selectedLocations.removeAll()
                             }
                         }
                         .appFont(.footnote, weight: .semibold)

@@ -22,6 +22,17 @@ enum WorkMode: String, CaseIterable, Codable {
     case remote = "Remote"
     case hybrid = "Hybrid"
     case onSite = "On-site"
+
+    /// Loose match for free text from CSVs and job APIs: "Remote - US", "onsite", "In-Office".
+    init?(matching raw: String) {
+        let s = raw.lowercased()
+        guard !s.isEmpty else { return nil }
+        if let hit = WorkMode.allCases.first(where: { $0.rawValue.lowercased() == s }) { self = hit; return }
+        if s.contains("remote") { self = .remote; return }
+        if s.contains("hybrid") { self = .hybrid; return }
+        if s.contains("on-site") || s.contains("onsite") || s.contains("in-office") || s.contains("in person") || s.contains("office") { self = .onSite; return }
+        return nil
+    }
 }
 
 // MARK: - Application Season

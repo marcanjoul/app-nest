@@ -209,6 +209,7 @@ struct FullEmailTests {
         #expect(result.position == "Campus Undergraduate Full-Time Engineer - 2027 AI Engineer I, Enterprise Technology Services")
         #expect(result.jobType == .fullTime)
         #expect(result.status == .applied)
+        #expect(result.location == "Phoenix, AZ")
         #expect(result.highlights.contains { $0.field == .status })
     }
 
@@ -284,6 +285,59 @@ struct FullEmailTests {
         #expect(result.position == "Software Engineering Intern")
         #expect(result.jobType == .internship)
         #expect(result.season == nil)
+        #expect(result.status == .applied)
+    }
+
+    @Test("work mode from phrasing; remote drops the city")
+    func workModeFromPhrasing() {
+        #expect(parser.parse("Thanks for applying to this fully remote role at Acme.").workMode == .remote)
+        #expect(parser.parse("This hybrid position is based in Austin, TX.").workMode == .hybrid)
+        #expect(parser.parse("This hybrid position is based in Austin, TX.").location == "Austin, TX")
+        #expect(parser.parse("Thanks for applying to Acme. We'll be in touch.").location == nil)
+    }
+
+    @Test("Pfizer: company named only by its program, title led by season and year")
+    func pfizerConfirmation() {
+        let email = """
+        Dear Mark,
+
+        Thank you for your application to the Summer 2027 Digital & Technology Internship.This email confirms that we have successfully received your application.
+
+        If you are invited to complete the assessment, please be advised that you are only required to complete it once, regardless of the number of positions you have applied to within the Pfizer Futures Program.
+
+        Kind regards,
+
+        Atrium Works
+        Pfizer Futures Program Team
+        """
+        let result = parser.parse(email)
+        #expect(result.companyName == "Pfizer")
+        #expect(result.position == "Digital & Technology Internship")
+        #expect(result.jobType == .internship)
+        #expect(result.season == .summer)
+        #expect(result.status == .applied)
+    }
+
+    @Test("a generic program name isn't a company")
+    func genericProgramIsNotCompany() {
+        #expect(parser.parse("Thanks for applying to the Summer Internship Program.").companyName != "Summer")
+    }
+
+    @Test("RTX: title in brackets with a req number, company only in the sign-off")
+    func rtxConfirmation() {
+        let email = """
+        Hi Mark Anjoul ,
+
+        Thank you for your interest in our open position ( 01884409 Systems Engineer Intern ). We look forward to reviewing your skills, qualifications and experience. If your profile meets the requirements of our open position, a member of our recruiting team will be in contact with you soon.
+
+        Regards,
+
+        RTX Global Talent Acquisition
+        """
+        let result = parser.parse(email)
+        #expect(result.companyName == "RTX")
+        #expect(result.position == "Systems Engineer Intern")
+        #expect(result.jobType == .internship)
         #expect(result.status == .applied)
     }
 }

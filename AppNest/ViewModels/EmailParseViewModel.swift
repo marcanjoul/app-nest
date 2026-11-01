@@ -20,6 +20,8 @@ final class EmailParseViewModel {
     var editStatus: ApplicationStatus = .applied
     var editSeasons: [ApplicationSeason] = []
     var editDate: Date? = nil
+    var editWorkMode: WorkMode? = nil
+    var editLocation = ""
     var editCompensationKind: CompensationKind? = nil
     var editCompensationAmount: Double? = nil
     var editCompensationCurrency: Currency? = .usd
@@ -37,6 +39,8 @@ final class EmailParseViewModel {
     var parseCount = 0
     var saveSuccess = false
     var fetchedLogoData: Data? = nil
+    /// The user tapped ✕ on the logo; saved so the job list doesn't fetch it back.
+    var logoRemoved = false
     var isFetchingLogo = false
     var highlights: [HighlightSpan] = []
     var isHighlightExpanded = false
@@ -72,6 +76,8 @@ final class EmailParseViewModel {
         editStatus = .applied
         editSeasons = []
         editDate = nil
+        editWorkMode = nil
+        editLocation = ""
         editCompensationKind = nil
         editCompensationAmount = nil
         editCompensationCurrency = .usd
@@ -85,6 +91,7 @@ final class EmailParseViewModel {
         editInterviewNotes = ""
         isEmailExpanded = true
         fetchedLogoData = nil
+        logoRemoved = false
         isFetchingLogo = false
         highlights = []
         isHighlightExpanded = false
@@ -118,6 +125,8 @@ final class EmailParseViewModel {
             editStatus = result.status ?? .applied
             editSeasons = result.season.map { [$0] } ?? []
             editDate = result.dateApplied
+            editWorkMode = result.workMode
+            editLocation = result.location ?? ""
             editCompensationKind = nil
             editCompensationAmount = nil
             editNotes = ""
@@ -144,6 +153,7 @@ final class EmailParseViewModel {
         let newJob = JobApplication(
             companyName: editCompany.isEmpty ? "Unknown Company" : editCompany,
             companyLogoImageData: fetchedLogoData,
+            logoRemoved: logoRemoved && fetchedLogoData == nil,
             position: editPosition.isEmpty ? "Unknown Position" : editPosition,
             jobType: editJobType,
             status: editStatus,
@@ -165,6 +175,9 @@ final class EmailParseViewModel {
         newJob.companyResearch = editCompanyResearch.isEmpty ? nil : editCompanyResearch
         newJob.interviewNotes  = editInterviewNotes.isEmpty  ? nil : editInterviewNotes
         newJob.seasons = editSeasons
+        newJob.workMode = editWorkMode
+        let location = editLocation.trimmingCharacters(in: .whitespaces)
+        newJob.location = location.isEmpty ? nil : location
         modelContext.insert(newJob)
         AppHaptics.shared.success()
         withAnimation(.appSmooth) { saveSuccess = true }
@@ -183,6 +196,7 @@ final class EmailParseViewModel {
     /// Call from `.task(id: vm.editCompany) { await vm.fetchLogo(isDark:) }` in the host view.
     func fetchLogo(isDark: Bool) async {
         fetchedLogoData = nil
+        logoRemoved = false   // a new company name gets a fresh logo
         isFetchingLogo = false
         let trimmed = editCompany.trimmingCharacters(in: .whitespaces)
         guard trimmed.count >= 2 else { return }

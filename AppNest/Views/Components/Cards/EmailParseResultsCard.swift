@@ -36,7 +36,10 @@ struct EmailParseResultsCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             header
-            companyAvatar
+            VStack(spacing: 12) {
+                companyAvatar
+                identity
+            }
             formFields
             actionButtons
                 .padding(.top, 4)
@@ -108,17 +111,59 @@ struct EmailParseResultsCard: View {
                 }
             }
             .buttonStyle(.plain)
+            .overlay(alignment: .topTrailing) {
+                if vm.fetchedLogoData != nil {
+                    LogoRemoveBadge {
+                        AppHaptics.shared.light()
+                        withAnimation(.appFastOut) {
+                            vm.fetchedLogoData = nil
+                            vm.logoRemoved = true
+                        }
+                    }
+                    .offset(x: 10, y: -10)
+                    .transition(.scale(scale: 0.5).combined(with: .opacity))
+                }
+            }
             .onChange(of: vm.pickerItem) { _, newValue in
                 guard let newValue else { return }
                 Task {
                     if let data = try? await newValue.loadTransferable(type: Data.self) {
-                        withAnimation(.appSmooth) { vm.fetchedLogoData = data }
+                        withAnimation(.appSmooth) {
+                            vm.fetchedLogoData = data
+                            vm.logoRemoved = false
+                        }
                     }
                 }
             }
             .animation(.appSmooth, value: vm.fetchedLogoData == nil)
             .animation(.appFastOut, value: vm.isFetchingLogo)
             Spacer()
+        }
+    }
+
+    /// What was parsed, read back plainly: the role, then the company under it. Follows the
+    /// fields below as they're edited.
+    @ViewBuilder
+    private var identity: some View {
+        let position = vm.editPosition.trimmingCharacters(in: .whitespacesAndNewlines)
+        let company = vm.editCompany.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !position.isEmpty || !company.isEmpty {
+            VStack(spacing: 2) {
+                if !position.isEmpty {
+                    Text(position)
+                        .appFont(.headline, weight: .bold)
+                        .foregroundStyle(Theme.textPrimary)
+                }
+                if !company.isEmpty {
+                    Text(company)
+                        .appFont(.body, weight: .medium)
+                        .foregroundStyle(Theme.textSecondary)
+                }
+            }
+            .multilineTextAlignment(.center)
+            .lineLimit(2)
+            .frame(maxWidth: .infinity)
+            .accessibilityElement(children: .combine)
         }
     }
 
@@ -157,6 +202,8 @@ struct EmailParseResultsCard: View {
             }
             .padding(4)
             .surface()
+
+            LocationSection(workMode: $vm.editWorkMode, location: $vm.editLocation)
 
             optionalSections
         }

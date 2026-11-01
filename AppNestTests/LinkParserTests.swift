@@ -57,3 +57,24 @@ func parsesLeverTitle() async {
 func stripsLegalSuffix(input: String, expected: String) {
     #expect(LinkParser.stripLegalSuffix(input) == expected)
 }
+
+@Test("ATS locations split into a place and a work mode", arguments: [
+    ("Remote - US", nil as String?, nil as String?, WorkMode.remote as WorkMode?),
+    ("New York, NY (Hybrid)", nil, "New York, NY", .hybrid),
+    ("Pittsburgh, PA", "OnSite", "Pittsburgh, PA", .onSite),
+    ("Singapore, Singapore", "hybrid", "Singapore, Singapore", .hybrid),
+    ("Tokyo, Japan", nil, "Tokyo, Japan", nil),
+    ("Austin, TX", "unspecified", "Austin, TX", nil),
+])
+func splitsLocation(raw: String, workplaceType: String?, place: String?, mode: WorkMode?) {
+    let (location, workMode) = LinkParser.splitLocation(raw, workplaceType: workplaceType)
+    #expect(location == place)
+    #expect(workMode == mode)
+}
+
+@Test("Workday location segments: City-ST only")
+func readsWorkdayLocation() {
+    #expect(LinkParser.workdayLocation("San-Francisco-CA") == "San Francisco, CA")
+    #expect(LinkParser.workdayLocation("Remote-USA") == "Remote")
+    #expect(LinkParser.workdayLocation("US-CA-San-Francisco") == nil)
+}

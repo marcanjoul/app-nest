@@ -129,7 +129,7 @@ enum CSVImporter {
             }
             row.status      = matchStatus(get("status"))
             row.season      = matchSeason(get("season"))
-            row.workMode    = matchWorkMode(get("work_mode"))
+            row.workMode    = WorkMode(matching: get("work_mode"))
             row.location    = get("location")
             row.jobURL      = get("url")
             row.notes       = get("notes")
@@ -290,16 +290,6 @@ enum CSVImporter {
         if s.contains("apply")  || s.contains("to do") || s.contains("todo") || s.contains("plan") { return .toApply }
         if s.contains("ghost")                                                      { return .ghosted }
         if s.contains("removed") || s.contains("expired") || s.contains("closed") || s.contains("filled") { return .jobRemoved }
-        return nil
-    }
-
-    private static func matchWorkMode(_ raw: String) -> WorkMode? {
-        let s = raw.lowercased()
-        guard !s.isEmpty else { return nil }
-        if let hit = WorkMode.allCases.first(where: { $0.rawValue.lowercased() == s }) { return hit }
-        if s.contains("remote") { return .remote }
-        if s.contains("hybrid") { return .hybrid }
-        if s.contains("on-site") || s.contains("onsite") || s.contains("in-office") || s.contains("in person") || s.contains("office") { return .onSite }
         return nil
     }
 

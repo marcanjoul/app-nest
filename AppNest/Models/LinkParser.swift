@@ -9,6 +9,8 @@ struct LinkParser {
         var position: String?
         var jobType: ApplicationType?
         var jobURL: String?
+        var workMode: WorkMode?
+        var location: String?
         var isLinkedIn: Bool = false
         /// A real URL that isn't a job posting (a homepage, a search page, a social link).
         var isNotJobLink: Bool = false
@@ -58,6 +60,7 @@ struct LinkParser {
                     if let fetched = await fetchGreenhouseJob(boardToken: token, jobID: ghJid) {
                         result.position = fetched.title
                         result.jobType = inferType(from: fetched.title)
+                        (result.location, result.workMode) = Self.splitLocation(fetched.location?.name)
                         return result
                     }
                 }
@@ -75,6 +78,7 @@ struct LinkParser {
                    let fetched = await fetchGreenhouseJob(boardToken: boardToken, jobID: pathComponents[2]) {
                     result.position = fetched.title
                     result.jobType = inferType(from: fetched.title)
+                    (result.location, result.workMode) = Self.splitLocation(fetched.location?.name)
                 }
             }
             return result
@@ -90,6 +94,8 @@ struct LinkParser {
                     result.position = posting.text
                     // The commitment ("Full-time", "Intern") is a better type signal than the title alone.
                     result.jobType = inferType(from: "\(posting.text) \(posting.categories?.commitment ?? "")")
+                    (result.location, result.workMode) = Self.splitLocation(posting.categories?.location,
+                                                                            workplaceType: posting.workplaceType)
                 }
             }
             return result
@@ -101,9 +107,11 @@ struct LinkParser {
             if pathComponents.count >= 1 {
                 result.companyName = formatName(pathComponents[0])
                 if pathComponents.count >= 2,
-                   let title = await fetchAshbyJobTitle(board: pathComponents[0], jobID: pathComponents[1]) {
-                    result.position = title
-                    result.jobType = inferType(from: title)
+                   let job = await fetchAshbyJob(board: pathComponents[0], jobID: pathComponents[1]) {
+                    result.position = job.title
+                    result.jobType = inferType(from: job.title)
+                    (result.location, result.workMode) = Self.splitLocation(
+                        job.location, workplaceType: job.workplaceType ?? (job.isRemote == true ? "remote" : nil))
                 }
             }
             return result
@@ -120,6 +128,10 @@ struct LinkParser {
                 let pos = formatPosition(last)
                 result.position = pos
                 result.jobType = inferType(from: pos)
+            }
+            // .../job/San-Francisco-CA/Title_R123 — the segment after "job" is the location.
+            if let jobIndex = pathComponents.firstIndex(of: "job"), jobIndex + 2 < pathComponents.count {
+                (result.location, result.workMode) = Self.splitLocation(Self.workdayLocation(pathComponents[jobIndex + 1]))
             }
             return result
         }
@@ -187,7 +199,9 @@ struct LinkParser {
     // MARK: - API Fetchers
 
     private struct GreenhouseJobResponse: Decodable {
+        struct Location: Decodable { let name: String? }
         let title: String
+        let location: Location?
     }
 
     private func fetchGreenhouseJob(boardToken: String, jobID: String) async -> GreenhouseJobResponse? {
@@ -197,9 +211,11 @@ struct LinkParser {
     }
 
     private struct LeverPosting: Decodable {
-        struct Categories: Decodable { let commitment: String? }
+        struct Categories: Decodable { let commitment: String?; let location: String? }
         let text: String
         let categories: Categories?
+        /// "remote" / "hybrid" / "onsite" / "unspecified"
+        let workplaceType: String?
     }
 
     private func fetchLeverPosting(company: String, postingID: String) async -> LeverPosting? {
@@ -209,18 +225,53 @@ struct LinkParser {
     }
 
     private struct AshbyBoardResponse: Decodable {
-        struct Job: Decodable { let id: String; let title: String }
+        struct Job: Decodable {
+            let id: String
+            let title: String
+            let location: String?
+            /// "Remote" / "Hybrid" / "OnSite"
+            let workplaceType: String?
+            let isRemote: Bool?
+        }
         let jobs: [Job]
     }
 
     // ponytail: Ashby has no single-job endpoint, so this pulls the whole board (~100 jobs, includes
     // descriptions). Fine for one paste; cache per board if this ever runs in a loop.
-    private func fetchAshbyJobTitle(board: String, jobID: String) async -> String? {
+    private func fetchAshbyJob(board: String, jobID: String) async -> AshbyBoardResponse.Job? {
         guard let url = URL(string: "https://api.ashbyhq.com/posting-api/job-board/\(board)") else { return nil }
         guard let (data, _) = try? await URLSession.shared.data(from: url),
               let response = try? JSONDecoder().decode(AshbyBoardResponse.self, from: data)
         else { return nil }
-        return response.jobs.first { $0.id.lowercased() == jobID.lowercased() }?.title
+        return response.jobs.first { $0.id.lowercased() == jobID.lowercased() }
+    }
+
+    // MARK: - Location
+
+    /// Splits an ATS location into the place and the work mode it implies. An explicit
+    /// workplace type wins over words in the location text.
+    /// "Remote - US" → (nil, .remote) · "New York, NY (Hybrid)" → ("New York, NY", .hybrid)
+    static func splitLocation(_ raw: String?, workplaceType: String? = nil) -> (location: String?, workMode: WorkMode?) {
+        let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let mode = workplaceType.flatMap(WorkMode.init(matching:)) ?? WorkMode(matching: raw)
+        // Remote jobs have no location field in the form.
+        guard mode != .remote else { return (nil, .remote) }
+        let place = raw
+            .replacingOccurrences(of: #"\(?\b(?:remote|hybrid|on-?site|in-office)\b\)?"#, with: "",
+                                  options: [.regularExpression, .caseInsensitive])
+            .trimmingCharacters(in: CharacterSet(charactersIn: " -–,/|").union(.whitespacesAndNewlines))
+        return (place.isEmpty ? nil : place, mode)
+    }
+
+    /// "San-Francisco-CA" → "San Francisco, CA". Other Workday shapes ("US-CA-San-Francisco",
+    /// site codes) are skipped rather than guessed at.
+    // ponytail: only the City-ST shape; add more as real Workday links show up.
+    static func workdayLocation(_ segment: String) -> String? {
+        if segment.lowercased().contains("remote") { return "Remote" }
+        guard let m = segment.range(of: #"^([A-Za-z]+(?:-[A-Za-z]+)*)-([A-Z]{2})$"#, options: .regularExpression),
+              m == segment.startIndex..<segment.endIndex else { return nil }
+        let city = segment.dropLast(3).replacingOccurrences(of: "-", with: " ")
+        return "\(city), \(segment.suffix(2))"
     }
 
     // MARK: - Formatters

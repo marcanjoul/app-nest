@@ -17,6 +17,9 @@ struct CollapsibleSection<Content: View>: View {
     @State private var contentHeight: CGFloat = 0
     /// Measured from the first SectionLabel; 48 only until the first layout pass.
     @State private var headerHeight: CGFloat = 48
+    /// Bottom edge of the SectionLabel. Content can start closer to the label than the fold's
+    /// bottom padding, so everything below this is covered while folded.
+    @State private var labelBottom: CGFloat = 0
 
     private let cardShape = RoundedRectangle(cornerRadius: 20, style: .continuous)   // Surface's radius
 
@@ -39,15 +42,23 @@ struct CollapsibleSection<Content: View>: View {
             .backgroundPreferenceValue(SectionLabelBoundsKey.self) { anchor in
                 GeometryReader { proxy in
                     // Label's bottom edge + the padding above it, so the fold is symmetric.
+                    let bottom = anchor.map { proxy[$0].maxY } ?? 0
                     let height = anchor.map { proxy[$0].maxY + proxy[$0].minY } ?? 0
                     Color.clear.onChange(of: height, initial: true) { _, new in
-                        if new > 0 { headerHeight = new }
+                        if new > 0 { headerHeight = new; labelBottom = bottom }
                     }
                 }
             }
             // Folded fields are out of sight; keep VoiceOver out of them too.
             .accessibilityHidden(!isExpanded)
             .frame(height: visibleHeight, alignment: .top)
+            // Folded: hide whatever peeks up between the label and the fold. Card fill is opaque.
+            .overlay(alignment: .top) {
+                Theme.cardFill
+                    .padding(.top, labelBottom)
+                    .opacity(isExpanded || labelBottom == 0 ? 0 : 1)
+                    .allowsHitTesting(false)
+            }
             .clipShape(cardShape)
             // Clipping cuts the card's bottom hairline; redraw it while folded.
             .overlay { cardShape.strokeBorder(Theme.cardBorder, lineWidth: 1).opacity(isExpanded ? 0 : 1) }
