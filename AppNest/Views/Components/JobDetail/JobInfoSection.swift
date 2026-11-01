@@ -25,6 +25,8 @@ struct JobInfoSection: View {
     // Company suggestions
     @Query private var applications: [JobApplication]
     @State private var remoteSuggestions: [LogoFetcher.Company] = []
+    /// Lowercased query the last finished search ran for — "no matches" only counts once it has.
+    @State private var searchedQuery = ""
     /// The suggestion last tapped; its logo skips the debounce and the search while the name still matches.
     @State private var picked: Suggestion?
 
@@ -32,14 +34,14 @@ struct JobInfoSection: View {
         let name: String
         var domain: String? = nil
         var logoData: Data? = nil
-        /// From the user's own applications rather than the Logo.dev search.
-        var isExisting = false
         var id: String { name.lowercased() }
     }
 
+    private var trimmedCompany: String { companyName.trimmingCharacters(in: .whitespaces) }
+
     /// The user's own companies first (same spelling as last time), then Logo.dev matches. Max 5.
-    private var suggestions: [Suggestion] {
-        let query = companyName.trimmingCharacters(in: .whitespaces)
+    private var matches: [Suggestion] {
+        let query = trimmedCompany
         guard focused == .company, !query.isEmpty, picked?.name != query else { return [] }
         let lowerQuery = query.lowercased()
 
@@ -50,17 +52,30 @@ struct JobInfoSection: View {
                 let name = app.companyName.trimmingCharacters(in: .whitespaces)
                 guard name.localizedCaseInsensitiveContains(query),
                       seen.insert(name.lowercased()).inserted else { return nil }
-                return Suggestion(name: name, logoData: app.companyLogoImageData, isExisting: true)
+                // Past jobs don't store a website; borrow it from the search when it knows the company.
+                let domain = remoteSuggestions.first { $0.name.lowercased() == name.lowercased() }?.domain
+                return Suggestion(name: name, domain: domain, logoData: app.companyLogoImageData)
             }
             .sorted { $0.name.lowercased().hasPrefix(lowerQuery) && !$1.name.lowercased().hasPrefix(lowerQuery) }
         let remote = remoteSuggestions
             .filter { seen.insert($0.name.lowercased()).inserted }
             .map { Suggestion(name: $0.name, domain: $0.domain) }
 
-        let all = Array((existing + remote).prefix(5))
+        return Array((existing + remote).prefix(5))
+    }
+
+    private var suggestions: [Suggestion] {
+        let all = matches
         // Already typed in full — nothing left to suggest.
-        if all.count == 1, all[0].name.lowercased() == lowerQuery { return [] }
+        if all.count == 1, all[0].name.lowercased() == trimmedCompany.lowercased() { return [] }
         return all
+    }
+
+    /// Nothing in the user's jobs or Logo.dev knows this name: offer to keep it as typed.
+    private var showsCreate: Bool {
+        let query = trimmedCompany
+        return focused == .company && query.count >= 2 && picked?.name != query
+            && searchedQuery == query.lowercased() && matches.isEmpty
     }
 
     private var logoImage: Image? {
@@ -124,14 +139,6 @@ struct JobInfoSection: View {
                     .offset(x: 2, y: 2)
                 }
             }
-            .overlay(alignment: .topTrailing) {
-                if hasLogo {
-                    LogoRemoveBadge(action: removeLogo)
-                        .offset(x: 10, y: -10)
-                        .transition(.scale(scale: 0.5).combined(with: .opacity))
-                }
-            }
-            .animation(.appFastOut, value: hasLogo)
             .onChange(of: pickerItem) { _, newValue in
                 guard let item = newValue else { return }
                 Task {
@@ -192,11 +199,14 @@ struct JobInfoSection: View {
             // LogoFetcher's search cache instead of making its own request.
             .task(id: focused == .company ? companyName : "") {
                 let query = companyName.trimmingCharacters(in: .whitespaces)
-                guard focused == .company, query.count >= 2 else { remoteSuggestions = []; return }
+                guard focused == .company, query.count >= 2 else { remoteSuggestions = []; searchedQuery = ""; return }
                 do { try await Task.sleep(for: .milliseconds(300)) } catch { return }
                 let results = await LogoFetcher.searchCompanies(query) ?? []
                 guard !Task.isCancelled else { return }
-                withAnimation(.appFastOut) { remoteSuggestions = results }
+                withAnimation(.appFastOut) {
+                    remoteSuggestions = results
+                    searchedQuery = query.lowercased()
+                }
             }
 
             VStack(spacing: 12) {
@@ -204,7 +214,7 @@ struct JobInfoSection: View {
                            text: $companyName, style: .headline, capitalization: .words, submit: .next) {
                     focused = .position
                 }
-                if !suggestions.isEmpty {
+                if !suggestions.isEmpty || showsCreate {
                     suggestionList
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
@@ -216,6 +226,7 @@ struct JobInfoSection: View {
             }
             .padding(.top, 16)
             .animation(.appFastOut, value: suggestions)
+            .animation(.appFastOut, value: showsCreate)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
@@ -254,10 +265,30 @@ struct JobInfoSection: View {
                             .foregroundStyle(Theme.textPrimary)
                             .lineLimit(1)
                         Spacer()
-                        Text(suggestion.isExisting ? "Added before" : (suggestion.domain ?? ""))
+                        Text(suggestion.domain ?? "")
                             .appFont(.footnote)
                             .foregroundStyle(Theme.textSecondary)
                             .lineLimit(1)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PressScaleButtonStyle())
+            }
+            if showsCreate {
+                Button { pick(Suggestion(name: trimmedCompany)) } label: {
+                    HStack(spacing: 12) {
+                        AppIcon("plus")
+                            .appFont(12, weight: .bold)
+                            .foregroundStyle(Theme.accent)
+                            .frame(width: 28, height: 28)
+                            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.accent.opacity(0.12)))
+                        Text("Create \u{201C}\(trimmedCompany)\u{201D}")
+                            .appFont(.body, weight: .semibold)
+                            .foregroundStyle(Theme.textPrimary)
+                            .lineLimit(1)
+                        Spacer()
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
@@ -364,27 +395,3 @@ struct JobInfoSection: View {
     }
 }
 
-/// Small red ✕ on a logo's top-right corner; same ring-and-dot build as the camera badge.
-struct LogoRemoveBadge: View {
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            ZStack {
-                Circle()
-                    .fill(Theme.background)
-                    .frame(width: 22, height: 22)
-                AppIcon("xmark")
-                    .appFont(8, weight: .bold)
-                    .foregroundStyle(.white)
-                    .frame(width: 18, height: 18)
-                    .background(Circle().fill(Theme.destructive))
-            }
-            // 22pt is too small to hit reliably; pad the tap area, not the drawing.
-            .padding(8)
-            .contentShape(Circle())
-        }
-        .buttonStyle(PressScaleButtonStyle())
-        .accessibilityLabel("Remove logo")
-    }
-}

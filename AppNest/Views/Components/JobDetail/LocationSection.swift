@@ -15,20 +15,18 @@ struct LocationSection: View {
     }
 
     /// Places from the user's own applications first (same spelling as last time), then Apple Maps cities. Max 5.
-    private var suggestions: [(name: String, isExisting: Bool)] {
+    private var suggestions: [String] {
         let query = location.trimmingCharacters(in: .whitespaces)
         guard isFocused, !query.isEmpty else { return [] }
         var seen = Set<String>()
         let existing = applications
             .compactMap { $0.location?.trimmingCharacters(in: .whitespaces) }
             .filter { $0.localizedCaseInsensitiveContains(query) && seen.insert($0.lowercased()).inserted }
-            .map { (name: $0, isExisting: true) }
         let cities = completer.results
             .filter { seen.insert($0.lowercased()).inserted }
-            .map { (name: $0, isExisting: false) }
         let all = Array((existing + cities).prefix(5))
         // Already typed in full — nothing left to suggest.
-        if all.count == 1, all[0].name.lowercased() == query.lowercased() { return [] }
+        if all.count == 1, all[0].lowercased() == query.lowercased() { return [] }
         return all
     }
 
@@ -89,18 +87,18 @@ struct LocationSection: View {
             }
         }
         .animation(.appCrisp, value: showLocationField)
-        .animation(.appFastOut, value: suggestions.map(\.name))
+        .animation(.appFastOut, value: suggestions)
         .padding(16)
         .surface()
     }
 
     private var suggestionList: some View {
         VStack(spacing: 0) {
-            ForEach(Array(suggestions.enumerated()), id: \.element.name) { index, suggestion in
+            ForEach(Array(suggestions.enumerated()), id: \.element) { index, suggestion in
                 if index > 0 { Divider().opacity(0.4).padding(.leading, 40) }
                 Button {
                     AppHaptics.shared.selection()
-                    location = suggestion.name
+                    location = suggestion
                     isFocused = false
                 } label: {
                     HStack(spacing: 12) {
@@ -108,16 +106,11 @@ struct LocationSection: View {
                             .appFont(12, weight: .semibold)
                             .foregroundStyle(Theme.textSecondary)
                             .frame(width: 16)
-                        Text(suggestion.name)
+                        Text(suggestion)
                             .appFont(.body, weight: .medium)
                             .foregroundStyle(Theme.textPrimary)
                             .lineLimit(1)
                         Spacer()
-                        if suggestion.isExisting {
-                            Text("Added before")
-                                .appFont(.footnote)
-                                .foregroundStyle(Theme.textSecondary)
-                        }
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)

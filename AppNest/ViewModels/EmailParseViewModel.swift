@@ -39,8 +39,6 @@ final class EmailParseViewModel {
     var parseCount = 0
     var saveSuccess = false
     var fetchedLogoData: Data? = nil
-    /// The user tapped ✕ on the logo; saved so the job list doesn't fetch it back.
-    var logoRemoved = false
     var isFetchingLogo = false
     var highlights: [HighlightSpan] = []
     var isHighlightExpanded = false
@@ -91,7 +89,6 @@ final class EmailParseViewModel {
         editInterviewNotes = ""
         isEmailExpanded = true
         fetchedLogoData = nil
-        logoRemoved = false
         isFetchingLogo = false
         highlights = []
         isHighlightExpanded = false
@@ -153,7 +150,6 @@ final class EmailParseViewModel {
         let newJob = JobApplication(
             companyName: editCompany.isEmpty ? "Unknown Company" : editCompany,
             companyLogoImageData: fetchedLogoData,
-            logoRemoved: logoRemoved && fetchedLogoData == nil,
             position: editPosition.isEmpty ? "Unknown Position" : editPosition,
             jobType: editJobType,
             status: editStatus,
@@ -196,7 +192,6 @@ final class EmailParseViewModel {
     /// Call from `.task(id: vm.editCompany) { await vm.fetchLogo(isDark:) }` in the host view.
     func fetchLogo(isDark: Bool) async {
         fetchedLogoData = nil
-        logoRemoved = false   // a new company name gets a fresh logo
         isFetchingLogo = false
         let trimmed = editCompany.trimmingCharacters(in: .whitespaces)
         guard trimmed.count >= 2 else { return }

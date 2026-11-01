@@ -567,7 +567,7 @@ struct ApplicationView: View {
                 ForEach(SortOption.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }
         } label: {
-            AppIcon("arrow.up.arrow.down")
+            AppIcon("arrow.down.wide.narrow")
                 .appFont(13, weight: .semibold)
                 .foregroundStyle(sortOption != .dateNewest ? Theme.accent : Theme.textSecondary)
                 .frame(width: 44, height: 44)
@@ -872,6 +872,8 @@ struct ApplicationView: View {
                     }
                 }
                 .appFont(.body, weight: .bold)
+                // The header actions take the rest of the row; truncate rather than wrap in a 44pt chip.
+                .lineLimit(1)
                 
                 AppIcon("chevron.down")
                     .appFont(10, weight: .black)

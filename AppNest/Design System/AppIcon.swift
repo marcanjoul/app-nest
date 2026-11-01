@@ -152,6 +152,7 @@ struct AppIcon: View {
         "mappin.circle.fill": "\u{e114}",
         "mappin.and.ellipse": "\u{e114}",
         "mappin": "\u{e114}",
+        "arrow.down.wide.narrow": "\u{e04b}",  // arrow-down-wide-narrow — sort button
         "wifi": "\u{e1ad}",
         "mic.fill": "\u{e11b}",
         "gearshape.fill": "\u{e157}",

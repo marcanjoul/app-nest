@@ -111,27 +111,11 @@ struct EmailParseResultsCard: View {
                 }
             }
             .buttonStyle(.plain)
-            .overlay(alignment: .topTrailing) {
-                if vm.fetchedLogoData != nil {
-                    LogoRemoveBadge {
-                        AppHaptics.shared.light()
-                        withAnimation(.appFastOut) {
-                            vm.fetchedLogoData = nil
-                            vm.logoRemoved = true
-                        }
-                    }
-                    .offset(x: 10, y: -10)
-                    .transition(.scale(scale: 0.5).combined(with: .opacity))
-                }
-            }
             .onChange(of: vm.pickerItem) { _, newValue in
                 guard let newValue else { return }
                 Task {
                     if let data = try? await newValue.loadTransferable(type: Data.self) {
-                        withAnimation(.appSmooth) {
-                            vm.fetchedLogoData = data
-                            vm.logoRemoved = false
-                        }
+                        withAnimation(.appSmooth) { vm.fetchedLogoData = data }
                     }
                 }
             }

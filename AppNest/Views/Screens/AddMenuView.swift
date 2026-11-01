@@ -7,7 +7,6 @@ struct AddMenuView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.scenePhase) private var scenePhase
 
     @Query(sort: \ResumeDocument.createdAt, order: .reverse) private var resumes: [ResumeDocument]
     @Query(sort: \JobCycle.createdAt, order: .reverse) private var cycles: [JobCycle]
@@ -38,13 +37,6 @@ struct AddMenuView: View {
     @State private var lastSavedLogo: Data?
     @FocusState private var isEmailEditorFocused: Bool
 
-    // Clipboard suggestion
-    /// "Copied link" / "Copied text" when the clipboard holds something not yet offered; nil hides the card.
-    @State private var clipboardHint: String?
-    /// Pasteboard changeCount last used or dismissed, so the same copy isn't offered twice.
-    // ponytail: changeCount resets on reboot, so a stale copy can be re-offered once after a restart.
-    @AppStorage("lastUsedPasteboardChange") private var lastUsedPasteboardChange = -1
-
     private let linkParser = LinkParser()
 
     private var defaultResume: ResumeDocument? { resumes.first(where: \.isDefault) }
@@ -59,11 +51,6 @@ struct AddMenuView: View {
             ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    if let clipboardHint {
-                        clipboardCard(clipboardHint)
-                            .transition(.opacity.combined(with: .move(edge: .top)))
-                    }
-
                     pasteLinkCard
 
                     emailParseCard
@@ -158,96 +145,6 @@ struct AddMenuView: View {
         }
         .task(id: vm.editCompany) {
             await vm.fetchLogo(isDark: colorScheme == .dark)
-        }
-        .task { await refreshClipboardHint() }
-        // Copying a link in Safari and switching back should surface it without reopening the menu.
-        .onChange(of: scenePhase) { _, phase in
-            guard phase == .active else { return }
-            Task { await refreshClipboardHint() }
-        }
-    }
-
-    // MARK: - Clipboard Suggestion
-
-    /// Checks *what kind* of thing is on the clipboard without reading it — reading the contents
-    /// would trigger iOS's paste-permission prompt. The PasteButton does the actual read.
-    private func refreshClipboardHint() async {
-        let pasteboard = UIPasteboard.general
-        guard pasteboard.hasStrings || pasteboard.hasURLs,
-              pasteboard.changeCount != lastUsedPasteboardChange else {
-            withAnimation(.appSmooth) { clipboardHint = nil }
-            return
-        }
-        let patterns = (try? await pasteboard.detectedPatterns(for: [\.probableWebURL])) ?? []
-        let isLink = pasteboard.hasURLs || patterns.contains(\.probableWebURL)
-        withAnimation(.appSmooth) { clipboardHint = isLink ? "Copied link" : "Copied text" }
-    }
-
-    private func clipboardCard(_ hint: String) -> some View {
-        HStack(spacing: 12) {
-            AppIcon("doc.on.clipboard.fill")
-                .appFont(16, weight: .semibold)
-                .foregroundStyle(Theme.textPrimary)
-                .frame(width: 36, height: 36)
-                .background(Circle().fill(Color.primary.opacity(0.08)))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(hint)
-                    .appFont(.body, weight: .semibold)
-                    .foregroundStyle(Theme.textPrimary)
-                Text("Paste to add it as a job.")
-                    .appFont(.footnote)
-                    .foregroundStyle(Theme.textSecondary)
-            }
-
-            Spacer()
-
-            PasteButton(payloadType: String.self) { strings in
-                guard let text = strings.first else { return }
-                Task { @MainActor in useClipboard(text) }
-            }
-            .labelStyle(.titleOnly)
-            .buttonBorderShape(.capsule)
-            .tint(Theme.buttonGreen)
-
-            Button {
-                lastUsedPasteboardChange = UIPasteboard.general.changeCount
-                withAnimation(.appSmooth) { clipboardHint = nil }
-            } label: {
-                AppIcon("xmark")
-                    .appFont(11, weight: .bold)
-                    .foregroundStyle(Theme.textSecondary)
-                    .frame(width: 28, height: 28)
-                    .background(Circle().fill(Color.primary.opacity(0.06)))
-            }
-            .buttonStyle(PressScaleButtonStyle())
-            .accessibilityLabel("Dismiss")
-        }
-        .padding(16)
-        .surface(cornerRadius: Theme.cardRadius)
-    }
-
-    /// A link goes to the link parser; anything else is treated as an email.
-    private func useClipboard(_ text: String) {
-        lastUsedPasteboardChange = UIPasteboard.general.changeCount
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        withAnimation(.appSmooth) { clipboardHint = nil }
-
-        if LinkParser.webURL(from: trimmed) != nil {
-            withAnimation(.appSmooth) {
-                isShowingEmailParse = false
-                isShowingPasteLink = true
-            }
-            pasteLinkURL = trimmed
-            parseLink()
-        } else {
-            withAnimation(.appSmooth) {
-                isShowingPasteLink = false
-                lastSavedCompany = nil
-                isShowingEmailParse = true
-            }
-            vm.emailText = trimmed
-            vm.parseEmail(defaultResume: defaultResume)
         }
     }
 
