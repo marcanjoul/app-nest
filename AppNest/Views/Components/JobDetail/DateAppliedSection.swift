@@ -10,12 +10,31 @@ struct DateAppliedSection: View {
     var isEmbedded: Bool = false
 
     @State private var permissionDenied: Bool = false
+    @State private var isShowingPicker = false
 
     private var isToApply: Bool { status == .toApply }
     private var accent: Color { Theme.accent }
+    /// Date chips and their calendar use the Offer pill's green.
+    private var chipColor: Color { ApplicationStatus.offer.color }
 
     private var sectionTitle: String {
         isToApply ? "Date to Apply" : "Date Applied"
+    }
+
+    private var quickDates: [QuickDate] { isToApply ? QuickDate.future : QuickDate.past }
+
+    /// The chip whose day matches the current date, if any — first wins when two land on one day.
+    private var selectedQuickDate: QuickDate? {
+        guard let dateApplied else { return nil }
+        return quickDates.first { Calendar.current.isDate($0.date(), inSameDayAs: dateApplied) }
+    }
+
+    private static let chipDateFormat: Date.FormatStyle = .dateTime.month(.abbreviated).day()
+
+    /// The fourth chip: "Select a date", or the picked date once it isn't a shortcut.
+    private var customLabel: String {
+        guard let dateApplied, selectedQuickDate == nil else { return "Select a date" }
+        return dateApplied.formatted(Self.chipDateFormat)
     }
 
     var body: some View {
@@ -57,57 +76,35 @@ struct DateAppliedSection: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionLabel(icon: "calendar", title: sectionTitle)
 
-            HStack {
-                Spacer()
-                if dateApplied == nil {
-                    Button {
-                        withAnimation(.appSmooth) { dateApplied = Date() }
-                    } label: {
-                        HStack(spacing: 7) {
-                            AppIcon("calendar.badge.plus")
-                                .appFont(14, weight: .semibold)
-                            Text("Select a date")
-                                .appFont(.headline, weight: .semibold)
-                        }
-                        .foregroundStyle(accent)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(accent.opacity(0.10))
-                                .overlay {
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .strokeBorder(accent.opacity(0.22), lineWidth: 1)
-                                }
-                        }
-                    }
-                    .buttonStyle(PressScaleButtonStyle())
-                } else if isToApply {
-                    DatePicker(
-                        "",
-                        selection: Binding(get: { dateApplied ?? Date() }, set: { dateApplied = $0 }),
-                        in: Date()...,
-                        displayedComponents: .date
-                    )
-                    .labelsHidden()
-                    .datePickerStyle(.compact)
-                    .controlSize(.large)
-                    .tint(accent)
-                } else {
-                    DatePicker(
-                        "",
-                        selection: Binding(get: { dateApplied ?? Date() }, set: { dateApplied = $0 }),
-                        in: ...Date(),
-                        displayedComponents: .date
-                    )
-                    .labelsHidden()
-                    .datePickerStyle(.compact)
-                    .controlSize(.large)
-                    .tint(accent)
+            // Shortcuts for the dates people actually log, plus the calendar as the fourth chip.
+            // A 2×2 grid of equal widths so nothing runs past the card edge.
+            Grid(horizontalSpacing: 8, verticalSpacing: 8) {
+                GridRow {
+                    quickChip(quickDates[0])
+                    quickChip(quickDates[1])
                 }
-                Spacer()
+                GridRow {
+                    quickChip(quickDates[2])
+                    dateChip(customLabel, icon: "calendar", isSelected: dateApplied != nil && selectedQuickDate == nil) {
+                        isShowingPicker = true
+                    }
+                    .popover(isPresented: $isShowingPicker) {
+                        DatePicker(
+                            "",
+                            selection: Binding(get: { dateApplied ?? Date() }, set: { dateApplied = $0 }),
+                            in: isToApply ? Date()...Date.distantFuture : Date.distantPast...Date(),
+                            displayedComponents: .date
+                        )
+                        .labelsHidden()
+                        .datePickerStyle(.graphical)
+                        .tint(chipColor)
+                        .padding()
+                        .frame(width: 340)
+                        .presentationCompactAdaptation(.popover)
+                    }
+                }
             }
-            .padding(.vertical, 2)
+            .animation(.appCrisp, value: selectedQuickDate)
 
             if isToApply {
                 VStack(alignment: .leading, spacing: 6) {
@@ -175,5 +172,38 @@ struct DateAppliedSection: View {
                 }
             }
         }
+    }
+
+    private func quickChip(_ quick: QuickDate) -> some View {
+        dateChip(quick.rawValue, icon: nil, isSelected: quick == selectedQuickDate) {
+            withAnimation(.appCrisp) { dateApplied = quick.date() }
+        }
+    }
+
+    /// Equal-width capsule, SelectablePill's shape in the Offer green.
+    private func dateChip(_ title: String, icon: String?, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                if let icon {
+                    AppIcon(icon)
+                        .appFont(12, weight: .bold)
+                }
+                Text(title)
+                    .appFont(.footnote, weight: isSelected ? .bold : .semibold)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+            .foregroundStyle(isSelected ? .white : chipColor.opacity(0.88))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 9)
+            .background(
+                Capsule()
+                    .fill(isSelected ? chipColor : chipColor.opacity(0.12))
+                    .overlay(Capsule().strokeBorder(isSelected ? .clear : chipColor.opacity(0.28), lineWidth: 0.8))
+            )
+            .contentShape(Capsule())
+        }
+        .buttonStyle(PressScaleButtonStyle())
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

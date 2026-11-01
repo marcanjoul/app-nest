@@ -27,6 +27,8 @@ struct ApplicationView: View {
     @State private var selectedLocations: Set<String> = []
     @State private var sortOption: SortOption = .dateNewest
     @State private var pendingDeleteJob: JobApplication? = nil
+    /// Job whose status dropdown is open, and its pill's global frame.
+    @State private var statusPicker: (job: JobApplication, anchor: CGRect)? = nil
     @State private var undoTask: Task<Void, Never>? = nil
     @State private var toastDragY: CGFloat = 0
     @State private var isShowingCyclePicker = false
@@ -198,6 +200,11 @@ struct ApplicationView: View {
                                             selectedJobIDs.insert(job.id)
                                         }
                                     }
+                                },
+                                isStatusOpen: statusPicker?.job.id == job.id,
+                                onStatusTap: { frame in
+                                    AppHaptics.shared.light()
+                                    withAnimation(.appSmooth) { statusPicker = (job, frame) }
                                 }
                             )
                             .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
@@ -344,6 +351,14 @@ struct ApplicationView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.95)))
                 }
                 .allowsHitTesting(true)
+            }
+
+            if let picker = statusPicker {
+                StatusDropdownOverlay(job: picker.job, anchor: picker.anchor) {
+                    withAnimation(.appSmooth) { statusPicker = nil }
+                }
+                .transition(.opacity)
+                .zIndex(10)
             }
         }
         .animation(.appSmooth, value: pendingDeleteJob != nil)

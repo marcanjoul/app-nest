@@ -175,6 +175,8 @@ struct ResumePill: View {
 /// Status badge with a distinct icon and color.
 struct DarkStatusPill: View {
     let status: ApplicationStatus
+    /// Non-nil makes it a dropdown trigger: a chevron after the text, flipped while open.
+    var isOpen: Bool? = nil
 
     private var style: Theme.StatusStyle { Theme.statusStyle(for: status) }
 
@@ -193,6 +195,12 @@ struct DarkStatusPill: View {
                 .appFont(.footnote, weight: .semibold)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
+            if let isOpen {
+                AppIcon("chevron.down")
+                    .appFont(9, weight: .bold)
+                    .rotationEffect(.degrees(isOpen ? -180 : 0))
+                    .padding(.leading, 1)
+            }
         }
         .foregroundStyle(style.tintColor)
         .padding(.horizontal, 13)

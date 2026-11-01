@@ -389,14 +389,6 @@ struct JobDetailView: View {
 
     // MARK: - Change Highlights
 
-    private var infoChanged: Bool {
-        guard !isNewApplication, let job else { return false }
-        if companyName != job.companyName { return true }
-        if position != job.position { return true }
-        if companyLogoImageData != job.companyLogoImageData { return true }
-        return false
-    }
-
     private var typeChanged: Bool {
         !isNewApplication && type != job?.jobType
     }
@@ -474,7 +466,8 @@ struct JobDetailView: View {
         )
         .id(FormSection.info)
         .modifier(ShakeEffect(animatableData: shakingSection == .info ? 1 : 0))
-        .changedHighlight(infoChanged)
+        // No changedHighlight: this section isn't a card, so the outline wrapped logo and fields
+        // together. The focused field's own outline already marks the edit.
     }
 
     @ViewBuilder

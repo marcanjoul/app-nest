@@ -6,6 +6,8 @@ struct JobCardSwipeRow: View {
     let isEditMode: Bool
     let isSelected: Bool
     let onToggleSelection: () -> Void
+    var isStatusOpen = false
+    var onStatusTap: ((CGRect) -> Void)? = nil
 
     @Environment(AppState.self) private var appState
 
@@ -38,7 +40,8 @@ struct JobCardSwipeRow: View {
                     appState.selectedJob = job
                 }
             } label: {
-                DarkJobCardView(job: job)
+                DarkJobCardView(job: job, isInteractive: !isEditMode,
+                                isStatusOpen: isStatusOpen, onStatusTap: onStatusTap)
             }
             .buttonStyle(CardPressButtonStyle())
         }

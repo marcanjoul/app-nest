@@ -9,6 +9,14 @@ import UIKit
 /// Application summary with company logo, status, and job type.
 struct DarkJobCardView: View {
     let job: JobApplication
+    /// Off in edit mode, where a tap anywhere on the card selects it.
+    var isInteractive = true
+    /// The status dropdown is open for this card (drawn by the list, over the screen).
+    var isStatusOpen = false
+    /// Asks the list to open the status dropdown under the pill at this global frame.
+    var onStatusTap: ((CGRect) -> Void)? = nil
+
+    @State private var pillFrame: CGRect = .zero
 
     private static let relativeDateFormatter: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
@@ -62,32 +70,22 @@ struct DarkJobCardView: View {
                 }
 
                 HStack(spacing: 6) {
-                    // ponytail: .contextMenu, not a long-press opening a per-card .sheet. The old
-                    // 0.35s press competed with the scroll gesture, and every card in the list
-                    // carried two sheet presenters.
+                    // No long-press menus on cards: status changes through this dropdown, the
+                    // rest in the job's detail view.
                     if let status = job.status {
-                        DarkStatusPill(status: status)
-                            .contextMenu {
-                                ForEach(ApplicationStatus.allCases, id: \.self) { option in
-                                    Button {
-                                        withAnimation(.appSmooth) { job.status = option }
-                                    } label: {
-                                        AppLabel(option.rawValue, systemImage: option.iconName)
-                                    }
-                                }
-                            }
+                        Button {
+                            onStatusTap?(pillFrame)
+                        } label: {
+                            DarkStatusPill(status: status, isOpen: onStatusTap == nil ? nil : isStatusOpen)
+                                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { pillFrame = $0 }
+                        }
+                        .buttonStyle(PressScaleButtonStyle())
+                        .allowsHitTesting(isInteractive && onStatusTap != nil)
+                        .accessibilityLabel("Status: \(status.rawValue)")
+                        .accessibilityHint("Shows the other statuses")
                     }
                     if let type = job.jobType {
                         DarkTypeTag(text: type.rawValue, icon: type.iconName, color: type.color)
-                            .contextMenu {
-                                ForEach(ApplicationType.allCases, id: \.self) { option in
-                                    Button {
-                                        withAnimation(.appSmooth) { job.jobType = option }
-                                    } label: {
-                                        AppLabel(option.rawValue, systemImage: option.iconName)
-                                    }
-                                }
-                            }
                     }
                 }
                 .padding(.top, 2)
