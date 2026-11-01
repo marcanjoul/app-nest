@@ -45,8 +45,12 @@ struct EmailParser {
         if let pos = result.position, let company = result.companyName {
             let normalizedPos     = pos.trimmingCharacters(in: .punctuationCharacters).lowercased()
             let normalizedCompany = company.lowercased()
-            if normalizedPos == normalizedCompany || normalizedPos.hasPrefix(normalizedCompany + " ") {
+            if normalizedPos == normalizedCompany {
                 result.position = nil
+            } else if normalizedPos.hasPrefix(normalizedCompany + " ") {
+                // "KAYAK Product, Design & Tech Opportunities" still holds a title; "Acme Corp" doesn't.
+                let rest = pos.dropFirst(company.count).trimmingCharacters(in: .whitespacesAndNewlines)
+                result.position = rest.split(separator: " ").count >= 2 ? rest : nil
             }
         }
 
@@ -72,7 +76,8 @@ struct EmailParser {
             // "role/position/internship at Company"
             #"(?:role|position|opportunity|opportunities|internship|job)\s+(?:at|with)\s+([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
             // "applied to [POSITION] at Company" — skip past the position title to find the company
-            #"(?:apply|applied|applying)\s+(?:to|for)\s+.+?\s+at\s+([A-Z][A-Za-z0-9&®\s\.]+?)(?:\s+on\b|\s+via\b|\s+through\b|\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
+            // (?!the) skips venues: "… at the SWE Conference at KAYAK" names KAYAK.
+            #"(?:apply|applied|applying)\s+(?:to|for)\s+.+?\s+at\s+(?!the\b)([A-Z][A-Za-z0-9&®\s\.]+?)(?:\s+on\b|\s+via\b|\s+through\b|\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
             // "apply/applied/applying to/at Company" — negative lookahead skips articles that precede position titles
             #"(?:apply|applied|applying)\s+(?:to|at|for)\s+(?!the\b|a\b|an\b)([A-Z][A-Za-z0-9&\s\.]+?)(?:\s+on\b|\s+through\b|\s+via\b|\s+and\b|\s+for\b|\.|,|\!|\n|$)"#,
             // "application to Company" — acknowledgment emails ("submit an application to Snackpass")
@@ -185,6 +190,8 @@ struct EmailParser {
             a.value != b.value ? a.value > b.value : firstSeen[a.key]! < firstSeen[b.key]!
         }).first
             .map { stripCollectiveSuffix($0.key) }
+            // NLTagger keeps a leading article: "The Walt Disney Company".
+            .map { $0.hasPrefix("The ") && $0.count > 4 ? String($0.dropFirst(4)) : $0 }
     }
 
     /// Drops trailing collective nouns: "role in the Yara Network" names the company Yara.
@@ -242,14 +249,19 @@ struct EmailParser {
             // "offer you [the] [POSITION] role/position/opportunity/opening"
             #"offer\s+(?:you\s+)?(?:the\s+|our\s+|a\s+|an\s+)?(.+?)\s+(?:role|position|opportunity|opening)"#,
             
-            // "the/our [POSITION] role/position/opening/opportunity"
-            #"(?:the|our)\s+(?!vacancy\b|opening\b|job\b|posting\b)(.+?)\s+(?:role|position|opening|opportunity)"#,
+            // "the/our [POSITION] role/position/opening/opportunity" — the capture can't cross another
+            // "the"/"our", so a sentence-opening "the interest you've shown in … the X position" yields X.
+            #"(?:the|our)\s+(?!vacancy\b|opening\b|job\b|posting\b)((?:(?!\b(?:the|our)\b).)+?)\s+(?:role|position|opening|opportunity)"#,
             
             // Label-style "Role: X" / "Position: X"
             #"(?:role|position|title)\s*:\s*(.+?)(?:\n|$)"#,
             
             // "as a/an [POSITION]"
             #"as\s+(?:a|an)\s+(.+?)(?:\.|,|\n|$)"#,
+
+            // "interest in UX Designer Intern – Summer 2027" — requires a role noun so
+            // "interest in Pindrop" / "interest in a career at X" don't read as titles.
+            #"interest(?:ed)?\s+in\s+(?:the\s+)?([^.\n]*?\b(?:intern|internship|engineer|designer|developer|analyst|manager|scientist|researcher|associate|specialist|consultant|co-op)\b[^.\n]*?)(?:\s+(?:at|with)\s+[A-Z]|\.(?:\s|$)|\n|$)"#,
         ]
 
         for pattern in patterns {
@@ -307,7 +319,8 @@ struct EmailParser {
             .trimmingCharacters(in: CharacterSet(charactersIn: ".,;:"))
 
         // Strip leading noise
-        let leadingNoise = ["role of the ", "position of the ", "role of ", "position of ",
+        // "apply for" — posting titles that start with it: "Apply for KAYAK Product, Design & Tech Opportunities"
+        let leadingNoise = ["apply for ", "apply to ", "role of the ","position of the ", "role of ", "position of ",
                             "for the ", "for a ", "for an ",
                             "your interest in the ", "your interest in ",
                             "interest in the ", "interest in ",
@@ -334,12 +347,19 @@ struct EmailParser {
         let idPatterns = [
             #"\s*\([A-Z]{2,}[-]?\d+\)"#,      // (REQ-123)
             // (?i) — the loop below runs case-sensitively so the [A-Z] patterns keep their meaning.
-            #"(?i)\s*\((?:job|req|requisition|posting)\s*(?:number|no\.?|id|#)?\s*:?\s*[A-Za-z0-9-]+\)"#,  // (Job number: 200049019)
+            #"(?i)\s*\((?:job|req|requisition|posting|id)\s*(?:number|no\.?|id|#)?\s*:?\s*[A-Za-z0-9-]+\)"#,  // (Job number: 200049019)
             #"^[A-Z]\d{5,}\s+"#,              // R160469 at start
             #"\s+-\s+[A-Z]\d{5,}"#,           // - R160469 at end
             #"^\d{4,}\s+"#                    // 2026 or similar years/IDs at start
         ]
         
+        // Leading division name: "Walt Disney Animation Studios Product Design Intern"
+        // ponytail: keyed on a short org-suffix list; a division ending in anything else
+        // ("Disney Imagineering X") slips through. Match against the parsed company if that bites.
+        if let div = s.range(of: #"^(?:[A-Z][A-Za-z&]*\s+){1,4}(?:Studios|Labs|Inc\.?|LLC|Corporation|Company|Entertainment)\s+(?=[A-Z])"#, options: .regularExpression) {
+            s = String(s[div.upperBound...])
+        }
+
         // Trailing location: "Enterprise Technology Services- Phoenix, AZ"
         if let loc = s.range(of: #"\s*-\s*[A-Z][A-Za-z.' ]+,\s*[A-Z]{2}$"#, options: .regularExpression) {
             s = String(s[..<loc.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -353,6 +373,17 @@ struct EmailParser {
                     s = String(s[..<range.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
                 }
             }
+        }
+
+        // Trailing season qualifier, after IDs are gone: "Product Design Intern, Summer 2027",
+        // "UX Designer Intern – Summer 2027"
+        if let q = s.range(of: #"(?:,|\s+[-–—])\s*\#(seasonAlternation)\s+20\d{2}$"#, options: [.regularExpression, .caseInsensitive]) {
+            s = String(s[..<q.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        // Trailing bare year: "Software Engineering Intern (2027)"
+        if let y = s.range(of: #"\s*\(20\d{2}\)$"#, options: .regularExpression) {
+            s = String(s[..<y.lowerBound])
         }
 
         return s

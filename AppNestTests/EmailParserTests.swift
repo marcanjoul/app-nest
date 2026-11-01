@@ -224,4 +224,66 @@ struct FullEmailTests {
         #expect(result.position == "Software Engineer, Front-End (New Grad)")
         #expect(result.jobType == .fullTime)
     }
+
+    @Test("Disney: title prefixed by a division name and suffixed by a season")
+    func disneyConfirmation() {
+        let email = "Thank you for sharing your story with us! We are delighted by the interest you've shown in The Walt Disney Company and the Walt Disney Animation Studios Product Design Intern, Summer 2027 position."
+        let result = parser.parse(email)
+        #expect(result.companyName == "Walt Disney Company")
+        #expect(result.position == "Product Design Intern")
+        #expect(result.jobType == .internship)
+        #expect(result.season == .summer)
+    }
+
+    @Test("Amazon: title after \"interest in\", with an en-dash season and an ID tag")
+    func amazonConfirmation() {
+        let email = """
+        Hi Mark,
+
+        Thank you for your interest in UX Designer Intern – Summer 2027 (ID: 10592766).
+
+        If you have completed the application:
+        Great! You can now check the application status here.
+
+        Best regards,
+        Amazon Recruiting Team
+        """
+        let result = parser.parse(email)
+        #expect(result.companyName == "Amazon")
+        #expect(result.position == "UX Designer Intern")
+        #expect(result.jobType == .internship)
+        #expect(result.season == .summer)
+        #expect(result.status == .applied)
+    }
+
+    @Test("KAYAK: \"Apply for\" posting title, venue before the company")
+    func kayakConfirmation() {
+        let email = """
+        Hi Mark,
+
+        Thank you for taking the time to apply for the Apply for KAYAK Product, Design & Tech Opportunities at the SWE Conference at KAYAK. We appreciate your interest in joining our team and the effort you put into your application.
+        """
+        let result = parser.parse(email)
+        #expect(result.companyName == "KAYAK")
+        #expect(result.position == "Product, Design & Tech Opportunities")
+        #expect(result.status == .applied)
+    }
+
+    @Test("Databricks: bare year in parentheses isn't part of the title")
+    func databricksConfirmation() {
+        let email = """
+        Hi Mark,
+
+        Thanks for applying to Databricks! Your application for the Software Engineering Intern (2027) role has been received. We will review it shortly and reach out if there is a fit.
+
+        Regards,
+        Databricks
+        """
+        let result = parser.parse(email)
+        #expect(result.companyName == "Databricks")
+        #expect(result.position == "Software Engineering Intern")
+        #expect(result.jobType == .internship)
+        #expect(result.season == nil)
+        #expect(result.status == .applied)
+    }
 }
