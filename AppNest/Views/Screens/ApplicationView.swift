@@ -142,7 +142,12 @@ struct ApplicationView: View {
                             headerActionButtons
                         }
                     }
+                    if hasMenuFilters {
+                        activeFilterChips
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
                 }
+                .animation(.appSmooth, value: hasMenuFilters)
                 .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 8, trailing: 20))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
@@ -554,15 +559,26 @@ struct ApplicationView: View {
         newCycleName = ""
     }
 
+    // MARK: - Sort Menu
+
+    private var sortMenu: some View {
+        Menu {
+            Picker("Sort", selection: $sortOption) {
+                ForEach(SortOption.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }
+        } label: {
+            AppIcon("arrow.up.arrow.down")
+                .appFont(13, weight: .semibold)
+                .foregroundStyle(sortOption != .dateNewest ? Theme.accent : Theme.textSecondary)
+                .frame(width: 44, height: 44)
+        }
+        .accessibilityLabel("Sort: \(sortOption.rawValue)")
+    }
+
     // MARK: - Filter Menu
 
     private var filterMenu: some View {
         Menu {
-            Section("Sort") {
-                Picker("Sort", selection: $sortOption) {
-                    ForEach(SortOption.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                }
-            }
             filterSection("Type", selection: $selectedTypes)
             filterSection("Season", selection: $selectedSeasons)
             filterSection("Work Mode", selection: $selectedWorkModes)
@@ -582,21 +598,16 @@ struct ApplicationView: View {
                 }
             }
             if hasMenuFilters {
-                Button("Clear Filters", role: .destructive) {
-                    selectedTypes.removeAll()
-                    selectedSeasons.removeAll()
-                    selectedWorkModes.removeAll()
-                    selectedLocations.removeAll()
-                }
+                Button("Clear Filters", role: .destructive, action: clearMenuFilters)
             }
         } label: {
             ZStack(alignment: .topTrailing) {
                 AppIcon("line.3.horizontal.decrease")
                     .appFont(13, weight: .semibold)
-                    .foregroundStyle(isMenuCustomized ? Theme.accent : Theme.textSecondary)
+                    .foregroundStyle(hasMenuFilters ? Theme.accent : Theme.textSecondary)
                     .frame(width: 44, height: 44)
 
-                if isMenuCustomized {
+                if hasMenuFilters {
                     Circle()
                         .fill(Theme.accent)
                         .frame(width: 8, height: 8)
@@ -606,6 +617,83 @@ struct ApplicationView: View {
             }
         }
         .menuActionDismissBehavior(.disabled)
+        .accessibilityLabel("Filter")
+    }
+
+    private func clearMenuFilters() {
+        withAnimation(.appSmooth) {
+            selectedTypes.removeAll()
+            selectedSeasons.removeAll()
+            selectedWorkModes.removeAll()
+            selectedLocations.removeAll()
+        }
+        AppHaptics.shared.light()
+    }
+
+    // MARK: - Active Filter Chips
+
+    private struct ActiveFilter: Identifiable {
+        let id: String
+        let label: String
+        let remove: () -> Void
+    }
+
+    /// Every menu filter that's on, so each can be removed without reopening the menu.
+    private var activeFilters: [ActiveFilter] {
+        var filters: [ActiveFilter] = []
+        for t in ApplicationType.allCases where selectedTypes.contains(t) {
+            filters.append(.init(id: "type-\(t.rawValue)", label: t.rawValue) { selectedTypes.remove(t) })
+        }
+        for season in ApplicationSeason.allCases where selectedSeasons.contains(season) {
+            filters.append(.init(id: "season-\(season.rawValue)", label: season.rawValue) { selectedSeasons.remove(season) })
+        }
+        for mode in WorkMode.allCases where selectedWorkModes.contains(mode) {
+            filters.append(.init(id: "mode-\(mode.rawValue)", label: mode.rawValue) { selectedWorkModes.remove(mode) })
+        }
+        for key in selectedLocations.sorted() {
+            // Stored lowercased; show the spelling the user's applications use.
+            let name = locationOptions.first { $0.lowercased() == key } ?? key.capitalized
+            filters.append(.init(id: "city-\(key)", label: name) { selectedLocations.remove(key) })
+        }
+        return filters
+    }
+
+    private var activeFilterChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(activeFilters) { filter in
+                    Button {
+                        AppHaptics.shared.light()
+                        withAnimation(.appSmooth) { filter.remove() }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(filter.label)
+                                .appFont(.footnote, weight: .semibold)
+                            AppIcon("xmark")
+                                .appFont(9, weight: .bold)
+                                .opacity(0.6)
+                        }
+                        .foregroundStyle(Theme.textPrimary)
+                        .padding(.horizontal, 12)
+                        .frame(height: 32)
+                        .background(Capsule().fill(Color.primary.opacity(0.06)))
+                        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.10), lineWidth: 1))
+                        .contentShape(Capsule())
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
+                    .accessibilityLabel("Remove \(filter.label) filter")
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                }
+
+                Button("Clear All", action: clearMenuFilters)
+                    .appFont(.footnote, weight: .semibold)
+                    .foregroundStyle(Theme.accent)
+                    .padding(.horizontal, 8)
+                    .frame(height: 32)
+            }
+            .animation(.appSmooth, value: activeFilters.map(\.id))
+        }
+        .scrollClipDisabled()
     }
 
     private var hasMenuFilters: Bool {
@@ -622,8 +710,6 @@ struct ApplicationView: View {
             .sorted { $0.count != $1.count ? $0.count > $1.count : $0.name < $1.name }
             .map(\.name)
     }
-
-    private var isMenuCustomized: Bool { hasMenuFilters || sortOption != .dateNewest }
 
     private func filterSection<T: Hashable & CaseIterable & RawRepresentable>(_ title: String, selection: Binding<Set<T>>) -> some View where T.AllCases: RandomAccessCollection, T.RawValue == String {
         Section(title) {
@@ -709,6 +795,8 @@ struct ApplicationView: View {
 
     private var headerActionButtons: some View {
         HStack(spacing: 0) {
+            sortMenu
+            divider
             filterMenu
             divider
             exportButton
