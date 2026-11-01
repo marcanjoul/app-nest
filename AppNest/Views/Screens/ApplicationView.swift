@@ -833,19 +833,20 @@ struct ApplicationView: View {
                 if !isEditMode { selectedJobIDs.removeAll() }
             }
         } label: {
-            HStack(spacing: 4) {
-                AppIcon(isEditMode ? "checkmark" : "pencil")
-                    .appFont(13, weight: .semibold)
-                if isEditMode {
-                    Text("Done")
-                        .appFont(.footnote, weight: .semibold)
-                        .transition(.opacity.combined(with: .scale(scale: 0.8)))
-                }
+            // Same 44pt box either way, so pencil ↔ tick swaps in place without resizing the capsule.
+            // AppIcon is a font glyph, not an SF Symbol, so cross-fade the two instead of .replace.
+            ZStack {
+                AppIcon("pencil")
+                    .foregroundStyle(Theme.textSecondary)
+                    .opacity(isEditMode ? 0 : 1)
+                    .scaleEffect(isEditMode ? 0.6 : 1)
+                AppIcon("checkmark")
+                    .foregroundStyle(Theme.accent)
+                    .opacity(isEditMode ? 1 : 0)
+                    .scaleEffect(isEditMode ? 1 : 0.6)
             }
-            .foregroundStyle(isEditMode ? Theme.accent : Theme.textSecondary)
-            .frame(minWidth: 44)
-            .frame(height: 44)
-            .padding(.horizontal, isEditMode ? 4 : 0)
+            .appFont(13, weight: .semibold)
+            .frame(width: 44, height: 44)
         }
         .buttonStyle(PressScaleButtonStyle())
         .animation(.appCrisp, value: isEditMode)
