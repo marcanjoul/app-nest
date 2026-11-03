@@ -1,13 +1,16 @@
 import SwiftUI
 
-/// The job card's status dropdown, drawn over the whole screen: a light blur-and-dim scrim, the
-/// current pill redrawn in place, and the other statuses dropping out beneath it. Tapping the
+/// The job card's status dropdown, drawn over the whole screen: a blur-and-dim scrim with the
+/// card itself cut out (it stays sharp), the current pill redrawn in place, and the other
+/// statuses dropping out beneath it. Tapping the
 /// scrim or the pill closes it. Cards live in a List and can't draw outside their row, so the
 /// list owns this and the card only reports where its pill is.
 struct StatusDropdownOverlay: View {
     let job: JobApplication
     /// The card's status pill, in global coordinates.
     let anchor: CGRect
+    /// The whole card, in global coordinates — left unblurred.
+    let card: CGRect
     let onDismiss: () -> Void
 
     @State private var appeared = false
@@ -30,6 +33,7 @@ struct StatusDropdownOverlay: View {
                 Rectangle()
                     .fill(.thinMaterial)
                     .overlay(Color.black.opacity(0.28))
+                    .mask { cardCutout }
                     .ignoresSafeArea()
                     .onTapGesture(perform: onDismiss)
                     .accessibilityLabel("Close status menu")
@@ -65,5 +69,21 @@ struct StatusDropdownOverlay: View {
             }
         }
         .onAppear { appeared = true }
+    }
+
+    /// Opaque everywhere except a card-shaped hole. Measured in its own space: the scrim
+    /// ignores the safe area, so its origin isn't the GeometryReader's.
+    private var cardCutout: some View {
+        GeometryReader { g in
+            let o = g.frame(in: .global).origin
+            ZStack(alignment: .topLeading) {
+                Rectangle()
+                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                    .frame(width: card.width, height: card.height)
+                    .offset(x: card.minX - o.x, y: card.minY - o.y)
+                    .blendMode(.destinationOut)
+            }
+            .compositingGroup()
+        }
     }
 }

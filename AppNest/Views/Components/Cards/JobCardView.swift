@@ -13,10 +13,11 @@ struct DarkJobCardView: View {
     var isInteractive = true
     /// The status dropdown is open for this card (drawn by the list, over the screen).
     var isStatusOpen = false
-    /// Asks the list to open the status dropdown under the pill at this global frame.
-    var onStatusTap: ((CGRect) -> Void)? = nil
+    /// Asks the list to open the status dropdown: the pill's and the card's global frames.
+    var onStatusTap: ((_ pill: CGRect, _ card: CGRect) -> Void)? = nil
 
     @State private var pillFrame: CGRect = .zero
+    @State private var cardFrame: CGRect = .zero
 
     private static let relativeDateFormatter: RelativeDateTimeFormatter = {
         let f = RelativeDateTimeFormatter()
@@ -74,7 +75,7 @@ struct DarkJobCardView: View {
                     // rest in the job's detail view.
                     if let status = job.status {
                         Button {
-                            onStatusTap?(pillFrame)
+                            onStatusTap?(pillFrame, cardFrame)
                         } label: {
                             DarkStatusPill(status: status, isOpen: onStatusTap == nil ? nil : isStatusOpen)
                                 .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { pillFrame = $0 }
@@ -94,6 +95,7 @@ struct DarkJobCardView: View {
         }
         .padding(16)
         .surface(cornerRadius: Theme.cardRadius)
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { cardFrame = $0 }
         .task(id: job.companyName) {
             guard !job.logoRemoved, job.companyLogoImageData == nil else { return }
             let trimmed = job.companyName.trimmingCharacters(in: .whitespaces)

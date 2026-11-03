@@ -7,7 +7,7 @@ struct JobCardSwipeRow: View {
     let isSelected: Bool
     let onToggleSelection: () -> Void
     var isStatusOpen = false
-    var onStatusTap: ((CGRect) -> Void)? = nil
+    var onStatusTap: ((_ pill: CGRect, _ card: CGRect) -> Void)? = nil
 
     @Environment(AppState.self) private var appState
 
