@@ -761,16 +761,19 @@ struct JobDetailView: View {
     private var secondaryNavButtons: some View {
         Button { isShowingLogoAttribution.toggle() } label: {
             Image(systemName: "info")
-        }
-        .popover(isPresented: $isShowingLogoAttribution, arrowEdge: .top) {
-            HStack(spacing: 4) {
-                Text("Company logos from").foregroundStyle(.secondary)
-                Link("Logo.dev", destination: URL(string: "https://logo.dev")!)
-            }
-            .appFont(.footnote)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .presentationCompactAdaptation(.popover)
+                .foregroundStyle(Theme.textPrimary)
+                // Anchored on the glyph, not the toolbar button, so the button doesn't morph
+                // into the popover and the "i" stays visible.
+                .popover(isPresented: $isShowingLogoAttribution, arrowEdge: .top) {
+                    HStack(spacing: 4) {
+                        Text("Company logos from").foregroundStyle(.secondary)
+                        Link("Logo.dev", destination: URL(string: "https://logo.dev")!)
+                    }
+                    .appFont(.footnote)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .presentationCompactAdaptation(.popover)
+                }
         }
         .accessibilityLabel("Logo attribution")
 
