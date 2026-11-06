@@ -173,7 +173,6 @@ struct AddMenuView: View {
                     iconColor: emailAccent,
                     title: "Parse Email",
                     subtitle: "Extract details from an email.",
-                    isProminent: true,
                     isExpanded: isShowingEmailParse
                 ) {
                     AppIcon("chevron.down")
@@ -374,7 +373,6 @@ struct AddMenuView: View {
                     iconColor: linkAccent,
                     title: "Paste Job Link",
                     subtitle: "Auto-extract company and role.",
-                    isProminent: true,
                     isExpanded: isShowingPasteLink
                 ) {
                     AppIcon("chevron.down")
@@ -558,7 +556,6 @@ struct CardRowHeader<Trailing: View>: View {
     let iconColor: Color
     let title: String
     let subtitle: String
-    var isProminent: Bool = false
     /// Open cards drop the description — the content below explains itself — and the title grows.
     var isExpanded: Bool = false
     @ViewBuilder let trailing: () -> Trailing
@@ -567,10 +564,10 @@ struct CardRowHeader<Trailing: View>: View {
         HStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .fill(iconColor.opacity(isProminent ? 0.18 : 0.15))
-                    .frame(width: isProminent ? 56 : 48, height: isProminent ? 56 : 48)
+                    .fill(iconColor.opacity(0.18))
+                    .frame(width: 56, height: 56)
                 AppIcon(icon)
-                    .appFont(isProminent ? 24 : 20, weight: .semibold)
+                    .appFont(24, weight: .semibold)
                     .foregroundStyle(iconColor)
             }
 
