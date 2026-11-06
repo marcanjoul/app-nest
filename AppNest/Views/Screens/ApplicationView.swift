@@ -582,7 +582,7 @@ struct ApplicationView: View {
                 ForEach(SortOption.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }
         } label: {
-            AppIcon("arrow.down.wide.narrow")
+            AppIcon("arrow.up.arrow.down")
                 .appFont(13, weight: .semibold)
                 .foregroundStyle(sortOption != .dateNewest ? Theme.accent : Theme.textSecondary)
                 .frame(width: 44, height: 44)
