@@ -12,6 +12,8 @@ class AppState {
     var selectedTab: Int = 0
     /// Presents the Add sheet from the floating "+" beside the tab bar.
     var isShowingAdd = false
+    /// A link or email handed over by the Share extension; AddMenuView consumes it.
+    var sharedText: String?
 
     // MARK: - Navigation & Interaction
     

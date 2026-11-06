@@ -5,6 +5,7 @@ import SwiftData
 struct AppNestApp: App {
     @AppStorage(AppStorageKeys.hasCompletedOnboarding) private var hasCompletedOnboarding = false
     @State private var appState = AppState()
+    @Environment(\.scenePhase) private var scenePhase
 
     /// Built once, by hand, so a store that won't open is something the app can react to.
     /// `.modelContainer(for:)` handles the same failure by trapping, which tells the user
@@ -43,11 +44,26 @@ struct AppNestApp: App {
                 .environment(appState)
                 .modelContainer(container)
                 .task { StoreBackup.snapshotIfPopulated(container) }
+                // The Share extension opens appnest://share; checking on every activation also
+                // catches shares saved while iOS refused to open the app.
+                .onOpenURL { _ in openSharedItem() }
+                .onChange(of: scenePhase, initial: true) { _, phase in
+                    if phase == .active { openSharedItem() }
+                }
 
             case .failure(let error):
                 StoreRecoveryView(error: error, brokenStoreURL: brokenStoreURL)
             }
         }
+    }
+}
+
+extension AppNestApp {
+    private func openSharedItem() {
+        guard let text = ShareInbox.take() else { return }
+        appState.selectedJob = nil
+        appState.sharedText = text
+        appState.isShowingAdd = true
     }
 }
 

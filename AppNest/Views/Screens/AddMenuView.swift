@@ -143,6 +143,7 @@ struct AddMenuView: View {
             csvImportRows = CSVImporter.parse(content)
             isPresentingImport = true
         }
+        .task(id: appState.sharedText) { handleSharedText() }
         .task(id: vm.editCompany) {
             await vm.fetchLogo(isDark: colorScheme == .dark)
         }
@@ -509,6 +510,28 @@ struct AddMenuView: View {
         }
         .buttonStyle(.plain)
         .disabled(isDisabled)
+    }
+
+    // MARK: - Shared Item
+
+    /// A share from Safari/Mail: links go straight into Parse Link, anything else is parsed as an email.
+    private func handleSharedText() {
+        guard let text = appState.sharedText else { return }
+        appState.sharedText = nil
+        withAnimation(.appSmooth) {
+            lastSavedCompany = nil
+            if LinkParser.webURL(from: text) != nil {
+                isShowingEmailParse = false
+                pasteLinkURL = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                isShowingPasteLink = true
+            } else {
+                isShowingPasteLink = false
+                vm.reset()
+                vm.emailText = text
+                isShowingEmailParse = true
+            }
+        }
+        if isShowingPasteLink { parseLink() } else { vm.parseEmail(defaultResume: defaultResume) }
     }
 
     // MARK: - Link Parsing
