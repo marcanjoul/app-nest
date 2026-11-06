@@ -341,3 +341,24 @@ struct FullEmailTests {
         #expect(result.status == .applied)
     }
 }
+
+@Suite("Stripe acknowledgment")
+struct StripeAckTests {
+    @Test("names the company from 'at Stripe' / sign-off")
+    func stripe() {
+        let email = """
+        Hi Mark,
+
+        Thanks so much for submitting your application for the Product Design Intern role! As a reminder, we have recorded your location preferences based on your application responses so only one application is required.
+
+        With the high volume of applications, our University Recruiting team will review applications on a rolling basis which may cause a delay in our response times. We appreciate your understanding and, in the meantime, encourage you to check out our quick guide to Stripe culture [0], our blog [1], and our LinkedIn page [2] to get a feel for what we're up to at Stripe.
+
+        We hope to connect soon!
+
+        Stripe
+        """
+        let r = parser.parse(email)
+        #expect(r.companyName == "Stripe")
+        #expect(r.position == "Product Design Intern")
+    }
+}

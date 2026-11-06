@@ -154,6 +154,17 @@ struct EmailParser {
             }
         }
 
+        // Strategy 1b: bare sign-off — the last line is just the company ("Stripe"). Requiring the
+        // name to appear earlier too keeps a person's sign-off ("Best,\nJane") from matching.
+        let lines = text.split(whereSeparator: \.isNewline)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        if let last = lines.last, lines.count > 1,
+           last.range(of: #"^[A-Z][A-Za-z0-9&\.]*(?: [A-Z][A-Za-z0-9&\.]*){0,2}$"#, options: .regularExpression) != nil,
+           lines.dropLast().joined(separator: "\n").contains(last) {
+            return last
+        }
+
         // Strategy 2: NLTagger NER (broader coverage, filtered for job-platform noise)
         let tagger = NLTagger(tagSchemes: [.nameType])
         tagger.string = text
