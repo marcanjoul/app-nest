@@ -28,3 +28,18 @@ struct SeasonsTests {
         #expect(job.season == nil)
     }
 }
+
+@Suite("CSV seasons")
+struct CSVSeasonsTests {
+    @Test("an exported 'Summer / Fall' cell imports as both seasons")
+    func multiSeasonRoundTrip() {
+        let csv = "Company,Position,Season\nStripe,Design Intern,Summer / Fall\n"
+        #expect(CSVImporter.parse(csv).first?.seasons == [.summer, .fall])
+    }
+
+    @Test("autumn reads as fall; unknown text is no season")
+    func aliases() {
+        #expect(CSVImporter.matchSeasons("Autumn 2026") == [.fall])
+        #expect(CSVImporter.matchSeasons("TBD").isEmpty)
+    }
+}

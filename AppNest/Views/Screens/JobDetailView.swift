@@ -165,7 +165,7 @@ struct JobDetailView: View {
         _position               = State(initialValue: r.position)
         _type                   = State(initialValue: r.jobType)
         _status                 = State(initialValue: r.status)
-        _seasons                = State(initialValue: r.season.map { [$0] } ?? [])
+        _seasons                = State(initialValue: r.seasons)
         _workMode               = State(initialValue: r.workMode)
         _location               = State(initialValue: r.location)
         _dateApplied            = State(initialValue: r.dateApplied)
@@ -195,7 +195,7 @@ struct JobDetailView: View {
         r.position = position
         r.jobType = type
         r.status = status
-        r.season = seasons.first   // ponytail: CSV rows hold one season — the first wins
+        r.seasons = seasons
         r.dateApplied = dateApplied
         r.workMode = workMode
         r.location = location

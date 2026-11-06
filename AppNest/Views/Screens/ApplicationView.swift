@@ -44,8 +44,8 @@ struct ApplicationView: View {
     @State private var isShowingImportPreview = false
     @State private var isImportingCSV = false
     @State private var isShowingImportConfirmation = false
-    @State private var csvFileURL: URL? = nil
-    @State private var isShowingShareSheet = false
+    @State private var exportFile: ExportFile? = nil
+    @State private var isChoosingExportScope = false
     @State private var importErrorMessage: String?
 
     // Cycle-filtered base (before search/status)
@@ -422,8 +422,15 @@ struct ApplicationView: View {
                     .environment(appState)
             }
         }
-        .sheet(isPresented: $isShowingShareSheet) {
-            if let url = csvFileURL { ShareSheet(activityItems: [url]) }
+        // item-driven so the sheet can't open before the file exists (blank first share sheet).
+        .sheet(item: $exportFile) { file in
+            ShareSheet(activityItems: [file.url])
+        }
+        .confirmationDialog("Export to CSV", isPresented: $isChoosingExportScope, titleVisibility: .visible) {
+            Button("Export \(filteredAndSorted.count) Shown") { exportCSV(filteredAndSorted) }
+            Button("Export All \(cycleFiltered.count)") { exportCSV(cycleFiltered) }
+        } message: {
+            Text("Filters or search are hiding some applications.")
         }
         .alert("Import CSV", isPresented: $isShowingImportConfirmation) {
             Button("Select File") { isImportingCSV = true }
@@ -488,10 +495,9 @@ struct ApplicationView: View {
         }
     }
 
-    private func exportCSV() {
+    private func exportCSV(_ exportable: [JobApplication]) {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
-        let exportable = filteredAndSorted
         let header = "Company,Position,Type,Status,Season,Work Mode,Location,Date Applied,Compensation,Currency,Resume,Notes,URL\n"
         let rows = exportable.map { app -> String in
             let compensation: String = {
@@ -523,15 +529,15 @@ struct ApplicationView: View {
 
         do {
             try csv.write(to: tempURL, atomically: true, encoding: .utf8)
-            csvFileURL = tempURL
-            isShowingShareSheet = true
+            exportFile = ExportFile(url: tempURL)
         } catch {
             importErrorMessage = "Failed to create export file."
         }
     }
 
     private func escapeCSV(_ str: String) -> String {
-        if str.contains(",") || str.contains("\"") || str.contains("\n") {
+        // Scalars, not Characters: "\r\n" is one Character and would slip past a Character check.
+        if str.unicodeScalars.contains(where: { ",\"\n\r".unicodeScalars.contains($0) }) {
             return "\"\(str.replacingOccurrences(of: "\"", with: "\"\""))\""
         }
         return str
@@ -824,7 +830,8 @@ struct ApplicationView: View {
 
     private var exportButton: some View {
         Button {
-            exportCSV()
+            let shown = filteredAndSorted
+            if shown.count < cycleFiltered.count { isChoosingExportScope = true } else { exportCSV(shown) }
         } label: {
             AppIcon("square.and.arrow.up")
                 .appFont(13, weight: .semibold)
@@ -849,7 +856,6 @@ struct ApplicationView: View {
             }
         } label: {
             // Same 44pt box either way, so pencil ↔ tick swaps in place without resizing the capsule.
-            // AppIcon is a font glyph, not an SF Symbol, so cross-fade the two instead of .replace.
             ZStack {
                 AppIcon("pencil")
                     .foregroundStyle(Theme.textSecondary)
@@ -1100,4 +1106,9 @@ struct ApplicationView: View {
     return NavigationStack { ApplicationView() }
         .environment(AppState())
         .modelContainer(container)
+}
+
+private struct ExportFile: Identifiable {
+    let url: URL
+    var id: URL { url }
 }

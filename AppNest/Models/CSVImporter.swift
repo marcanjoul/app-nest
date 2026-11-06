@@ -9,7 +9,7 @@ struct CSVImportRow: Identifiable {
     var position: String = ""
     var jobType: ApplicationType? = nil
     var status: ApplicationStatus? = nil
-    var season: ApplicationSeason? = nil
+    var seasons: [ApplicationSeason] = []
     var dateApplied: Date = Date()
     var compensationAmount: Double? = nil
     var compensationKind: CompensationKind? = nil
@@ -128,7 +128,7 @@ enum CSVImporter {
                 row.jobType = matchTypeFromTitle(row.position)
             }
             row.status      = matchStatus(get("status"))
-            row.season      = matchSeason(get("season"))
+            row.seasons     = matchSeasons(get("season"))
             row.workMode    = WorkMode(matching: get("work_mode"))
             row.location    = get("location")
             row.jobURL      = get("url")
@@ -293,15 +293,12 @@ enum CSVImporter {
         return nil
     }
 
-    private static func matchSeason(_ raw: String) -> ApplicationSeason? {
+    /// Every season named in the cell — the app exports several as "Summer / Fall".
+    static func matchSeasons(_ raw: String) -> [ApplicationSeason] {
         let s = raw.lowercased()
-        guard !s.isEmpty else { return nil }
-        if let hit = ApplicationSeason.allCases.first(where: { $0.rawValue.lowercased() == s }) { return hit }
-        if s.contains("winter")                    { return .winter }
-        if s.contains("spring")                    { return .spring }
-        if s.contains("summer")                    { return .summer }
-        if s.contains("fall") || s.contains("autumn") { return .fall }
-        return nil
+        return ApplicationSeason.allCases.filter {
+            s.contains($0.rawValue.lowercased()) || ($0 == .fall && s.contains("autumn"))
+        }
     }
 
     private static func parseCompensation(comp: String, curr: String, into row: inout CSVImportRow) {

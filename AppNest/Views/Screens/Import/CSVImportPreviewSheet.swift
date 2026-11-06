@@ -285,6 +285,7 @@ struct CSVImportPreviewSheet: View {
                     .foregroundStyle(isSelected ? Theme.accent : Theme.textTertiary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(isSelected ? "Deselect row" : "Select row")
 
             // Logo Preview
             ZStack {
@@ -431,7 +432,7 @@ struct CSVImportPreviewSheet: View {
                 position: row.position,
                 jobType: row.jobType,
                 status: row.status ?? .applied,
-                season: row.season,
+                season: row.seasons.first,
                 cycle: rowCycle ?? defaultCycle,
                 dateApplied: row.dateApplied,
                 jobURL: row.jobURL.isEmpty ? nil : row.jobURL,
@@ -441,6 +442,7 @@ struct CSVImportPreviewSheet: View {
                 compensationCurrency: row.compensationCurrency,
                 salaryPeriod: row.salaryPeriod
             )
+            app.seasons = row.seasons
             app.workMode = row.workMode
             app.location = row.location.isEmpty ? nil : row.location
             modelContext.insert(app)
