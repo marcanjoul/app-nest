@@ -118,7 +118,7 @@ final class EmailParseViewModel {
         withAnimation(.appSmooth) {
             editCompany = result.companyName ?? ""
             editPosition = result.position ?? ""
-            editJobType = result.jobType
+            editJobType = result.jobType ?? CSVImporter.matchTypeFromTitle(editPosition)
             editStatus = result.status ?? .applied
             editSeasons = result.season.map { [$0] } ?? []
             editDate = result.dateApplied

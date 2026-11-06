@@ -196,6 +196,11 @@ struct EmailParseResultsCard: View {
         .onChange(of: vm.editJobType) { _, _ in
             if !isSeasonAllowed { vm.editSeasons = [] }
         }
+        // Same as JobDetailView: only when the title's implied type changes, so a manual pick sticks.
+        .onChange(of: vm.editPosition) { old, new in
+            let match = CSVImporter.matchTypeFromTitle(new)
+            if let match, match != CSVImporter.matchTypeFromTitle(old) { vm.editJobType = match }
+        }
         .id(vm.parseCount)
     }
 
