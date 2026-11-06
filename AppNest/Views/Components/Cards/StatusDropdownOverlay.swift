@@ -31,7 +31,7 @@ struct StatusDropdownOverlay: View {
             ZStack(alignment: .topLeading) {
                 // Enough blur and dim that the pills read clearly over any card.
                 Rectangle()
-                    .fill(.thinMaterial)
+                    .fill(.ultraThinMaterial)
                     .overlay(Color.black.opacity(0.28))
                     .mask { cardCutout }
                     .ignoresSafeArea()
