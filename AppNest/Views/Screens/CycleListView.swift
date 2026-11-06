@@ -78,6 +78,7 @@ struct CycleListView: View {
                         .appFont(14, weight: .bold)
                         .foregroundStyle(Theme.accent)
                 }
+                .accessibilityLabel("New cycle")
             }
         }
         .alert("New Cycle", isPresented: $isAddingCycle) {

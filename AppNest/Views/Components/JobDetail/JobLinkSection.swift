@@ -56,6 +56,7 @@ struct JobLinkSection: View {
                             .foregroundStyle(Theme.accent)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Open job link")
                     .transition(.scale(scale: 0.7).combined(with: .opacity))
                 }
             }

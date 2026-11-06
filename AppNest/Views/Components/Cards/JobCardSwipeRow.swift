@@ -21,6 +21,7 @@ struct JobCardSwipeRow: View {
                     .animation(.appCrisp, value: isSelected)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(isSelected ? "Deselect" : "Select")
             .frame(width: 22, height: 22)
             .padding(.trailing, isEditMode ? 10 : 0)
             .frame(width: isEditMode ? 32 : 0)

@@ -11,7 +11,9 @@ extension EnvironmentValues {
     }
 }
 
-/// SF Symbol sized by the `appIconSize` environment value.
+/// SF Symbol in a square frame. Size and weight come from the caller's `.appFont(size, weight:)`
+/// (which also sets `appIconSize`), so the symbol matches its surrounding text. VoiceOver gets the
+/// symbol's built-in label; icon-only buttons still add their own `.accessibilityLabel`.
 struct AppIcon: View {
     let name: String
     @Environment(\.appIconSize) private var size
@@ -20,7 +22,6 @@ struct AppIcon: View {
 
     var body: some View {
         Image(systemName: name)
-            .font(.system(size: size))
             .frame(width: size, height: size)
     }
 }
