@@ -653,6 +653,11 @@ struct JobDetailView: View {
             .onChange(of: type) { _, _ in
                 if !isSeasonAllowed { seasons = [] }
             }
+            // Only react when the title's implied type changes, so a manual pick sticks while typing.
+            .onChange(of: position) { old, new in
+                let match = CSVImporter.matchTypeFromTitle(new)
+                if let match, match != CSVImporter.matchTypeFromTitle(old) { type = match }
+            }
             .animation(.appSmooth, value: isSeasonAllowed)
             .animation(.appSmooth, value: isInterviewStage)
             .onChange(of: csvSyncSignature) { _, _ in syncToCSVRow() }
@@ -755,9 +760,7 @@ struct JobDetailView: View {
     @ViewBuilder
     private var secondaryNavButtons: some View {
         Button { isShowingLogoAttribution.toggle() } label: {
-            AppIcon("info.circle")
-                .appFont(15, weight: .medium)
-                .foregroundStyle(Theme.textSecondary)
+            Image(systemName: "info")
         }
         .popover(isPresented: $isShowingLogoAttribution, arrowEdge: .top) {
             HStack(spacing: 4) {

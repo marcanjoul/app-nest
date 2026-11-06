@@ -254,7 +254,7 @@ enum CSVImporter {
         return nil
     }
 
-    private static func matchTypeFromTitle(_ raw: String) -> ApplicationType? {
+    static func matchTypeFromTitle(_ raw: String) -> ApplicationType? {
         let s = raw.lowercased()
         guard !s.isEmpty else { return nil }
 
