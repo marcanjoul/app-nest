@@ -2,15 +2,12 @@ import UIKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Share sheet → "App Nest". Saves the shared link or text to the App Group inbox, then opens
-/// App Nest, which picks it up (ShareInbox) and starts parsing. If iOS won't let us open the app,
-/// the item is already saved and appears the next time App Nest comes to the foreground.
+/// Share sheet → "App Nest". Opens App Nest with the shared link or text in the URL
+/// (appnest://share?text=…), which drops it straight into Add a Job. No App Group needed, so
+/// it signs with any team. If iOS won't open the app, the text goes on the clipboard instead.
 final class ShareViewController: UIViewController {
-    // Must match ShareInbox in the app target.
-    private static let appGroup = "group.com.example.mark.AppNest"
-    private static let openURL = URL(string: "appnest://share")!
-
     private let model = ShareStatus()
+    private var text = ""
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -27,11 +24,11 @@ final class ShareViewController: UIViewController {
     }
 
     private func handleShare() async {
-        guard let text = await sharedText(), save(text) else {
+        guard let text = await sharedText() else {
             model.state = .failed
             return
         }
-        model.state = .saved
+        self.text = text
         openApp()
     }
 
@@ -52,25 +49,17 @@ final class ShareViewController: UIViewController {
         return nil
     }
 
-    /// One file per share, so two quick shares can't overwrite each other.
-    private func save(_ text: String) -> Bool {
-        guard let dir = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: Self.appGroup)?
-            .appendingPathComponent("ShareInbox", isDirectory: true) else { return false }
-        do {
-            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-            try text.write(to: dir.appendingPathComponent("\(Date().timeIntervalSince1970)-\(UUID().uuidString).txt"),
-                           atomically: true, encoding: .utf8)
-            return true
-        } catch {
-            return false
-        }
-    }
-
     /// Share extensions have no public "open my app" API, and `UIApplication.open` is marked
     /// extension-unavailable. The responder chain still reaches the UIApplication, so call
     /// `open(_:options:completionHandler:)` through the runtime. If iOS ever refuses, the
-    /// completion says so and the card stays up with an "Open App Nest" fallback.
+    /// completion says so: the text goes on the clipboard and the card explains what to do.
     private func openApp() {
+        var components = URLComponents()
+        components.scheme = "appnest"
+        components.host = "share"
+        components.queryItems = [URLQueryItem(name: "text", value: String(text.prefix(50_000)))]
+        guard let url = components.url else { return openManually() }
+
         typealias Completion = @convention(block) (Bool) -> Void
         typealias OpenFn = @convention(c) (AnyObject, Selector, NSURL, NSDictionary, Completion?) -> Void
         let selector = NSSelectorFromString("openURL:options:completionHandler:")
@@ -79,14 +68,19 @@ final class ShareViewController: UIViewController {
         while let r = responder {
             if r.isKind(of: UIApplication.self), let imp = r.method(for: selector) {
                 let completion: Completion = { [weak self] opened in
-                    if opened { self?.finish() } else { self?.model.state = .savedOpenManually }
+                    if opened { self?.finish() } else { self?.openManually() }
                 }
-                unsafeBitCast(imp, to: OpenFn.self)(r, selector, Self.openURL as NSURL, [:] as NSDictionary, completion)
+                unsafeBitCast(imp, to: OpenFn.self)(r, selector, url as NSURL, [:] as NSDictionary, completion)
                 return
             }
             responder = r.next
         }
-        model.state = .savedOpenManually
+        openManually()
+    }
+
+    private func openManually() {
+        UIPasteboard.general.string = text
+        model.state = .openManually
     }
 
     private func finish() {
@@ -96,7 +90,7 @@ final class ShareViewController: UIViewController {
 
 @MainActor @Observable
 final class ShareStatus {
-    enum State { case working, saved, savedOpenManually, failed }
+    enum State { case working, openManually, failed }
     var state: State = .working
 }
 
@@ -108,13 +102,13 @@ private struct ShareCard: View {
     var body: some View {
         VStack(spacing: 14) {
             switch status.state {
-            case .working, .saved:
+            case .working:
                 ProgressView()
                 Text("Sending to App Nest…").font(.headline)
-            case .savedOpenManually:
-                Image(systemName: "checkmark.circle.fill").font(.system(size: 44)).foregroundStyle(.green)
-                Text("Saved to App Nest").font(.headline)
-                Text("Open App Nest and it'll be ready to add.")
+            case .openManually:
+                Image(systemName: "doc.on.clipboard.fill").font(.system(size: 44)).foregroundStyle(.green)
+                Text("Copied").font(.headline)
+                Text("Open App Nest, tap +, and paste it into Paste Job Link or Parse Email.")
                     .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 Button("Open App Nest", action: onOpen).buttonStyle(.borderedProminent).tint(.green)
                 Button("Done", action: onDone)

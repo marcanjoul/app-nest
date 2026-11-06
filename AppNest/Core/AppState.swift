@@ -15,6 +15,15 @@ class AppState {
     /// A link or email handed over by the Share extension; AddMenuView consumes it.
     var sharedText: String?
 
+    /// Decodes the Share extension's appnest://share?text=… URL.
+    static func sharedText(from url: URL) -> String? {
+        guard url.scheme == "appnest", url.host == "share",
+              let text = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+                .queryItems?.first(where: { $0.name == "text" })?.value,
+              !text.isEmpty else { return nil }
+        return text
+    }
+
     // MARK: - Navigation & Interaction
     
     /// Main navigation path for the Applications tab.
